@@ -20,6 +20,7 @@ const rotation: RaidRotation = {
       range_band: 'near',
       core_diameter_px: null,
       part_destruction_times: [],
+      spawns_adds: false,
       stated: { 등급: '로드 급', 거리: '근거리', 설명: ['머리에 꽃을 얹은 랩쳐.'] },
     },
     {
@@ -28,6 +29,7 @@ const rotation: RaidRotation = {
       range_band: 'far',
       core_diameter_px: null,
       part_destruction_times: [],
+      spawns_adds: false,
       stated: { 등급: '타이런트 급' },
     },
   ],

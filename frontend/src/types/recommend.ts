@@ -23,6 +23,10 @@ export interface BossProfile {
   part_destructible: boolean // default false — boss has a part-destruction gimmick;
   // selects the ceiling (max-potential) model for units whose kit depends on
   // part destruction (e.g. Ark Ranger Black), false = floor (lower-bound) model.
+  spawns_adds: boolean // default false — 잡몹이 주기적으로 생성되는 보스. 딜 계산에는
+  // 안 들어가고, 홀드 파이어 택틱(자기 풀버스트 동안 평타를 멈춰 라운드 버프를
+  // 살리는 수)을 후보에서 지우는 데만 쓰인다 — 나오는 잡몹을 치워야 하므로 평타를
+  // 멈출 수 없다.
   part_destruction_times: number[] // default [] — 파츠가 실제로 깨지는 시각(초).
   // 그 보스를 관측해야 나오는 값이라 공지에서 오지 않는다. 비어 있으면 파괴에
   // 반응하는 스킬은 위 불리언만 보던 근사로 돌고, 시각이 있으면 그 시각마다

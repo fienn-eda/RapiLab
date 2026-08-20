@@ -1,15 +1,19 @@
 """이번 회차 레이드 보스. `/update-raid-bosses` 스킬이 공지를 읽어 적고, 보스
 설정 화면의 카드 피커가 읽는다.
 
-기계가 읽는 필드는 보스마다 `weakness` · `range_band` · `core_diameter_px` ·
-`part_destruction_times` 넷이다. 앞의 둘은 공지가 그 단어로 적은 것을 엔진 어휘로
-옮긴 값이고, 판독 시점에 스킬이 채운다 — 앱이 `stated`의 한글 산문을 파싱하는 일은
-없다. 뒤의 둘만 출처가 다르다: 공지에 없고, 그 보스와 싸우며 관측한 값이다. 코어
-지름은 화면에서 잰 길이를 엔진 단위로 환산해 적고
-(docs/measurements/accuracy-circle-and-core-px.md), 파괴 시각은 파츠가 실제로
-깨지는 초를 적는다. 나머지(부위파괴·스쿼드 추천 등)는
-대응이 확인되지 않아 `stated`에 원문 그대로만 남는다
-(docs/superpowers/specs/2026-08-07-raid-boss-rotation-import-design.md D3).
+기계가 읽는 필드는 보스마다 다섯이고, 출처가 둘로 갈린다.
+
+**공지에서 오는 둘** — `weakness`와 `range_band`. 공지가 그 단어로 적은 것을 판독
+시점에 스킬이 엔진 어휘로 옮겨 적으므로, 앱이 `stated`의 산문을 파싱하는 일은 없다.
+
+**관측에서 오는 셋** — 공지에 없고 그 보스와 싸워 봐야 아는 값이라 3단계에서
+사람에게 받는다. `core_diameter_px`는 화면에서 잰 길이를 엔진 단위로 환산한 값이고
+(docs/measurements/accuracy-circle-and-core-px.md), `part_destruction_times`는 파츠가
+실제로 깨지는 초, `spawns_adds`는 잡몹이 주기적으로 나오는가다. 마지막 것은 딜
+계산에 안 들어가고 홀드 파이어 택틱을 탐색 후보에서 지우는 데만 쓰인다.
+
+나머지(저지 부위·스쿼드 추천 등)는 대응이 확인되지 않아 `stated`에 원문 그대로만
+남는다 (docs/superpowers/specs/2026-08-07-raid-boss-rotation-import-design.md D3).
 
 파일의 키는 보스 이름이 아니라 (회차, 보스)다. 같은 보스가 시즌마다 다른 속성을
 달고 나오므로, 지난 시즌 기록이 이번 시즌 보스에 얹힐 수 있는 구조를 아예 만들지
@@ -88,6 +92,10 @@ def validate_rotations(doc):
                     raise ValueError(
                         f"{rid}/{boss['name']}: 파괴 시각은 0 이상의 수여야 한다 "
                         f"{moment!r}")
+            adds = boss.get("spawns_adds")
+            if adds is not None and not isinstance(adds, bool):
+                raise ValueError(
+                    f"{rid}/{boss['name']}: 잡몹 생성은 예/아니오여야 한다 {adds!r}")
     return doc
 
 

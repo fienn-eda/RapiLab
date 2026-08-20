@@ -12,6 +12,7 @@ and why the deck gate exists.
 import pytest
 
 from app.deck_search import (BossProfile, deck_is_valid, evaluate_deck,
+                             evaluate_deck_best_seating,
                              evaluate_deck_hold_fire_options, feasible_orderings)
 from app.models import UserNikkeState
 from app.roster import assemble_simulation_inputs
@@ -102,8 +103,8 @@ def test_adas_released_shot_is_her_special_modification_not_a_plain_rl():
 def test_holding_ada_pays_in_a_deck_that_can_preserve_her_buff():
     deck = ["miranda-signature", "liter", "crown", "ada-wong", "helm-signature"]
     ordering = _ordering(deck, "ada-wong")
-    assert evaluate_deck_hold_fire_options(ordering) == [frozenset(),
-                                                         frozenset({"ada-wong"})]
+    assert evaluate_deck_hold_fire_options(ordering, BOSS) == [
+        frozenset(), frozenset({"ada-wong"})]
     plain = evaluate_deck(ordering, BOSS)
     held = evaluate_deck(ordering, BOSS, hold_fire={"ada-wong"})
     assert held["total_damage"] > plain["total_damage"]
@@ -133,17 +134,47 @@ def _ordering(deck, carry):
 
 def test_a_deck_with_nobody_to_preserve_a_buff_for_is_never_offered_the_hold():
     assert evaluate_deck_hold_fire_options(
-        _ordering(WITHOUT_GRANTER, MIHARA)) == [frozenset()]
+        _ordering(WITHOUT_GRANTER, MIHARA), BOSS) == [frozenset()]
 
 
 def test_a_deck_with_a_granter_and_a_holder_is_offered_both():
-    options = evaluate_deck_hold_fire_options(_ordering(WITH_GRANTER, MIHARA))
+    options = evaluate_deck_hold_fire_options(_ordering(WITH_GRANTER, MIHARA), BOSS)
     assert options == [frozenset(), frozenset({MIHARA})]
 
 
 def test_a_deck_with_a_granter_but_no_holder_is_not_offered_the_hold():
     deck = ["miranda-signature", "liter", "crown", "snow-white", "helm-signature"]
-    assert evaluate_deck_hold_fire_options(_ordering(deck, "snow-white")) == [frozenset()]
+    assert evaluate_deck_hold_fire_options(
+        _ordering(deck, "snow-white"), BOSS) == [frozenset()]
+
+
+def test_a_boss_that_spawns_adds_is_never_offered_the_hold():
+    # 잡몹이 주기적으로 나오는 보스에서는 평타를 멈출 수 없다 - 살릴 라운드 버프가
+    # 있어도 그 창 동안 잡몹을 치워야 하므로 택틱 자체가 성립하지 않는다
+    # (Fienn, 2026-08-20, 솔로 40시즌). 덱 게이트와 같은 이유로 후보를 아예 안 낸다:
+    # 시뮬을 돌려 봐야 지는 선택지다.
+    ordering = _ordering(WITH_GRANTER, MIHARA)
+    assert evaluate_deck_hold_fire_options(
+        ordering, BossProfile(spawns_adds=True)) == [frozenset()]
+
+
+def test_the_report_path_reports_no_hold_against_a_boss_that_spawns_adds():
+    # 게이트가 있어도 리포트 경로가 보스를 안 넘기면 결과에는 홀드가 그대로 남는다 -
+    # `effective_range_band`가 정확히 그렇게 사라졌었다.
+    ordering = _ordering(WITH_GRANTER, MIHARA)
+    quiet = BossProfile(element="Iron", fight_duration=180.0)
+    noisy = BossProfile(element="Iron", fight_duration=180.0, spawns_adds=True)
+
+    assert evaluate_deck_best_seating(ordering, quiet)["hold_fire"] == [MIHARA]
+    assert "hold_fire" not in evaluate_deck_best_seating(ordering, noisy)
+
+
+def test_the_adds_gate_is_the_encounters_call_not_the_decks():
+    # 같은 덱이 잡몹 없는 보스에서는 여전히 홀드를 제안받는다 - 게이트가 덱에
+    # 박히면 보스를 바꿔도 안 돌아온다.
+    ordering = _ordering(WITH_GRANTER, MIHARA)
+    assert evaluate_deck_hold_fire_options(ordering, BossProfile()) == [
+        frozenset(), frozenset({MIHARA})]
 
 
 def test_holding_pays_when_there_is_a_buff_to_preserve_and_costs_when_there_is_not():

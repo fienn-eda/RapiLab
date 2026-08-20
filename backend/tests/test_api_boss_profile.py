@@ -70,6 +70,11 @@ def test_a_caller_that_sends_no_destruction_times_gets_the_untimed_default():
     assert boss_profile(BossProfileIn()).part_destruction_times == ()
 
 
+def test_the_adds_flag_a_caller_sends_is_the_flag_the_engine_gets():
+    assert boss_profile(BossProfileIn(spawns_adds=True)).spawns_adds is True
+    assert boss_profile(BossProfileIn()).spawns_adds is False
+
+
 def test_a_negative_destruction_time_is_rejected_at_the_api_surface():
     # 전투가 시작하기 전에 깨지는 파츠는 없다. 음수가 통과하면 -5초에 열린 창이
     # 전투 시작 시점에 이미 살아 있어, 회차 로더가 막으려던 것과 같은 상태가

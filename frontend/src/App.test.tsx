@@ -174,7 +174,7 @@ describe('App', () => {
       source_url: 'https://arca.live/b/nikketgv/177017741',
       source_locale: 'ko',
       read_on: '2026-08-07',
-      bosses: [{ name: '아일랜드 이터', weakness: 'Iron', range_band: null, core_diameter_px: null, part_destruction_times: [], stated: {} }],
+      bosses: [{ name: '아일랜드 이터', weakness: 'Iron', range_band: null, core_diameter_px: null, part_destruction_times: [], spawns_adds: false, stated: {} }],
     },
     {
       id: 'union-2026-07-31',
@@ -185,7 +185,7 @@ describe('App', () => {
       source_url: 'https://arca.live/b/nikketgv/177833660',
       source_locale: 'ko',
       read_on: '2026-08-07',
-      bosses: [{ name: '선바스', weakness: 'Electric', range_band: null, core_diameter_px: null, part_destruction_times: [], stated: {} }],
+      bosses: [{ name: '선바스', weakness: 'Electric', range_band: null, core_diameter_px: null, part_destruction_times: [], spawns_adds: false, stated: {} }],
     },
   ]
 

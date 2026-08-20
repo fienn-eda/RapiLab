@@ -631,10 +631,20 @@ EXISTS for a unit and how many shots she releases; switching it on is
 `deck_search.evaluate_deck`'s `hold_fire`, the same category as `max_bursts`.
 The chooser is `evaluate_deck_best_seating` (REPORT path, never the search hot
 path), gated by `evaluate_deck_hold_fire_options`: a deck is only offered the
-alternative when it holds such a unit AND somebody in it grants a round buff to
-an ally. That gate reads `SkillRule.grants_round_buff_to_allies`, set by
-`round_buff_rule` itself, so a newly encoded granter is covered the day it lands
-rather than the day someone remembers a table.
+alternative when the ENCOUNTER allows the tactic at all AND it holds such a unit
+AND somebody in it grants a round buff to an ally. The deck half of that gate
+reads `SkillRule.grants_round_buff_to_allies`, set by `round_buff_rule` itself,
+so a newly encoded granter is covered the day it lands rather than the day
+someone remembers a table.
+
+The ENCOUNTER half is `BossProfile.spawns_adds` (2026-08-20): against a boss
+that keeps producing adds the player has to keep shooting, so the tactic is not
+on the board however good the deck's buffs are — solo-40's 「사치스러운 거미」 is
+the first (Fienn). It is a boss fact, not a unit one, so it lands on the boss
+profile beside `part_destructible` and reaches the chooser through
+`evaluate_deck_hold_fire_options(ordered_deck, boss)`. Nothing else reads it:
+how much damage the adds take, and how many rounds clearing them costs, are not
+modeled.
 
 **A hold needs the unit's damage model to survive being fired ONCE.** Ada Wong
 was blocked on exactly this until 2026-08-18: her Special Modification is

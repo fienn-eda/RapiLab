@@ -23,6 +23,7 @@ const boss: BossProfile = {
   fight_duration: 180,
   part_destructible: false,
   part_destruction_times: [],
+  spawns_adds: false,
   core_diameter_px: null,
   effective_range_band: null,
   elemental_interrupt_required: false,

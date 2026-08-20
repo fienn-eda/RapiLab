@@ -17,6 +17,7 @@
           "range_band": null,
           "core_diameter_px": null,
           "part_destruction_times": [],
+          "spawns_adds": false,
           "stated": {
             "보스 속성": "전격",
             "약점 속성": "철갑",
@@ -46,6 +47,7 @@
           "range_band": "near",
           "core_diameter_px": null,
           "part_destruction_times": [],
+          "spawns_adds": false,
           "stated": {
             "등급": "로드 급",
             "약점": "전격",
@@ -62,6 +64,7 @@
           "range_band": "far",
           "core_diameter_px": null,
           "part_destruction_times": [],
+          "spawns_adds": false,
           "stated": {
             "등급": "로드 급",
             "약점": "작열",
@@ -78,6 +81,7 @@
           "range_band": "far",
           "core_diameter_px": null,
           "part_destruction_times": [],
+          "spawns_adds": false,
           "stated": {
             "등급": "타이런트 급",
             "약점": "수냉",
@@ -94,6 +98,7 @@
           "range_band": "far",
           "core_diameter_px": null,
           "part_destruction_times": [],
+          "spawns_adds": false,
           "stated": {
             "등급": "로드 급",
             "약점": "풍압",
@@ -110,6 +115,7 @@
           "range_band": "near",
           "core_diameter_px": null,
           "part_destruction_times": [],
+          "spawns_adds": false,
           "stated": {
             "등급": "타이런트 급",
             "약점": "철갑",
@@ -138,6 +144,7 @@
           "range_band": "mid",
           "core_diameter_px": null,
           "part_destruction_times": [1, 61, 126],
+          "spawns_adds": true,
           "stated": {
             "Property": "Wind",
             "Weakness": "Fire",
@@ -150,6 +157,7 @@
             "이름 출처": "공지가 영문판뿐이라 「사치스러운 거미」는 Fienn의 인게임 한국 서버 표기다. 영문 표기는 Luxurious Spider.",
             "적정거리(Fienn 확인)": "앞쪽이 mid, 뒤쪽(깊은 쪽)이 far이고 플레이어가 때릴 위치를 고른다. range_band에는 한 값만 담기므로 mid를 기본값으로 적었다 — SR 덱을 볼 때는 보스 설정에서 far로 바꾼다.",
             "코어(Fienn 확인)": "없다. core_diameter_px가 null이라 카드를 고르면 core_hittable도 함께 꺼진다.",
+            "잡몹(Fienn 확인)": "주기적으로 생성돼 계속 쳐야 하므로 홀드 파이어 택틱(미란다+미하라 등)을 사실상 못 쓴다 - spawns_adds가 그 값이다. 공지의 「summons Raptures from its eggs」와 같은 사실이지만, 공지 문구만으로 켜지는 않았다.",
             "파츠파괴(Fienn 확인)": "파츠는 전투 개시 시점과 이후 약 1분 주기로 생성되고, 생성 +1초에 파괴된다 — part_destruction_times의 1 · 61 · 126초가 그 값이다. 카드를 고르면 「부위파괴」도 함께 켜진다."
           }
         }

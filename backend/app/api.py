@@ -67,6 +67,10 @@ class BossProfileIn(BaseModel):
     # 전에 깨지는 파츠는 없고, -5초에 열린 창은 전투 시작 시점에 이미 살아 있어
     # 회차 로더가 막으려던 상태가 라우트로 그대로 들어온다.
     part_destruction_times: tuple[Annotated[float, Field(ge=0)], ...] = ()
+    # 잡몹이 주기적으로 생성되는 보스. 딜 계산에는 안 들어가고, 홀드 파이어 택틱을
+    # 후보에서 지우는 데만 쓰인다 - 나오는 잡몹을 치워야 하므로 자기 풀 버스트
+    # 동안 평타를 멈출 수 없다. 자세한 것은 BossProfile.spawns_adds.
+    spawns_adds: bool = False
     # How far away this boss is fought. The band decides WHICH weapons are
     # inside their effective range and collect +0.30 on their normal attacks:
     # near pays SG/SMG, mid pays AR/MG, far pays SR, and a Rocket Launcher is
@@ -111,6 +115,9 @@ class RotationBoss(BaseModel):
     # 공지에서 오지 않는다 - 안 관측한 보스는 빈 목록이고, 그때 파괴에 반응하는
     # 스킬은 지금까지의 근사 그대로 돈다.
     part_destruction_times: list[float] = []
+    # 잡몹이 주기적으로 생성되는가. 공지가 「소환」을 적더라도 그것만으로 켜지
+    # 않는다 - 나오는 잡몹을 실제로 쳐야 하는지는 그 보스와 싸워 봐야 안다.
+    spawns_adds: bool = False
     stated: dict[str, str | list[str]] = {}
 
 

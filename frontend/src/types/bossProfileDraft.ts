@@ -14,6 +14,8 @@ export interface BossProfileDraft {
   enemy_def: string
   fight_duration: string
   part_destructible: boolean
+  /** 잡몹이 주기적으로 생성되는 보스. 홀드 파이어 택틱을 탐색에서 지운다. */
+  spawns_adds: boolean
   /** 파츠가 깨지는 시각을 쉼표로 구분한 초. 빈 문자열 = 관측 안 함. */
   part_destruction_times: string
   /** 빈 문자열 = 안 쟀다. 필수가 아니라서 다른 숫자 칸과 파싱 규칙이 다르다. */
@@ -32,6 +34,7 @@ export const makeDefaultBossProfileDraft = (enemyDef = '0'): BossProfileDraft =>
   enemy_def: enemyDef,
   fight_duration: '180',
   part_destructible: false,
+  spawns_adds: false,
   part_destruction_times: '',
   core_diameter_px: '',
   effective_range_band: null,
@@ -64,6 +67,9 @@ export const bossProfileToDraft = (boss: BossProfile): BossProfileDraft => ({
   enemy_def: String(boss.enemy_def),
   fight_duration: String(boss.fight_duration),
   part_destructible: boss.part_destructible,
+  // 이 필드가 생기기 전에 저장된 프로필은 undefined라, 그대로 두면 체크박스가
+  // 비제어 컴포넌트가 된다.
+  spawns_adds: boss.spawns_adds ?? false,
   // 이 필드가 생기기 전에 저장된 프로필은 undefined라, 빈 칸으로 돌아간다.
   part_destruction_times: (boss.part_destruction_times ?? []).join(', '),
   // 이 필드가 생기기 전에 저장된 프로필은 undefined이고, null은 「안 쟀다」다.
@@ -153,6 +159,7 @@ export const validateBossProfileDraft = (
     enemy_def: enemyDef.value!,
     fight_duration: fightDuration.value!,
     part_destructible: draft.part_destructible,
+    spawns_adds: draft.spawns_adds,
     part_destruction_times: destructionTimes.value,
     core_diameter_px: coreDiameter.value ?? null,
     effective_range_band: draft.effective_range_band,

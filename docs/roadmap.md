@@ -295,9 +295,10 @@
   공지가 그 둘을 주지 않는다.
   스펙: `docs/superpowers/specs/2026-08-07-raid-boss-rotation-import-design.md`,
   플랜: `docs/superpowers/plans/2026-08-07-raid-boss-rotation-import.md`.
-  - **그 뒤로 카드가 채우는 값이 넷으로 늘었다**: 약점 속성 · `range_band`(유니온
-    공지의 「거리」) · `core_diameter_px` · `part_destruction_times`(2026-08-20).
-    뒤의 둘은 공지가 아니라 **Fienn의 인게임 관측**에서 오고, 3단계에서 물어서
+  - **그 뒤로 카드가 채우는 값이 다섯으로 늘었다**: 약점 속성 · `range_band`(유니온
+    공지의 「거리」) · `core_diameter_px` · `part_destruction_times`(2026-08-20) ·
+    `spawns_adds`(2026-08-20, 잡몹이 나오면 홀드 파이어 택틱을 탐색에서 뺀다).
+    뒤의 셋은 공지가 아니라 **Fienn의 인게임 관측**에서 오고, 3단계에서 물어서
     받는다. 위 문단의 「약점 속성 하나」와 「부위파괴 특성 데이터 미확보」는
     그 시점의 기록이다.
 - 브랜치: `worktree-raid-boss-rotation-import` — 병합 전 최종 리뷰 수정 반영(카드의

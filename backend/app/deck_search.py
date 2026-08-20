@@ -201,6 +201,16 @@ class BossProfile:
     # (기본값) 파괴에 반응하는 스킬은 `part_destructible` 불리언만 보던 근사
     # 그대로 돈다. 전투 길이를 넘는 시각은 그 전투에서 일어나지 않는다.
     part_destruction_times: tuple[float, ...] = ()
+    # 잡몹이 주기적으로 생성되는 보스. 이 사실 하나가 홀드 파이어 택틱을 통째로
+    # 지운다 - 나오는 잡몹을 치워야 하므로 자기 풀 버스트 동안 평타를 멈출 수
+    # 없다(Fienn, 2026-08-20, 솔로 40시즌 「사치스러운 거미」). 그래서
+    # `evaluate_deck_hold_fire_options`가 후보를 아예 안 낸다: 시뮬을 돌려 봐야
+    # 플레이어가 못 두는 수다.
+    #
+    # 딜 계산 자체에는 안 들어간다 - 잡몹이 얼마나 딜을 가져가는지, 치우는 데
+    # 몇 발이 드는지는 모델하지 않는다. 이 플래그가 답하는 것은 「그 택틱을 둘 수
+    # 있는가」 하나뿐이다.
+    spawns_adds: bool = False
     # How far away this boss is fought, which decides WHICH weapons are inside
     # their effective range and collect +0.30 in the major bucket on their
     # normal attacks (measured on Ade: Agent Bunny, engine-gaps item 16).
@@ -500,19 +510,29 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
     )
 
 
-def evaluate_deck_hold_fire_options(ordered_deck):
+def evaluate_deck_hold_fire_options(ordered_deck, boss):
     """The `hold_fire` sets worth SCORING for this deck, cheapest first.
 
     Always includes the empty set (nobody holds - today's answer). The
-    alternatives only appear when the deck actually holds a unit the tactic is
-    played on AND somebody in it hands out a "for N round(s)" buff: holding fire
-    removes shots and adds nothing on its own, so with no such buff to preserve
-    the alternative is a guaranteed loss and is not worth a simulation.
+    alternatives only appear when the ENCOUNTER allows the tactic at all AND
+    the deck actually holds a unit it is played on AND somebody in it hands out
+    a "for N round(s)" buff: holding fire removes shots and adds nothing on its
+    own, so with no such buff to preserve the alternative is a guaranteed loss
+    and is not worth a simulation.
+
+    The encounter gate is `BossProfile.spawns_adds`: against a boss that keeps
+    producing adds the player cannot stop firing, so the tactic is not on the
+    board however good the deck's buffs are. `boss` is required rather than
+    optional for the reason `effective_range_band` was silently dropped by
+    three endpoints - an input a caller can forget is an input that eventually
+    goes missing.
 
     Subsets rather than one all-on set, because holding is not jointly good: in
     a deck with three Burst 3s, Ada holding while Ein also holds cost the deck
     3 percentage points against Ein holding alone, since she barely bursts and
     threw her normal attacks away for a window she rarely opened."""
+    if boss.spawns_adds:
+        return [frozenset()]
     slugs = [unit.slug for unit in ordered_deck]
     holders = [slug for slug in slugs if get_hold_fire_release_shots(slug) is not None]
     if not holders:
@@ -590,7 +610,7 @@ def evaluate_deck_best_seating(ordered_deck, boss: BossProfile, **kwargs):
     The winner is reported as `result["hold_fire"]`, absent when nobody holds.
     """
     arrangements = seat_arrangements(ordered_deck)
-    holds = evaluate_deck_hold_fire_options(ordered_deck)
+    holds = evaluate_deck_hold_fire_options(ordered_deck, boss)
     if not arrangements and holds == [frozenset()]:
         return evaluate_deck(ordered_deck, boss, **kwargs)
     best, best_arrangement, best_hold = None, None, frozenset()

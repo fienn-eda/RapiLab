@@ -201,9 +201,9 @@ const rotation: RaidRotation = {
   read_on: '2026-08-07',
   bosses: [
     { name: '선바스', weakness: 'Electric', range_band: 'near', core_diameter_px: null,
-      part_destruction_times: [], stated: { 거리: '근거리' } },
+      part_destruction_times: [], spawns_adds: false, stated: { 거리: '근거리' } },
     { name: '토커티브', weakness: 'Water', range_band: 'far', core_diameter_px: null,
-      part_destruction_times: [], stated: { 거리: '원거리' } },
+      part_destruction_times: [], spawns_adds: false, stated: { 거리: '원거리' } },
   ],
 }
 
@@ -214,7 +214,7 @@ const soloRotation: RaidRotation = {
   raid: 'solo',
   title: '솔로 레이드 39시즌',
   bosses: [{ name: '아일랜드 이터', weakness: 'Iron', range_band: null,
-             core_diameter_px: null, part_destruction_times: [], stated: {} }],
+             core_diameter_px: null, part_destruction_times: [], spawns_adds: false, stated: {} }],
 }
 
 /** 파괴 시각이 관측된 보스. 솔로 40시즌의 「사치스러운 거미」 모양이다. */
@@ -225,7 +225,7 @@ const timedRotation: RaidRotation = {
   title: '솔로 레이드 40시즌',
   bosses: [{ name: '사치스러운 거미', weakness: 'Fire', range_band: 'mid',
              core_diameter_px: null, part_destruction_times: [1, 61, 126],
-             stated: {} }],
+             spawns_adds: true, stated: {} }],
 }
 
 describe('BossProfileField 회차 보스 피커', () => {
@@ -295,6 +295,40 @@ describe('BossProfileField 회차 보스 피커', () => {
         part_destruction_times: '1, 61, 126',
         part_destructible: true,
       }),
+    )
+  })
+
+  it('잡몹이 나오는 보스를 고르면 그 사실도 같이 들어간다', async () => {
+    // 이 값 하나가 홀드 파이어 택틱을 탐색에서 지운다. 카드가 안 채우면 Fienn이
+    // 회차마다 손으로 켜야 하고, 잊으면 못 두는 수가 최선으로 추천된다.
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={onChange}
+        rotation={timedRotation}
+      />,
+    )
+    await user.click(screen.getByRole('radio', { name: '작열사치스러운 거미' }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ spawns_adds: true }),
+    )
+  })
+
+  it('잡몹이 없는 보스를 고르면 꺼진 채로 돌아간다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), spawns_adds: true }}
+        onChange={onChange}
+        rotation={soloRotation}
+      />,
+    )
+    await user.click(screen.getByRole('radio', { name: '철갑아일랜드 이터' }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ spawns_adds: false }),
     )
   })
 
@@ -447,6 +481,20 @@ describe('BossProfileField 보스 이름', () => {
     await user.click(screen.getByRole('radio', { name: '약점 없음' }))
 
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ boss_name: null }))
+  })
+})
+
+describe('BossProfileField 잡몹 생성', () => {
+  it('체크박스가 있고 끄고 켤 수 있다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={onChange} />)
+
+    await user.click(screen.getByRole('checkbox', { name: '잡몹 생성' }))
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ spawns_adds: true }),
+    )
   })
 })
 

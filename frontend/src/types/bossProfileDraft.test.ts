@@ -18,6 +18,7 @@ describe('validateBossProfileDraft', () => {
       fight_duration: 180,
       part_destructible: false,
       part_destruction_times: [],
+      spawns_adds: false,
       core_diameter_px: null,
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -34,6 +35,7 @@ describe('validateBossProfileDraft', () => {
       fight_duration: '90',
       part_destructible: true,
       part_destruction_times: '',
+      spawns_adds: false,
       core_diameter_px: '',
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -46,6 +48,7 @@ describe('validateBossProfileDraft', () => {
       fight_duration: 90,
       part_destructible: true,
       part_destruction_times: [],
+      spawns_adds: false,
       core_diameter_px: null,
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -92,6 +95,7 @@ describe('bossProfileToDraft', () => {
       fight_duration: '90',
       part_destructible: true,
       part_destruction_times: '',
+      spawns_adds: false,
       core_diameter_px: '33.33',
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -231,5 +235,24 @@ describe('파츠 파괴 시각', () => {
     delete (old as { part_destruction_times?: unknown }).part_destruction_times
 
     expect(bossProfileToDraft(old).part_destruction_times).toBe('')
+  })
+})
+
+describe('잡몹 생성', () => {
+  it('기본값은 꺼짐이다', () => {
+    expect(validateBossProfileDraft(makeDefaultBossProfileDraft()).value!.spawns_adds)
+      .toBe(false)
+  })
+
+  it('켜면 요청까지 실려 간다', () => {
+    const draft = { ...makeDefaultBossProfileDraft(), spawns_adds: true }
+    expect(validateBossProfileDraft(draft).value!.spawns_adds).toBe(true)
+  })
+
+  it('이 필드가 없던 시절 저장된 프로필도 복원된다', () => {
+    const old = { ...validateBossProfileDraft(makeDefaultBossProfileDraft()).value! }
+    delete (old as { spawns_adds?: unknown }).spawns_adds
+
+    expect(bossProfileToDraft(old).spawns_adds).toBe(false)
   })
 })

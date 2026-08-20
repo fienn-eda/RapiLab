@@ -25,6 +25,9 @@ export interface RotationBoss {
    *  공지에서 오지 않는다. 빈 목록이면 파괴에 반응하는 스킬은 부위파괴 불리언만
    *  보던 근사로 돈다. */
   part_destruction_times: number[]
+  /** 잡몹이 주기적으로 생성되는가. 공지가 「소환」을 적더라도 그것만으로 켜지지
+   *  않는다 — 나오는 잡몹을 실제로 쳐야 하는지는 그 보스와 싸워 봐야 안다. */
+  spawns_adds: boolean
   /** 공지 원문 기록. 항목은 솔로/유니온이 다르므로 자유 형식이다. */
   stated: Record<string, string | string[]>
 }

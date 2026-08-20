@@ -212,6 +212,7 @@ export function BossProfileField({
       // 코어 지름이 기록돼 있다는 것은 그 보스를 코어로 때릴 수 있다는 뜻이다.
       // 같이 켜지 않으면 엔진이 값을 무시해, 카드를 눌러도 아무 일이 없다.
       core_hittable: boss.core_diameter_px !== null,
+      spawns_adds: boss.spawns_adds,
       part_destruction_times: boss.part_destruction_times.join(', '),
       // 같은 규칙: 파괴 시각이 기록돼 있다는 것은 그 보스에 깨지는 파츠가 있다는
       // 뜻이다. 같이 켜지 않으면 불리언만 보는 소비자(아크레인저의 브래킷 ·
@@ -387,6 +388,22 @@ export function BossProfileField({
             </label>
             <HelpTip label="부위파괴 기믹">
               <HelpText>{HELP.boss.partDestructible}</HelpText>
+            </HelpTip>
+          </div>
+
+          <div className="checkbox-row">
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={value.spawns_adds}
+                onChange={(event) =>
+                  onChange({ ...value, spawns_adds: event.target.checked })
+                }
+              />
+              잡몹 생성
+            </label>
+            <HelpTip label="잡몹 생성">
+              <HelpText>{HELP.boss.spawnsAdds}</HelpText>
             </HelpTip>
           </div>
 
