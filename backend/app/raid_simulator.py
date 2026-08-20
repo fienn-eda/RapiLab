@@ -1598,6 +1598,13 @@ def _simulate_raid_once(
     # `part_destructible`이 이긴다. 「파괴 가능한 파츠가 없다」고 말해 놓고 시각을
     # 적은 인카운터는 모순이고, 그때 시각을 그대로 쏘면 floor로 재려는 사람이
     # 아크레인저만 floor이고 레이븐·디젤은 창을 받는 반쪽 보스를 얻는다.
+    #
+    # 이 자리는 periodic_rules와 마찬가지로 **버프만** 받는다 - 뒤에
+    # `drain_instant_damage`가 없다. 즉발 딜 펄스를 이 트리거에 다는 규칙
+    # (`instant_nuke_pulse_rule("part_destroyed", ...)`)을 쓰려면 그 배수구를 먼저
+    # 만들어야 한다. 지금 그냥 달면 펄스가 적립돼 있다가 다음 배수 지점인
+    # on_battle_start에서 t=0으로 기록되어, 파괴 시각이 아니라 전투 시작의 풀버스트
+    # 자격으로 계산된다.
     if part_destructible:
         for destroyed_at in part_destruction_times:
             if destroyed_at < fight_duration:

@@ -38,6 +38,7 @@ describe('BossSummary', () => {
     expect(screen.queryByText(/코어 피격/)).not.toBeInTheDocument()
     expect(screen.queryByText(/2관통/)).not.toBeInTheDocument()
     expect(screen.queryByText(/부위파괴/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/잡몹/)).not.toBeInTheDocument()
     expect(screen.queryByText(/속성저지/)).not.toBeInTheDocument()
   })
 
@@ -49,7 +50,7 @@ describe('BossSummary', () => {
           pierce_hits_body_behind_core: true,
           part_destructible: true,
           part_destruction_times: [],
-          spawns_adds: false,
+          spawns_adds: true,
           elemental_interrupt_required: true,
         })}
       />,
@@ -58,6 +59,9 @@ describe('BossSummary', () => {
     expect(screen.getByText('코어 피격')).toBeInTheDocument()
     expect(screen.getByText('2관통')).toBeInTheDocument()
     expect(screen.getByText('부위파괴')).toBeInTheDocument()
+    // 이 플래그는 홀드 파이어 택틱을 탐색에서 빼므로 추천 결과를 바꾼다 -
+    // 보관된 결과가 어느 쪽으로 계산됐는지 여기 말고는 알 자리가 없다.
+    expect(screen.getByText('잡몹 생성')).toBeInTheDocument()
     expect(screen.getByText('속성저지 필수')).toBeInTheDocument()
   })
 

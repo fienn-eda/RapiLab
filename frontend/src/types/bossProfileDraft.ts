@@ -147,7 +147,12 @@ export const validateBossProfileDraft = (
   const coreDiameter = parseOptionalPositive(draft.core_diameter_px)
   if (coreDiameter.error) errors.core_diameter_px = coreDiameter.error
 
-  const destructionTimes = parseDestructionTimes(draft.part_destruction_times)
+  // 부위파괴가 꺼져 있으면 읽지 않는다 - 엔진이 그때 시각을 무시하는 것과 같고,
+  // 폼이 그 칸을 아예 안 그린다. 그래도 파싱하면 화면에서 사라진 칸의 오류가
+  // 제출을 막아, 이유가 안 보이는 채로 버튼만 죽는다.
+  const destructionTimes = draft.part_destructible
+    ? parseDestructionTimes(draft.part_destruction_times)
+    : { value: [] }
   if (destructionTimes.error) errors.part_destruction_times = destructionTimes.error
 
   if (Object.keys(errors).length > 0) return { errors }

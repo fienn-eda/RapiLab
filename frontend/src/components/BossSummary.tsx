@@ -24,6 +24,7 @@ export function BossSummary({ boss }: BossSummaryProps) {
     boss.core_hittable && '코어 피격',
     boss.pierce_hits_body_behind_core && '2관통',
     boss.part_destructible && '부위파괴',
+    boss.spawns_adds && '잡몹 생성',
     boss.elemental_interrupt_required && '속성저지 필수',
   ].filter((label): label is string => typeof label === 'string')
 

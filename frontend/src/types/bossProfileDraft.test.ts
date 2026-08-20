@@ -202,6 +202,7 @@ describe('파츠 파괴 시각', () => {
   it('숫자가 아닌 시각은 거부한다', () => {
     const draft = {
       ...makeDefaultBossProfileDraft(),
+      part_destructible: true,
       part_destruction_times: '1, 나중에',
     }
     const { errors, value } = validateBossProfileDraft(draft)
@@ -211,8 +212,26 @@ describe('파츠 파괴 시각', () => {
   })
 
   it('음수 시각은 거부한다', () => {
-    const draft = { ...makeDefaultBossProfileDraft(), part_destruction_times: '-1' }
+    const draft = {
+      ...makeDefaultBossProfileDraft(),
+      part_destructible: true,
+      part_destruction_times: '-1',
+    }
     expect(validateBossProfileDraft(draft).errors.part_destruction_times).toBeTruthy()
+  })
+
+  it('부위파괴가 꺼져 있으면 잘못 적힌 시각도 제출을 막지 않는다', () => {
+    // 칸이 화면에서 사라지는데 오류만 남으면, 이유가 안 보이는 채로 제출 버튼만
+    // 죽는다. 엔진도 부위파괴가 꺼져 있으면 시각을 무시하므로 여기서도 안 읽는다.
+    const draft = {
+      ...makeDefaultBossProfileDraft(),
+      part_destructible: false,
+      part_destruction_times: '1, abc',
+    }
+    const { errors, value } = validateBossProfileDraft(draft)
+
+    expect(errors.part_destruction_times).toBeUndefined()
+    expect(value!.part_destruction_times).toEqual([])
   })
 
   it('폼으로 왕복해도 시각이 살아남는다', () => {
