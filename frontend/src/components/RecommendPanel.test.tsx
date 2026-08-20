@@ -1072,6 +1072,19 @@ describe('RecommendPanel mode switch', () => {
     await user.click(screen.getByRole('radio', { name: /단일 덱/ }))
     expect(screen.getByText('속성저지 파훼 불가')).toBeInTheDocument()
   })
+
+  it('선택된 모드의 설명만 보인다', async () => {
+    const user = userEvent.setup()
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+
+    expect(screen.getByText(/기대 딜량이 높은 개별 덱을 찾아줘요/)).toBeInTheDocument()
+    expect(screen.queryByText(/설정한 덱 개수만큼 최적화해요/)).not.toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('전부 최적화'))
+
+    expect(screen.getByText(/설정한 덱 개수만큼 최적화해요/)).toBeInTheDocument()
+    expect(screen.queryByText(/기대 딜량이 높은 개별 덱을 찾아줘요/)).not.toBeInTheDocument()
+  })
 })
 
 describe('RecommendPanel persistence', () => {

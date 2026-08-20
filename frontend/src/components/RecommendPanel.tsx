@@ -58,6 +58,7 @@ import { EvaluationResults } from './EvaluationResults'
 import { RaidResults } from './RaidResults'
 import { SaveRunButton } from './SaveRunButton'
 import { SavedRunList } from './SavedRunList'
+import { ToggleChip } from './fields/ToggleChip'
 import { UnitPalette, type UnitInvestment } from './UnitPalette'
 import { HELP } from '../lib/helpText'
 import { HelpText } from './HelpText'
@@ -124,6 +125,21 @@ const suggestRunName = (boss: BossProfile, mode: RecommendMode, at: Date): strin
 }
 
 type RecommendMode = 'single' | 'raid' | 'draft' | 'evaluate'
+
+// 칩을 그리는 순서. 라벨은 위의 MODE_LABEL이 이미 갖고 있다 - 저장 이름과 칩이
+// 같은 낱말을 쓰는 것이 맞다.
+//
+// 힌트를 Record로 두는 이유는 모드를 하나 더 만드는 날 타입이 빠진 자리를 잡아
+// 주기 때문이다 - 배열에서 find로 꺼내면 「못 찾는 경우」를 타입이 요구하는데
+// 실제로는 못 찾을 수 없다.
+const RECOMMEND_MODES: RecommendMode[] = ['single', 'raid', 'draft', 'evaluate']
+
+const MODE_HINT: Record<RecommendMode, string> = {
+  single: HELP.recommendMode.single,
+  raid: HELP.recommendMode.raid,
+  draft: HELP.recommendMode.draft,
+  evaluate: HELP.recommendMode.evaluate,
+}
 
 /** Maps the useRecommendRaid hook's success fields to the cacheable shape -
  * both raid and draft submits persist through this. */
@@ -846,52 +862,25 @@ export function RecommendPanel({
 
           <fieldset className="group">
             <legend className="group__legend">모드</legend>
-            <div className="mode-switch">
-              <label className="radio">
-                <input
+            {/* 네 문장을 전부 세워 두면 세로가 길어지고, 정작 지금 무엇을
+                하려는지는 고른 하나가 답한다. 그래서 힌트는 선택된 모드의 것만
+                칩 줄 아래 한 줄로 선다. */}
+            <div className="chip-row">
+              {RECOMMEND_MODES.map((option) => (
+                <ToggleChip
+                  key={option}
                   type="radio"
                   name="recommend-mode"
-                  value="single"
-                  checked={mode === 'single'}
-                  onChange={() => switchMode('single')}
-                />
-                단일 덱
-                <span className="group__hint"> — <HelpText>{HELP.recommendMode.single}</HelpText></span>
-              </label>
-              <label className="radio">
-                <input
-                  type="radio"
-                  name="recommend-mode"
-                  value="raid"
-                  checked={mode === 'raid'}
-                  onChange={() => switchMode('raid')}
-                />
-                전부 최적화
-                <span className="group__hint"> — <HelpText>{HELP.recommendMode.raid}</HelpText></span>
-              </label>
-              <label className="radio">
-                <input
-                  type="radio"
-                  name="recommend-mode"
-                  value="draft"
-                  checked={mode === 'draft'}
-                  onChange={() => switchMode('draft')}
-                />
-                빈자리만 최적화
-                <span className="group__hint"> — <HelpText>{HELP.recommendMode.draft}</HelpText></span>
-              </label>
-              <label className="radio">
-                <input
-                  type="radio"
-                  name="recommend-mode"
-                  value="evaluate"
-                  checked={mode === 'evaluate'}
-                  onChange={() => switchMode('evaluate')}
-                />
-                기대 딜량 계산
-                <span className="group__hint"> — <HelpText>{HELP.recommendMode.evaluate}</HelpText></span>
-              </label>
+                  checked={mode === option}
+                  onChange={() => switchMode(option)}
+                >
+                  {MODE_LABEL[option]}
+                </ToggleChip>
+              ))}
             </div>
+            <p className="mode-switch__hint group__hint">
+              <HelpText>{MODE_HINT[mode]}</HelpText>
+            </p>
 
             {mode !== 'single' && (
               <div className="field">

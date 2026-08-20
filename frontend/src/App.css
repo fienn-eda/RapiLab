@@ -2001,12 +2001,9 @@
 
 /* Mode switch + raid/evaluation results --------------------------------- */
 
-/* 모드 힌트는 인라인 <span>이라 max-width가 듣지 않는다. 줄바꿈을 결정하는
-   것은 이 컨테이너다. */
-.mode-switch {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
+/* 선택된 모드의 설명 한 줄. 문장이라 읽기 폭을 넘지 않는다. */
+.mode-switch__hint {
+  margin: 0;
   max-width: var(--measure);
 }
 
