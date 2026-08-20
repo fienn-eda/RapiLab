@@ -10,7 +10,7 @@ Two measured numbers carry it, both from Fienn's frame reading of 2026-08-19
   `registry.TIMED_CHARGE_MOTION_DELAY` and a counterexample to handing untimed
   charge weapons the 22-frame stand-in.
 - **She is a tap-fire candidate** (`registry.TAP_FIRE_CANDIDATES`): outside her
-  burst window, releasing at the start of the charge fires a 100% shot every 15
+  burst window, releasing at the start of the charge fires a 103% shot every 15
   frames, and the engine weighs that against a full charge once per magazine.
   Which one wins is the DECK's answer, not hers - reload speed decides it, so she
   taps outside her burst in a Crown + Privaty + Resilience-cube deck and
@@ -63,11 +63,13 @@ Not modeled / deferred:
   endpoint (`attack_rate.tap_fire_wins`). A player who releases half-way is
   therefore modelled as doing worse than either mode, which is what the
   arithmetic says they are doing.
-- **The frame a tap does bank.** A tap is modelled at exactly 100%, but a real
-  hand holds one or two frames and Fienn's readings came out at 104% and 107%.
-  The engine therefore UNDERSTATES a tapped shot by 3-7%, which is the safe
-  direction: it can only make the recommender prefer tapping less often than the
-  game does, never more.
+- **A tap fires at gauge 103%, not 100%.** Gauge 100% is the "not charged" state
+  and the trigger does not go off there; 103% is the lowest gauge a shot has been
+  observed at (Fienn, 2026-08-20, docs/measurements/bready-charge-damage.md).
+  The engine models a tapped shot at that 103% (`attack_rate.TAP_FIRE_CHARGE_BONUS`).
+  This closes what used to stand here as a 3-7% understatement: the readings of
+  104% and 107% above were not a loose hand against a 100% model, they were a
+  loose hand against a 103% floor.
 """
 from app.skill_rules._helpers import buff_rule, highest_atk_buff_rule
 

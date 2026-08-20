@@ -1226,8 +1226,22 @@ that shot is (docs/measurements/alice-tap-fire.md):
   Damage. Eight readings fit `damage / gauge%` to within 0.4%, all of it explained
   by the displayed integer rounding. So a partial charge is neither "no bonus
   unless full" nor "proportional from zero" — it is 100% plus a linear ramp.
-- **A tap fills no gauge at all** (the frame the gauge starts rising IS the firing
-  frame), so a tapped shot is exactly 100%: charge bonus 0.
+- **A tap fires at gauge 103%, not 100%** (2026-08-20 correction). Gauge 100% is
+  the "not charged" state and firing does not go off there; 103% is the lowest
+  gauge a shot has ever been observed at
+  (Fienn, `docs/measurements/bready-charge-damage.md`).
+  `attack_rate.TAP_FIRE_CHARGE_BONUS = 0.03` is that
+  floor. This also settled a second question the same reading answered: **a
+  tapped shot does not receive the Charge Damage buff** — Charge Damage
+  multiplies a FULLY-CHARGED shot and nothing else (nikke.gg's damage-formula
+  glossary already said so; the engine had been multiplying it onto every
+  charge-weapon shot regardless). Raising Charge Damage from 7.59% to 11.11% on
+  the same account moved the damage of an identically-gauged shot by only
+  +0.06% (a direct multiply would have moved it +3.27%). `raid_simulator`
+  therefore adds `charge_damage_bonus` for a full-charge `ShotRecord` but not
+  for a tap (`is_tap_fire`) one; skills that grant Charge Damage (Alice's
+  Energizing Carrot, e.g.) are unaffected in how they are modelled, only in
+  which shots the bonus is allowed to land on.
 - **Its interval is a separately measured value, not derivable from the
   pause** — `registry.TAP_FIRE_INTERVAL`, joined onto the timeline as
   `tap_fire_interval`. For a while this slot held "the tap interval IS the
@@ -1312,10 +1326,13 @@ options, so the damage is continuous even where the reported mode is not — for
 Alice the two are within 5% at the default cube's reload speed, and the
 collectible's charge-damage multiplier alone flips which one is named.
 
-**A tap is modelled at exactly 100%, which understates it by 3-7%.** A real hand
-holds one or two frames, and those frames bank a slice of the ramp (Alice read
-104% and 107% against a 90-frame charge). The error is in the safe direction: the
-recommender can only prefer tapping LESS often than the game does.
+**Closed (2026-08-20): a tap is modelled at 103%, not 100%.** This used to read
+"a tap is modelled at exactly 100%, which understates it by 3-7%" — Alice's
+104%/107% readings were misread as a loose hand banking a slice of the ramp
+above a 100% floor. They were actually a loose hand above the 103% firing
+threshold itself (see the tap-fire section above); the "3-7% understatement"
+was really the model's floor being 3 points too low across the board, not
+noise from an unsteady trigger finger.
 
 **Charge speed reaches this decision through more than one door.** Alice is the
 worked example: her own burst's `charge_speed_percent` (+80.15%) cuts 80 of her 90

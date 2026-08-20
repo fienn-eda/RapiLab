@@ -31,12 +31,17 @@ def milk_weapon(max_ammo=6, reload_time=2.0):
 
 def report(label, weapon):
     shots = generate_segmented_shots(weapon, (), FIGHT)
-    fulls = [s.time for s in shots if s.extra_charge_bonus > 0]
+    # 풀차지는 `is_tap_fire` 플래그로 가른다 - 값(`extra_charge_bonus > 0`)으로
+    # 가르면 톡톡이 배율이 0보다 큰 지금(0.03) 모든 톡톡이 샷이 풀차지로
+    # 오분류된다.
+    fulls = [s.time for s in shots if not s.is_tap_fire]
+    taps = [s for s in shots if s.is_tap_fire]
+    tap_mult = (1 + taps[0].extra_charge_bonus) if taps else float("nan")
     gaps = [b - a for a, b in zip(fulls, fulls[1:])]
     worst = max(gaps) if gaps else 0.0
     damage = sum(s.damage_percent * (1 + s.extra_charge_bonus) for s in shots)
     print(f"{label:28s} 발수 {len(shots):3d}  풀차지 {len(fulls):3d}  "
-          f"최대간격 {worst:5.2f}s  누적배율 {damage:8.1f}"
+          f"최대간격 {worst:5.2f}s  누적배율 {damage:8.1f}  톡톡이배율 {tap_mult:.3f}"
           f"{'  ** 창 초과 **' if worst > WINDOW + 1e-9 else ''}")
 
 
