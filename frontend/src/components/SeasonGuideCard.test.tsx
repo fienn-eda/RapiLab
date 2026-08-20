@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { SeasonGuideCard } from './SeasonGuideCard'
@@ -91,41 +91,47 @@ describe('SeasonGuideCard', () => {
     expect(screen.queryByLabelText('가이드 내용')).not.toBeInTheDocument()
   })
 
-  it('쓴 글이 남고, 보스를 바꾸면 다른 글이 나온다', async () => {
+  it('쓴 이벤트가 남고, 보스를 바꾸면 다른 목록이 나온다', async () => {
     const user = userEvent.setup()
     const { rerender } = render(<SeasonGuideCard rotation={solo40} boss={picked()} />)
 
-    await user.type(screen.getByLabelText('가이드 내용'), '알 먼저')
-    expect(screen.getByLabelText('가이드 내용')).toHaveValue('알 먼저')
+    await user.click(screen.getByRole('button', { name: '이벤트 추가' }))
+    await user.type(screen.getByPlaceholderText('이 시점에 무엇을 하나'), '알 먼저')
+    expect(screen.getByDisplayValue('알 먼저')).toBeInTheDocument()
 
     rerender(<SeasonGuideCard rotation={solo40} boss={picked({ boss_name: '다른 보스' })} />)
-    expect(screen.getByLabelText('가이드 내용')).toHaveValue('')
+    expect(screen.queryByDisplayValue('알 먼저')).not.toBeInTheDocument()
 
     rerender(<SeasonGuideCard rotation={solo40} boss={picked()} />)
-    expect(screen.getByLabelText('가이드 내용')).toHaveValue('알 먼저')
+    expect(screen.getByDisplayValue('알 먼저')).toBeInTheDocument()
   })
 
-  it('부위파괴가 꺼져 있으면 파괴 시각을 그리지 않는다', () => {
+  it('부위파괴가 꺼져 있으면 파괴 행이 없다', () => {
     render(
       <SeasonGuideCard
         rotation={solo40}
         boss={picked({ part_destructible: false, part_destruction_times: '1, 61' })}
       />,
     )
-    expect(screen.queryByText(/파괴 1/)).not.toBeInTheDocument()
+    expect(within(screen.getByRole('list')).queryByText('부위파괴')).not.toBeInTheDocument()
   })
 
-  it('부위파괴가 켜져 있으면 파괴 시각을 그린다', () => {
+  it('부위파괴가 켜져 있으면 파괴 행이 잔여시간으로 선다', () => {
     render(
       <SeasonGuideCard
         rotation={solo40}
         boss={picked({ part_destructible: true, part_destruction_times: '1, 61, 126' })}
       />,
     )
-    expect(screen.getByText('파괴 1 · 61 · 126초')).toBeInTheDocument()
+    // 「부위파괴」는 뱃지 줄에도 있으므로 타임라인 목록으로 좁혀 센다.
+    const timeline = within(screen.getByRole('list'))
+    expect(timeline.getAllByText('부위파괴')).toHaveLength(3)
+    expect(screen.getByText('2:59')).toBeInTheDocument()
+    expect(screen.getByText('1:59')).toBeInTheDocument()
+    expect(screen.getByText('0:54')).toBeInTheDocument()
   })
 
-  // 편집 중인 반쪽짜리 입력이 0초짜리 눈금을 만들면 안 된다.
+  // 편집 중인 반쪽짜리 입력이 0초짜리 행(= 3:00)을 만들면 안 된다.
   it('파괴 시각 칸이 편집 중이어도 빈 조각을 0초로 읽지 않는다', () => {
     render(
       <SeasonGuideCard
@@ -133,6 +139,31 @@ describe('SeasonGuideCard', () => {
         boss={picked({ part_destructible: true, part_destruction_times: '1, ' })}
       />,
     )
-    expect(screen.getByText('파괴 1초')).toBeInTheDocument()
+    expect(within(screen.getByRole('list')).getAllByText('부위파괴')).toHaveLength(1)
+    expect(screen.getByText('2:59')).toBeInTheDocument()
+  })
+
+  // 전투 시간을 바꾸면 같은 경과 초가 다른 잔여시간이 된다 - 이벤트는 전투
+  // 시작에 붙어 있고 시계만 길어진다.
+  it('전투 시간을 바꾸면 파괴 행의 잔여시간이 따라 움직인다', () => {
+    const { rerender } = render(
+      <SeasonGuideCard
+        rotation={solo40}
+        boss={picked({ part_destructible: true, part_destruction_times: '60' })}
+      />,
+    )
+    expect(screen.getByText('2:00')).toBeInTheDocument()
+
+    rerender(
+      <SeasonGuideCard
+        rotation={solo40}
+        boss={picked({
+          part_destructible: true,
+          part_destruction_times: '60',
+          fight_duration: '200',
+        })}
+      />,
+    )
+    expect(screen.getByText('2:20')).toBeInTheDocument()
   })
 })

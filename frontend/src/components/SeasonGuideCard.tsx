@@ -5,17 +5,22 @@
 // 어긋날 수 없다. 솔로 탭은 보스 설정을 접어 두므로 그 값들을 비추는 유일한
 // 자리이기도 하다.
 //
-// 문장만 사람이 쓴다. 지금은 localStorage에만 남는다(useBossGuides의 주석 참조).
+// 축 위의 이벤트만 사람이 쓴다 - 파괴 시각은 보스 설정에서 자동으로 온다.
+// 지금은 localStorage에만 남는다(useBossGuides의 주석 참조).
 
 import { gimmickBadges } from '../lib/bossBadges'
 import { guideTitle } from '../lib/bossLabel'
 import { weaknessFor } from '../lib/elementAdvantage'
 import { elementLabel } from '../lib/elementName'
-import { useBossGuides } from '../hooks/useBossGuides'
+import { useBossGuides, type GuideEvent } from '../hooks/useBossGuides'
 import { FightTimeline } from './FightTimeline'
 import type { BossProfileDraft } from '../types/bossProfileDraft'
 import type { RaidRotation } from '../types/raidRotation'
 import type { BossRangeBand } from '../types/recommend'
+
+/** 아직 아무것도 안 쓴 보스의 이벤트 목록. 상수로 두는 이유는 매 렌더
+ * 새 배열을 넘기면 guideFor가 매번 다른 참조를 내기 때문이다. */
+const NO_EVENTS: GuideEvent[] = []
 
 const RANGE_BAND_LABEL: Record<Exclude<BossRangeBand, null>, string> = {
   near: '근거리',
@@ -75,20 +80,14 @@ export function SeasonGuideCard({ rotation, boss }: SeasonGuideCardProps) {
         ))}
       </p>
 
-      <FightTimeline
-        durationSeconds={Number(boss.fight_duration)}
-        destructionTimes={times}
-      />
-
       {key === null ? (
         <p className="guide-card__empty">위에서 이번 회차 보스를 고르세요.</p>
       ) : (
-        <textarea
-          className="guide-card__text"
-          aria-label="가이드 내용"
-          placeholder="무엇을 챙기고 무엇을 피하는지"
-          value={guideFor(key, '')}
-          onChange={(event) => setGuide(key, event.target.value)}
+        <FightTimeline
+          fightDuration={Number(boss.fight_duration)}
+          destructionTimes={times}
+          events={guideFor(key, NO_EVENTS)}
+          onChange={(events) => setGuide(key, events)}
         />
       )}
     </section>
