@@ -5,6 +5,60 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 보스 이미지는 미루고 `guide`만 릴리즈에 먼저 싣는다 — 2단계를 가른다
+
+- Date: 2026-08-20
+- Context: 아래 「시즌 가이드 텍스트는 1단계에서 localStorage에만 산다」 결정이
+  2단계를 "회차 데이터에 `guide` + 보스 이미지 필드를 같은 배치로 추가"로 계획해
+  뒀다 — 근거는 "둘 다 같은 파일·모델·로더·스킬·테스트를 지나므로 스키마를 두 번
+  안 건드린다"였다. Fienn이 릴리즈 시점을 앞당기기로 하면서(2026-08-20) 그 근거가
+  뒤집혔다: 보스 이미지는 공지의 이미지 URL이 서명 URL이라 약 10시간 만료되므로
+  (2026-08-07 결정) 링크가 아니라 받아서 커밋해야 하는, `guide`보다 무거운 별도
+  작업이다. 이미지를 기다리면 이미 준비된 `guide`까지 함께 묶여 릴리즈가 늦는다.
+- Alternatives considered: (a) 원래 계획대로 이미지를 확보할 때까지 기다렸다가
+  `guide`와 함께 한 번에 착륙시킨다. (b) **`guide`만 먼저 착륙시키고, 이미지는
+  별도 백로그로 분리한다**(스키마를 한 번 더 건드리는 비용을 감수).
+- Decision: **(b)**(Fienn, 2026-08-20). `7984565d`.
+- Why: "스키마를 두 번 건드리지 않는다"는 이미지가 이미 손에 있을 때만 유효한
+  절약이다. 이미지가 아직 없는 지금 그 절약을 지키려고 이미 완성된 `guide`까지
+  묶어 두면, 절약하는 것(스키마 수정 한 번)보다 잃는 것(릴리즈 가능한 기능의
+  지연)이 크다.
+- Consequences: **구현된 것** — `data/raid-rotations.json`에 선택적 `guide`
+  필드(`[{ "at": 초|null, "text": "..." }]`, `at`은 `part_destruction_times`와
+  같은 단위인 전투 시작 경과 초, `null`은 「상시」); `backend/app/raid_rotations.py`의
+  로더 검증(`.get()` 선택 필드 — 코어 지름·파괴 시각과 같은 계열, 목록·객체·문자열
+  타입 검사, `at`은 bool을 파괴 시각과 같은 이유로 따로 거부 — 백엔드 테스트 8개);
+  TS `RotationGuideEntry`·`RotationBoss.guide?`; `SeasonGuideCard`가 번들 `guide`를
+  타임라인 기본값으로 깔고 localStorage가 그 위를 덮음(`useBossGuides.hasOverride`/
+  `clearGuide`로 「기본값으로 되돌리기」 — 번들값이 있고 실제로 고쳤을 때만 버튼이
+  뜬다, 없으면 「빈 목록으로 만들기」가 되어 이름과 다른 일을 하므로); 번들 항목의
+  id는 `bundled-${index}`(번들 값에는 id가 없고, 매 렌더 새로 만들면 React 키가
+  바뀌어 입력 칸이 다시 마운트된다); `/update-raid-bosses` 스킬에 `guide` 필드
+  설명(파괴 시각은 여기 적지 않는다 — `part_destruction_times`가 이미 하는 일이라
+  또 적으면 같은 순간이 두 줄로 선다). 보스 이미지는 `docs/roadmap.md` To-Do에
+  백로그로 계속 남는다.
+
+  **이음매 하나를 릴리스 직전에 잡았다**(커밋 `0a276a62`): `backend/app/api.py`의
+  응답 모델 `RotationBoss`(FastAPI가 `/api/raid-rotations`를 이 pydantic 모델로
+  직렬화한다)에 `guide`가 없어서, 로더는 통과시키는데 **라우트가 조용히
+  떨어뜨리고 있었다**. pydantic 기본(`extra="ignore"`)이 모델에 없는 키를 응답에서
+  지운다 — 이 저장소에 이미 있었던 실패 모양이다(`UserNikkeState`의 `core_level`
+  잔재, 이 문서 아래쪽 항목).
+
+  **왜 아무 테스트도 안 깨졌나**:
+  `test_the_route_serves_the_file_as_is`(`backend/tests/test_api_raid_rotations.py`)가
+  로더 출력과 API 응답의 완전 동치를 검사해 이런 누락을 잡도록 설계돼 있지만,
+  그때 `data/raid-rotations.json`에는 `guide`를 채운 보스가 하나도 없어 **양쪽 다
+  그 키가 없는 채로 우연히 일치**했다. 즉 이 결함은 **Fienn이 첫 가이드를 적는
+  날에야** 「앱에 안 뜬다」로 드러났을 것이고, 그날은 하필 릴리스 직후다.
+
+  닫은 방법: `RotationGuideEntry` 모델과 `RotationBoss.guide: list[...] = []` 선언,
+  그리고 동치 테스트에 기대지 않는 **직접 검사** 두 개 —
+  `test_a_guide_survives_the_wire_untouched`(모델에 가이드를 밀어 넣어 왕복을 본다)와
+  `test_every_boss_carries_a_guide_key`. 후자를 위해 데이터 파일의 보스 7기 전부에
+  `"guide": []`를 적었다 — `stated`와 같은 규칙이고, 키를 빼면 서버가 기본값을
+  채워 응답해 동치 테스트가 깨진다.
+
 ## 솔로 탭만 보스 설정을 기본 접은 채로 띄운다 — 유니온 탭은 펼친 채로 남긴다
 
 - Date: 2026-08-20
@@ -53,7 +107,7 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   말하고 새 칩은 *채움*으로 「켜졌나」를 말해 다른 축이라 충돌이 아니다. 새 색
   토큰은 0개 — `--primary`·`--text`·`--rule`·`--surface`만 재사용.
 
-## 시즌 가이드 텍스트는 1단계에서 localStorage에만 산다 — 릴리즈 빌드에는 안 실린다
+## 시즌 가이드 텍스트는 1단계에서 localStorage에만 산다 — 2단계(회차 데이터의 `guide`)는 이후 착륙
 
 - Date: 2026-08-20
 - Context: 새 시즌 가이드 카드에 Fienn이 직접 쓰는 공략 문장을 저장해야 했다.
@@ -82,7 +136,12 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   「전투 타임라인…」 항목들 참고): 저장 모양이 자유 문장 `string`에서 이벤트
   목록 `GuideEvent[]`(`{ id, at: number | null, text }`)로 바뀌었다** —
   fallback도 이제 `GuideEvent[]`다(항상 `''`이던 자리가 항상 `[]`가 됐다).
-  릴리즈에 안 실린다는 뼈대와 `guideFor(key, fallback)` 시그니처는 그대로다.
+  **(같은 날 나중 개정, 커밋 `7984565d`): 2단계가 이미지와 갈라져 `guide`만
+  먼저 왔다** — 위 「보스 이미지는 미루고 `guide`만 릴리즈에 먼저 싣는다」
+  항목이 그 분기와 구현을 담는다. 「릴리즈에 안 실린다」는 뼈대는
+  더 이상 현재 상태가 아니다: 회차 데이터의 `guide`가 기본값이고 localStorage가
+  그 위를 덮는 최종 형태가 실제로 만들어졌고, 응답 모델이 그 키를 떨어뜨리던
+  이음매도 커밋 `0a276a62`에서 닫혔다. `guideFor(key, fallback)` 시그니처는 그대로다.
 
 ## 전투 타임라인 — 세로 이벤트 목록이 가로 눈금과 자유 문장을 둘 다 대체한다
 

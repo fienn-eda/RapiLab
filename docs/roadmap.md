@@ -1060,21 +1060,46 @@
       프론트 **1022 passed / 80 files**, 타입에러 0, lint 에러 0(경고만,
       전부 이 브랜치 밖의 기존 항목) · 백엔드는 이 브랜치가 건드리지 않는다
       (직전 확인 **2597 passed / 3 skipped**에서 무변화).
+      **(같은 날 나중 개정, 커밋 `7984565d`): 위 「무변경」은 여기까지다** —
+      2단계(부분, `guide` 필드)가 백엔드 로더(`raid_rotations.py`)와 테스트
+      8개를 처음으로 건드렸다. 최종 확인: 프론트 **1030 passed / 80 files**,
+      백엔드 **2605 passed / 3 skipped**, 타입 0, lint 에러 0. 엔진 능력은
+      여전히 안 건드렸다(`engine-capabilities.md` 변경 없음 — 확인만; `guide`는
+      엔진이 읽지 않는 표시용 필드다).
 - [x] `docs/decisions.md`·`docs/insights.md` 갱신.
 
   설계: `docs/superpowers/specs/2026-08-20-solo-raid-setup-layout-design.md`,
   계획: `docs/superpowers/plans/2026-08-20-solo-raid-setup-layout.md`.
 
-- [ ] **2단계 백로그 — 회차 데이터에 `guide` + 보스 이미지 필드를 추가해 가이드가
-      릴리즈 앱에 실리게 한다**(Fienn 판단, 2단계로 미룸, 2026-08-20).
-      `data/raid-rotations.json` 스키마 확장 + 백엔드 모델·로더 +
-      `/update-raid-bosses` 스킬 + 테스트가 필요하다. localStorage는 그 위를
-      덮어쓰는 계층으로 남고, `guideFor(key, fallback)`의 fallback 자리에 회차
-      데이터의 `guide`를 흘려 넣는 것으로 마무리한다(호출부 재작업 불필요 —
-      시그니처를 1단계에서 이미 그렇게 잡아 뒀다). 보스 이미지를 같은 배치로
-      넣는 이유: 둘 다 같은 파일·모델·로더·스킬·테스트를 지나 스키마를 두 번 안
-      건드린다. 공지 이미지 URL은 서명 URL이라 약 10시간 만료되므로(2026-08-07
-      결정) 링크가 아니라 받아서 커밋하는 방식이어야 한다.
+- [x] **2단계 (부분) — 회차 데이터에 `guide` 필드를 추가해 가이드가 릴리즈
+      앱에 실리는 길을 낸다**(Fienn 판단: 보스 이미지와 갈라 `guide`만 먼저,
+      2026-08-20, `worktree-solo-raid-setup-layout` 커밋 `7984565d`).
+      `data/raid-rotations.json`에 선택적 `guide` 필드(`[{ "at": 초|null,
+      "text": "..." }]`) + `backend/app/raid_rotations.py` 로더 검증(백엔드
+      테스트 8개) + TS `RotationGuideEntry`/`RotationBoss.guide?` +
+      `SeasonGuideCard`가 번들값을 타임라인 기본값으로 깔고 localStorage가
+      덮어씀(`useBossGuides.hasOverride`/`clearGuide`로 「기본값으로
+      되돌리기」, 번들값이 있고 실제로 고쳤을 때만 버튼이 뜬다) +
+      `/update-raid-bosses` 스킬 필드 설명. `guideFor(key, fallback)` 시그니처는
+      1단계에서 잡아 둔 그대로라 호출부 재작업이 필요 없었다. 상세:
+      `docs/decisions.md`.
+- [x] **응답 모델이 `guide`를 떨어뜨리던 이음매를 닫았다**(커밋 `0a276a62`).
+      로더만 고쳤을 때는 `backend/app/api.py::RotationBoss`에 선언이 없어
+      pydantic 기본(`extra="ignore"`)이 응답에서 `guide`를 지웠다 — 로더 검증은
+      통과하는데 화면엔 절대 안 뜨는 죽은 경로였다. 데이터에 `guide`를 채운
+      보스가 하나도 없어 `test_the_route_serves_the_file_as_is`가 우연히
+      일치하며 못 잡았고, **Fienn이 첫 가이드를 적는 날에야** 드러났을 것이다.
+      `RotationGuideEntry` + `RotationBoss.guide` 선언, 동치에 기대지 않는 직접
+      검사 둘(`test_a_guide_survives_the_wire_untouched`,
+      `test_every_boss_carries_a_guide_key`), 데이터 파일 보스 7기에
+      `"guide": []`. 상세: `docs/insights.md`.
+- [ ] **보스 이미지 필드 — 여전히 백로그**(Fienn 판단으로 `guide`와 분리,
+      2026-08-20). "스키마를 두 번 안 건드린다"던 원래 근거(둘 다 같은
+      파일·모델·로더·스킬·테스트를 지난다)는 릴리즈를 앞당기며 뒤집혔다 —
+      `guide`만이라도 먼저 릴리즈에 싣는 이득이 스키마를 한 번 더 건드리는
+      비용보다 크다는 판단(`docs/decisions.md`). 공지 이미지 URL은 서명
+      URL이라 약 10시간 만료되므로(2026-08-07 결정) 링크가 아니라 받아서
+      커밋하는 방식이어야 한다.
 
 ### 톡톡이 배율 정정 — 103% + 차지대미지 게이팅 (2026-08-20, Fienn 실측)
 

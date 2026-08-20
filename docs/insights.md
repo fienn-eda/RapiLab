@@ -1070,6 +1070,61 @@ exit 0라고 두 번 보고했는데, 그건 `tail`의 종료 코드였다. 실�
   음차하면 존재하지 않는 이름("챗터박스")이 만들어진다. `display_names.py`가
   니케 이름에 이미 지키는 원칙(한국 서버 공식 표기, 음차 아님)과 같은 실패
   모양이 보스 이름에도 그대로 걸린다.
+
+## 로더 검증을 통과해도 API 응답 모델에 없는 키는 조용히 사라진다 — 두 스키마가 따로 산다
+
+- 확립: 2026-08-20 (솔로 레이드 설정 영역 재배치 2단계, `worktree-solo-raid-setup-layout`,
+  커밋 `7984565d`). `data/raid-rotations.json`에 선택적 `guide` 필드를 추가하고
+  `backend/app/raid_rotations.py::validate_rotations`에 검증을 넣었지만,
+  `/api/raid-rotations`를 직렬화하는 FastAPI 응답 모델(`backend/app/api.py::RotationBoss`,
+  pydantic `BaseModel`)에는 `guide`를 안 더했다 — 로더(파일 검증)와 API(응답
+  직렬화)가 회차 보스에 대해 **서로 다른 스키마**를 갖고 있다는 사실을 놓쳤다.
+- pydantic의 기본(`extra="ignore"`)은 모델에 선언 안 된 입력 키를 검증·직렬화
+  양쪽에서 예외도 경고도 없이 조용히 떨어뜨린다. 이 저장소에서 같은 모양이 이미
+  한 번 있었다 — `UserNikkeState`에서 `core_level` 필드를 지운 뒤, 그 필드를 아직
+  들고 있는 옛 `localStorage` 로스터가 "로드는 되지만 값은 사라지는" 채로
+  조용히 넘어간 것도 같은 pydantic 기본값이 만든 동작이다(`docs/decisions.md`
+  「`core_level` removed from `UserNikkeState`...」 항목).
+- **왜 테스트가 못 잡았나**: `test_the_route_serves_the_file_as_is`
+  (`backend/tests/test_api_raid_rotations.py`)가 로더 출력과 API 응답의 완전
+  동치(`get() == load_rotations()`)를 검사해 정확히 이런 종류의 누락을 잡도록
+  설계돼 있다. 그런데 `data/raid-rotations.json`에는 아직 `guide`를 채운 보스가
+  하나도 없어서, 로더 출력에도 API 응답에도 그 키가 둘 다 없었다 — **없음과 없음이
+  우연히 같아** 테스트가 초록이었다. 이 갭은 Fienn이 실제로 첫 `guide`를 채우는
+  순간, 즉 **릴리스 직후에야** 「앱에 안 뜬다」로 드러났을 것이다.
+- **어떻게 닫았나**(커밋 `0a276a62`): `RotationGuideEntry` 모델과
+  `RotationBoss.guide: list[...] = []` 선언. 그리고 동치 테스트에 기대지 않는
+  **직접 검사** 둘을 더했다 — `test_a_guide_survives_the_wire_untouched`는 응답
+  모델에 가이드를 밀어 넣어 왕복을 값으로 확인하고(픽스처가 데이터 파일과
+  무관해 사각지대가 없다), `test_every_boss_carries_a_guide_key`는 데이터
+  파일 쪽 규칙을 못박는다. 후자를 위해 보스 7기 전부에 `"guide": []`를 적었다.
+- **How to apply:** 회차 데이터처럼 "파일 로더 검증"과 "API 응답 모델"이 코드
+  상 분리된 파이프라인에 필드를 추가할 때는 **둘 다** 고쳐야 한다 — 로더만
+  고치면 검증은 통과하는데 화면엔 절대 안 뜨는 죽은 경로가 생긴다. 그리고
+  `test_the_route_serves_the_file_as_is` 류의 "라우트가 파일과 동일한지" 검사는
+  **그 필드가 실제로 채워진 픽스처가 있을 때만** 누락을 잡는다 — 필드가 전부
+  `None`/빈 목록/키 없음인 동안은 이런 테스트의 사각지대다. 그러므로 새 필드에는
+  **동치가 아니라 값을 보는 테스트를 따로** 붙일 것: 모델에 그 필드를 직접
+  밀어 넣어 왕복을 확인하면 데이터 파일이 비어 있어도 잡힌다.
+
+## 번들 기본값 + 로컬 덮어쓰기 계층을 만들 때 걸리는 두 가지
+
+- 확립: 2026-08-20 (시즌 가이드 카드가 회차 데이터의 `guide`를 기본값으로 삼고
+  localStorage가 덮어쓰는 계층을 갖췄을 때, `SeasonGuideCard.tsx`).
+- **번들 값에는 안정적인 자리 번호로 id를 지어라, 렌더마다 새로 만들지 마라.**
+  편집 UI(세로 타임라인 `<FightTimeline>`)가 각 행에 React 키로 쓸 안정적인
+  id가 필요한데, 회차 데이터의 `guide` 항목에는 id가 없다 — id는 편집 화면의
+  사정이지 데이터가 알 바 아니다. `crypto.randomUUID()`처럼 렌더마다 새로
+  만들면 매번 다른 id가 나와 React 키가 바뀌고, 그러면 입력 칸이 통째로 다시
+  마운트돼 포커스와 커서 위치가 튄다. `bundled-${index}`처럼 배열 위치로 지으면
+  같은 데이터에는 항상 같은 id가 나와 결정적이고 안정적이다(`bundledEvents`).
+- **"되돌리기"는 되돌릴 곳이 있을 때만 버튼으로 그려라.** 번들 기본값이 없는
+  보스에 같은 「기본값으로 되돌리기」 버튼을 그리면, 눌렀을 때 실제로 일어나는
+  일은 "덮어쓴 것을 지워 기본값을 드러낸다"가 아니라 "빈 목록으로 만든다"다 —
+  이름과 다른 일을 하는 컨트롤이 된다. `hasOverride(key)`(덮어쓴 적이 있는가)와
+  `bundled.length > 0`(되돌아갈 기본값이 있는가)을 **둘 다** 만족할 때만 버튼을
+  그려야 한다.
+
 ## 무기별 명중 회귀식 셋은 사실 하나다 — 110%가 게임 전체 상수
 
 - 확립: 2026-08-07. 세 무기(SG/AR/SMG)에서 따로 측정된 탄착군 대 명중률 회귀식
