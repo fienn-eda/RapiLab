@@ -115,6 +115,38 @@
           }
         }
       ]
+    },
+    {
+      "id": "solo-40",
+      "raid": "solo",
+      "title": "솔로 레이드 40시즌",
+      "starts_at": "2026-08-20T12:00:00+09:00",
+      "ends_at": "2026-08-27T04:59:00+09:00",
+      "source_url": "https://www.blablalink.com/post/detail?post_uuid=3336405268905834026",
+      "source_locale": "ko",
+      "read_on": "2026-08-20",
+      "bosses": [
+        {
+          "name": "사치스러운 거미",
+          "weakness": "Fire",
+          "range_band": "mid",
+          "core_diameter_px": null,
+          "stated": {
+            "Property": "Wind",
+            "Weakness": "Fire",
+            "Squad Recommendations": "SG, MG Nikkes",
+            "Raptures Attack Mode": [
+              "Luxurious Spider fires powerful laser beams periodically, dealing damage. Take cover to defend against the attacks.",
+              "Luxurious Spider summons Raptures from its eggs that deal powerful self-destruct attacks. Destroy the eggs or kill the summoned Raptures to prevent the attacks."
+            ],
+            "공지 본문": "The Boss for this season is Harvester. — 이미지 제목은 LUXURIOUS SPIDER이고 공격 설명도 그 이름을 쓴다. 본문 한 줄이 어긋난 것으로 읽었다.",
+            "이름 출처": "공지가 영문판뿐이라 「사치스러운 거미」는 Fienn의 인게임 한국 서버 표기다. 영문 표기는 Luxurious Spider.",
+            "적정거리(Fienn 확인)": "앞쪽이 mid, 뒤쪽(깊은 쪽)이 far이고 플레이어가 때릴 위치를 고른다. range_band에는 한 값만 담기므로 mid를 기본값으로 적었다 — SR 덱을 볼 때는 보스 설정에서 far로 바꾼다.",
+            "코어(Fienn 확인)": "없다. core_diameter_px가 null이라 카드를 고르면 core_hittable도 함께 꺼진다.",
+            "파츠파괴(Fienn 확인)": "전투 개시 시점과 이후 1분 주기로 가능하다. 회차 파일에는 담을 자리가 없어 보스 설정의 「부위파괴」는 손으로 켠다."
+          }
+        }
+      ]
     }
   ]
 }
