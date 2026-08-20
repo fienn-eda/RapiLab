@@ -5,6 +5,62 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 파싱된 캐릭터 데이터(dotgg/lootandwaifus/shiftypad json)는 커밋한다 — 원본 스크랩은 계속 무시
+
+- Date: 2026-08-21
+- Context: v0.1.0~v0.1.3이 전부 니케 풀이 **0개**인 채로 나가고 있었다.
+  `data/dotgg/`·`data/lootandwaifus/`·`data/shiftypad/`가 통째로 gitignore
+  대상이라 CI 러너가 클론하면 애초에 없고, PyInstaller는 있는 것만 담으므로
+  릴리즈 번들의 `_internal/data`가 3개 파일(0.4MB)뿐이었다(로컬 빌드는 382개
+  파일/24.7MB). 결정적 진단: 떠 있는 배포본의 엔진 버전이 로컬 빌드와
+  **동일**(`0257ef4c860e`)했다 — 같은 코드인데 로컬 107개/배포본 0개라면
+  코드가 아니라 데이터.
+- Decision: **파싱된 json만** 커밋한다 — dotgg 85 · lootandwaifus 94 ·
+  shiftypad 16, 총 195개 파일 3.1MB. `data/lootandwaifus/*.html`(9.1MB)과
+  `data/shiftypad/raw/`(13MB) 등 원본 스크랩은 계속 무시한다.
+- Alternatives considered: (a) `data/` 전체를 커밋한다 — 기각, 원본 스크랩은
+  런타임이 안 읽는다(백엔드에선 주석으로만 언급되고 실제 독자는
+  `scripts/audit_*.py`와 `tools/collect-blablalink`뿐이다), 다시 받을 수
+  있고, 공개 저장소에 올릴 이유가 없다(26.5MB 대 3.3MB). (b) CI 워크플로에
+  수집 스크립트를 얹어 빌드 전에 매번 새로 긁는다 — 기각, ShiftyPad는 계정
+  세션이 필요하고 dotgg는 이미 셧다운돼 재수집 대상이 아니다 — 커밋된
+  스냅샷이 유일하게 항상 존재하는 소스다.
+- Why: 런타임이 읽는 값과 감사·수집 도구만 읽는 원본을 같은 gitignore 규칙
+  아래 두면, "이 파일이 왜 필요한가"를 안 따진 규칙 하나가 CI에서만 조용히
+  깨진다. 파싱된 값과 원본을 분리하면 규칙이 "런타임이 읽는가"라는 실제
+  질문과 일치한다.
+- Consequences: 신규 니케를 온보딩하면 파싱된 json도 함께 커밋해야 한다(잊으면
+  같은 사고가 그 유닛 하나로 재발). 검증: 깨끗한 클론에서 `data/`가 198파일
+  3.1MB로 들어오고 `supported_units()`가 **107개**를 낸다. 스테이징 내용도
+  확인 — 195개 전부 json, html·raw 0개, 개인 식별 정보(닉네임/open_id/uid)
+  0건. **남은 것(백로그)**: 로컬 빌드는 `packaging/rapilab.spec`이 `data/`
+  전체를 담아 원본 스크랩(23MB)까지 여전히 함께 실리므로, 로컬 빌드와 CI
+  빌드가 서로 다른 번들을 만든다 — 지금은 양쪽 다 동작하지만(런타임이 읽는
+  json은 둘 다 있다) 아티팩트가 다르다는 것 자체가 이번 사고를 숨긴 조건이었다.
+  spec이 담을 하위 디렉터리를 명시하면 둘이 같아진다. 커밋 `6d4aefd9`.
+
+## 릴리즈 스모크는 `Start-Process -Wait -PassThru`로 종료 코드를 받는다 — 직접 호출은 항상 초록이다
+
+- Date: 2026-08-21
+- Context: 위 사고(유닛 0개 배포)를 잡으라고 이미 만들어 둔 selftest ②
+  ("유닛 0개면 실패")가 실제로 CI 로그에 `FAIL: no units - data path is
+  wrong inside the bundle`을 찍고 있었는데, 그 워크플로 단계는 **success**로
+  끝났다. 원인: exe가 `console=False`(windowed)라 `dist/RapiLab/RapiLab.exe
+  --selftest`로 직접 부르면 셸이 기다리지 않고 종료 코드를 안 받는다. 실측:
+  같은 실패하는 exe를 직접 호출하면 `$LASTEXITCODE`가 **비어 있고**,
+  `Start-Process -Wait -PassThru`로 부르면 **ExitCode 1**을 준다.
+- Decision: `.github/workflows/release.yml`의 스모크 단계를 `Start-Process
+  -FilePath ... -ArgumentList '--selftest' -Wait -PassThru`로 바꾸고, 반환된
+  `ExitCode`가 0이 아니면 `throw`한다. `selftest.log`도 함께 `Get-Content`해
+  실패 이유가 워크플로 로그 자체에 남게 했다.
+- Why: 윈도우 없는 GUI 앱의 스모크는 "실행됐다"가 아니라 "성공적으로
+  실행됐다"를 확인해야 하는데, 직접 호출은 그 둘을 구분할 방법이 셸 수준에서
+  없다. `-Wait -PassThru`는 프로세스 객체를 돌려주므로 종료 코드를 코드로
+  검사할 수 있다.
+- Consequences: v0.1.0~v0.1.3의 selftest ②는 **처음부터 릴리즈를 막을 수
+  없는 자리에 있었다** — 가드가 존재한다는 것과 가드가 작동한다는 것은
+  다른 사실이라는 사례로 `docs/insights.md`에도 남긴다. 커밋 `e8d34bb0`.
+
 ## 받아서 푼 번들의 차단 표시는 앱이 스스로 지운다 — 인스톨러가 아니라 자가 치유
 
 - Date: 2026-08-20

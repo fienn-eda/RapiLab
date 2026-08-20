@@ -906,6 +906,63 @@ exit 0라고 두 번 보고했는데, 그건 `tail`의 종료 코드였다. 실�
   단계를 건너뛰지 말 것 — 이번에 사고 둘(Mark-of-the-Web 크래시·낡은 태그)을
   잡은 유일한 자리가 그 단계였다.
 
+## gitignore된 데이터에 런타임이 의존하면, CI 빌드가 조용히 빈 앱을 만든다
+
+- 확립: 2026-08-21 (v0.1.0~v0.1.3 전부 니케 풀 0개로 배포됨, 커밋 `6d4aefd9`).
+- 증상: v0.1.3을 받아 실행하니 니케 풀에 아무것도 안 떴다 — `/api/supported-units`가
+  빈 목록.
+- 원인: `data/dotgg/`·`data/lootandwaifus/`·`data/shiftypad/`가 통째로
+  gitignore 대상이었다. 이 저장소는 이미 "워크트리에 데이터가 없다"로 여러
+  번 당했었다(`scripts/sync_worktree_data.py`가 생긴 이유) — **하지만 CI
+  러너도 워크트리와 똑같이 클론이라 같은 함정의 다른 얼굴**이라는 것을 아무도
+  안 봤다. 로컬 개발 트리엔 파일이 이미 있으니 매번 정상으로 보이고, CI에서만
+  0개다.
+- **판별법: 배포본과 로컬 빌드의 엔진 버전이 같은데 결과가 다르면 데이터다.**
+  두 빌드가 같은 커밋에서 나왔다면(버전 문자열 대조로 확인) 코드 차이일 수
+  없으니, 남는 것은 "무엇이 번들에 실렸는가"뿐이다. 번들 파일 수·용량 비교
+  (내 빌드 382파일/24.7MB 대 배포본 3파일/0.4MB)로 확정했다.
+- **How to apply:** 새로운 gitignore 규칙을 추가하기 전에 "런타임이 이 경로를
+  읽는가"를 확인할 것. 읽는다면 그 규칙은 로컬에서는 안 보이고 CI에서만
+  터지는 시한폭탄이다. 이 저장소는 파싱된 json(런타임이 읽는 값)과 원본
+  스크랩(감사·수집 도구만 읽는 값)을 분리해, gitignore 규칙을 "런타임이
+  읽는가"라는 실제 질문과 일치시켰다(`docs/decisions.md`). 위 line 3531의
+  "`data/dotgg/`·`data/lootandwaifus/`가 전부 gitignore"는 이 결정으로
+  낡았다 — 파싱된 json은 이제 커밋된다, 아래 갱신 참고.
+
+## windowed(`console=False`) exe는 셸에 종료 코드를 안 준다 — CI 스모크가 실패해도 초록이 된다
+
+- 확립: 2026-08-21, 같은 사고. 위 데이터 누락을 잡으라고 이미 있던 selftest
+  ②("유닛 0개면 실패")가 CI 로그에 `FAIL: no units - data path is wrong
+  inside the bundle`을 정확히 찍고 있었는데, 그 워크플로 단계는 **success**로
+  끝났다.
+- 원인: `dist/RapiLab/RapiLab.exe --selftest`처럼 exe를 직접 호출하면,
+  windowed(`console=False`)로 빌드된 exe는 셸에 종료 코드를 돌려주지 않는다.
+  실측: 같은 실패하는 exe를 직접 호출하면 `$LASTEXITCODE`가 **비어 있고**,
+  `Start-Process -Wait -PassThru`로 부르면 프로세스 객체의 `.ExitCode`가
+  **1**로 나온다.
+- **How to apply:** GUI(windowed) exe를 CI 스모크로 부를 때는 절대 직접
+  호출하지 말 것 — `Start-Process -FilePath ... -Wait -PassThru`로 프로세스
+  객체를 받아 `.ExitCode`를 직접 검사해야 한다. 직접 호출로 "잘 도는 것처럼
+  보이는" 워크플로는 사실 아무것도 검사하지 않고 있을 수 있다. 로그에
+  `FAIL`이 찍혀 있는데 단계가 success인 조합을 보면 이 함정을 의심할 것.
+
+## 가드가 있다는 것과 가드가 작동한다는 것은 다르다 — 실제로 한 번 깨뜨려 확인할 것
+
+- 확립: 2026-08-21, 같은 사고(v0.1.0~v0.1.3 니케 0개 배포). selftest ②는
+  정확히 이 사고를 잡으라고 쓰였고 실제로 `FAIL`을 출력했는데, 그 출력이
+  네 번의 릴리즈(v0.1.0~v0.1.3) 동안 아무것도 막지 못했다 — 원인은 바로 위
+  windowed exe 종료 코드 문제.
+- **일반형**: 가드 코드가 존재하고 실패 시 올바른 메시지를 찍는다는 것을
+  확인하는 것과, 그 가드가 실제로 파이프라인을 멈춘다는 것을 확인하는 것은
+  다른 검증이다. 전자만 확인하면(코드 리뷰·단위 테스트로 "FAIL을 찍는다"만
+  본다) 후자가 조용히 빠져도 아무도 모른다.
+- **How to apply:** 새 CI 가드를 만들 때 "이 가드가 실패하면 무엇이
+  멈추는가"를 한 번 실제로 깨뜨려(의도적으로 실패 조건을 주입해) 워크플로
+  전체가 빨간불이 되는 것까지 눈으로 확인할 것 — FAIL 로그가 찍히는 것까지만
+  보고 넘어가지 말 것. `docs/insights.md`의 "스모크 테스트가 안 보는 경로가
+  곧 사고 지점이다"(위)와 짝을 이루는 교훈이다: 그쪽은 "무엇을 안 보는가",
+  이쪽은 "본 것을 실제로 막는가".
+
 ## 미란다 오버로드 임계값은 naive 격차 나누기의 2.5~3배다 - 경계가 「매 사이클」이라서
 
 - 확립: 2026-08-08 (미란다 계산기, Task 7). 어떤 유닛이 웨이크업!3(최종공격력
@@ -3528,7 +3585,7 @@ own_burst_activate가 아니라...) 참고.
 - **When two encodings of the same character share ONE game ID, that ID cannot be the discriminator — identity keys answer "which character", investment/progression state needs its own layer.** A "dual-slot" unit (both `<slug>` and `<slug>-signature` encoded — Drake, Julia) has one `resource_id` for both; whether the signature applies depends on the user owning the in-game Favorite Item, which is per-user and changes over time. So `resourceIdSlugMap` maps id → BASE slug only, and ownership lives in a separate `SIGNATURE_OWNED` set. Merging the two into one table looks tidier and is wrong for everyone but the author, at one moment in time.
 - **A guard test can only catch what its source of truth knows — name the blind spot as part of the guard's contract.** `backend/tests/test_resource_id_slug_map.py` cross-checks the hand-authored frontend map against the live `ENCODED_SLUGS`, so it catches typos, stale slugs, missing entries, and newly encoded dual-slots (encoding a new Nikke red-fails the backend suite until the map or `KNOWN_UNMAPPED` is updated — intentional). It cannot catch a wrong-but-VALID `resource_id`, because no committed data maps ids to names; closing that needs a committed public directory snapshot — **which now exists**, see the next bullet.
 - **The public half of a session-gated source can often be committed even when the personal half cannot — splitting them turns "needs a live run to verify" into a normal test.** The nikke directory (194 units: `resource_id`/`name_code`/English name/rarity) arrives on the same authenticated ShiftyPad load as the roster, but carries no account data, so `collect.js --directory` dumps it to a committed `nikke-directory.json` while `roster.json` stays gitignored. The mode returns *before* the `game_openid` lookup, so it needs no account at all. `backend/tests/test_resource_id_directory.py` then checks each mapped slug against the directory's English name (normalised), closing the wrong-but-valid-id hole above — verified by injecting the exact bug class (Soline's base 71 in place of variant 74): the new guard names it, the old guard stays green. Two design notes that make the check honest: (a) the rule was derived from data, not assumed — 51 of 57 entries matched normalised-equality exactly, and the 6 that didn't were all collab units whose ShiftyPad name is a short form (`Ada` vs `ada-wong`), so they became an explicit `SLUG_NAME_EXCEPTIONS` table; (b) each exemption is **pinned to the exact directory name** it may differ from, so an exemption cannot widen into hiding a real mis-mapping. A side effect worth knowing: ids no longer require someone to *own* the unit, which is what let `jill-valentine` be mapped from evidence (841) rather than guessed, emptying `KNOWN_UNMAPPED`.
-- **`data/dotgg/` and `data/lootandwaifus/` are gitignored local data assets — a git worktree does not get them for free.** Data-dependent tests fail broadly in a fresh worktree until both directories are copied over from the main checkout; conversely, deliverables produced while working in a worktree (new/updated data files) are handed off by copying them back to the main checkout, not by committing them (they're gitignored everywhere).
+- **`data/dotgg/` and `data/lootandwaifus/` are gitignored local data assets — a git worktree does not get them for free.** Data-dependent tests fail broadly in a fresh worktree until both directories are copied over from the main checkout; conversely, deliverables produced while working in a worktree (new/updated data files) are handed off by copying them back to the main checkout, not by committing them (they're gitignored everywhere). **정정(2026-08-21, 커밋 `6d4aefd9`): 더는 전부 gitignore가 아니다.** 파싱된 json(dotgg 전부, lootandwaifus/shiftypad의 `.json`)은 이제 커밋된다 — 그 gitignore가 CI 클론에 니케 데이터가 아예 없어 v0.1.0~v0.1.3이 유닛 0개로 나가게 만든 근본 원인이었다(위 "gitignore된 데이터에 런타임이 의존하면..." 항목). 계속 gitignore인 것은 런타임이 안 읽는 원본 스크랩뿐 — `data/lootandwaifus/*.html`과 `data/shiftypad/raw/`. 워크트리는 이제 이 파싱된 json을 git이 알아서 채워주므로(main처럼) 위 sync 필요성은 원본 스크랩과 `data/blablalink-cdn/`·`data/FIENN.json` 등 여전히 gitignore인 나머지 파일에만 남는다.
 - **ShiftyPad's public share-URL uid's leading number is a ShiftyPad REGION id, not the API's `nikke_area_id` — a plausible-looking decode is a false lead.** `blablalink.com/shiftyspad?uid=<base64>` decodes to `<shiftypad_region_id>-<intl_open_id>` (e.g. `29080-1234567890123456789`). Calling `GetUserCharacters`/`GetUserCharacterDetails`/`GetUserProfileOutpostInfo` with `nikke_area_id=29080` (the uid's own leading number) returns `code 1303001` ("param invalid") — 29080 is unrelated to the game API's area. Cost one round-trip to discover; don't trust a decoded uid's leading number without checking the API's actual response code first. **The uid does not carry the account's region at all** — see the region-id entry below for where the real `nikke_area_id` comes from.
 - **`nikke_area_id` is the game SERVER REGION, and 81 is Japan — not "international".** The authoritative list is `GET https://api.blablalink.com/api/lip/direct/commodity/Game/GetRegionList?game_id=29080`, which returns `area_list`: **81 Japan · 82 NA · 83 Korea · 84 Global · 85 SEA**. This project hardcoded 81 everywhere and called it "the international server" for weeks; that survived only because both accounts it was ever tested against were Japan-region. The first Korea-region account broke it: `GetUserCharacters` with area 81 for a KR `open_id` fails `code 1303002` ("proxy.GetUserShiftyspadPrivacy error") even when the target's ShiftyPad visibility IS public — the privacy record is looked up in the wrong region, so a region mismatch is indistinguishable from a privacy problem by its error message alone. **Lesson: a constant that happens to work for every sample you have is not a constant.** The value was only discoverable from blablalink's own region-list endpoint, not from the share URL, not from the account, and not by inference.
 - **A failing first call can be reported as a failure of the SECOND one.** The bookmarklet's `GetUserCharacters` result is read as `(await call(...)).characters||[]`, so when that call is the one that breaks, the `||[]` flattens it into an empty roster and the NEXT call (`GetUserCharacterDetails` with `name_codes: []`) is what raises the visible error — `param invalid`, pointing at the wrong endpoint and the wrong parameter. Diagnosing it required a probe that reported every call's own `code` instead of stopping at the first throw. **When an error names a step, check that the step before it actually succeeded** — a defaulting `||` between two calls will hide the real one.

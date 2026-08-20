@@ -42,10 +42,13 @@ jobs:
       # 실패해도 항상 초록이었다. v0.1.0~v0.1.3이 그렇게 나갔다: 로그에는
       # "FAIL: no units"가 찍혀 있는데 단계는 success였다. `-Wait -PassThru`가
       # 진짜 종료 코드를 준다(실측: 직접 호출은 LASTEXITCODE가 비어 있고 이쪽은 1).
+      # `-NoNewWindow`가 필요하다: 이것 없이 띄우면 콘솔이 없어 selftest의 서버
+      # 스레드가 20초 안에 안 뜨고, 성한 빌드도 "backend did not answer"로 죽는다
+      # (실측: 상속 2.0초 통과 / 분리 21.2초 실패). 출력도 이것이 있어야 로그에 남는다.
       - name: Smoke the built app
         run: |
           $app = Start-Process -FilePath dist\RapiLab\RapiLab.exe `
-                               -ArgumentList '--selftest' -Wait -PassThru
+                               -ArgumentList '--selftest' -Wait -PassThru -NoNewWindow
           $log = "$env:LOCALAPPDATA\RapiLab\selftest.log"
           if (Test-Path $log) { Get-Content $log }
           if ($app.ExitCode -ne 0) {

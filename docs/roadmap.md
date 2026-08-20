@@ -1125,6 +1125,50 @@
       급하지 않다는 판단 근거: 둘 다 덱 총합 대비 3% 미만이고 시각 이동은
       2초(전투 180초의 1.1%)뿐이다.
 
+### v0.1.3 배포 사고 — 니케 풀이 v0.1.0부터 0개로 나가고 있었다, 스모크는 못 막았다 (2026-08-21, 커밋 `e8d34bb0`·`6d4aefd9`)
+
+- [x] **사고 ④ — v0.1.0~v0.1.3 전부 니케 풀 0개로 배포됐다.**
+      `data/dotgg/`·`data/lootandwaifus/`·`data/shiftypad/`가 통째로
+      gitignore 대상이라 CI 러너가 클론하면 아예 없고, PyInstaller는 있는
+      것만 담으므로 릴리즈 번들의 `_internal/data`가 3개 파일(0.4MB)뿐이었다
+      (`/api/supported-units`가 빈 목록). 진단의 결정적 한 수: 떠 있는
+      배포본의 엔진 버전이 로컬 빌드와 **동일**(`0257ef4c860e`)했다 — 같은
+      코드인데 로컬 107개/배포본 0개라면 코드가 아니라 데이터. 번들 비교로
+      확정(내 빌드 382파일/24.7MB 대 배포본 3파일/0.4MB). 고침: 파싱된
+      json만 커밋한다(dotgg 85·lootandwaifus 94·shiftypad 16, 195파일
+      3.1MB) — 원본 스크랩(`*.html`·`data/shiftypad/raw/`, 26.5MB)은 계속
+      무시. 상세: `docs/decisions.md`·`docs/insights.md`.
+- [x] **스모크 자신이 이 사고를 못 막았다 — windowed exe가 셸에 종료 코드를
+      안 준다.** CI 로그에는 `FAIL: no units - data path is wrong inside
+      the bundle`이 찍혀 있는데 워크플로 단계는 **success**였다.
+      `console=False` exe를 직접 호출하면 셸이 기다리지 않는다(실측:
+      직접 호출은 `$LASTEXITCODE`가 비어 있고, `Start-Process -Wait
+      -PassThru`는 ExitCode 1을 준다). 고침:
+      `.github/workflows/release.yml`을 `Start-Process -Wait -PassThru` +
+      ExitCode 검사로 바꾸고 `selftest.log`를 CI 로그에 함께 찍는다 —
+      **selftest ②는 처음부터 릴리즈를 막을 수 없는 자리에 있었다.**
+- [x] **검증**: 깨끗한 클론에서 `data/`가 198파일 3.1MB로 들어오고
+      `supported_units()`가 **107개**를 냄을 확인. 스테이징 195개 전부
+      json(html·raw 0개), 개인 식별 정보(닉네임/open_id/uid) 0건. 프론트
+      **1030 passed / 80 files** · 타입 0 · lint 0 · 백엔드 **2614 passed /
+      3 skipped + 1 실패**(`test_pick_port_steps_past_one_that_is_taken`,
+      Fienn이 켜 둔 v0.1.3 앱이 41573을 잡고 있어 테스트 자신의 bind()가
+      실패한 것 — 기록된 환경 충돌이고 회귀 아님). 엔진 능력은 안 건드렸다
+      (`engine-capabilities.md` 변경 없음).
+- **릴리즈 절차 갱신(이 사고로 확정, 아래 v0.1.2 절차에 (3) 추가)**:
+  (3) 스모크가 CI에서 **실제로 릴리즈를 막는다**는 것은 더는 가정이 아니라
+  `Start-Process -Wait -PassThru`로 코드 검증된 사실이다 — 그전까지는
+  가드가 FAIL을 찍어도 워크플로가 초록일 수 있었다. 그리고 "받아서
+  실행해 본다"는 습관(아래 v0.1.2 절차 (2))이 이번에도, 그러니까 **세
+  번째로**(MOTW 크래시 · 낡은 태그 · 이번 빈 데이터) 자동화가 못 잡은
+  사고를 잡았다.
+- **남은 것(백로그)**: 로컬 빌드와 CI 빌드가 서로 다른 번들을 만든다 —
+  `packaging/rapilab.spec`이 `data/` 전체를 담으므로 로컬 빌드는 원본
+  스크랩 23MB까지 싣고 CI 빌드는 안 싣는다. 지금은 양쪽 다 동작하지만
+  (런타임이 읽는 json은 둘 다 있다) **아티팩트가 다르다는 것 자체가 이번
+  사고를 숨긴 조건**이었다. spec이 담을 하위 디렉터리를 명시하면 둘이
+  같아진다.
+
 ### v0.1.2 배포 사고 — 받아서 실행하면 안 켜졌다, 태그도 낡아 있었다 (2026-08-20, 커밋 `e7e66291`)
 
 - [x] **사고 ① — Mark-of-the-Web: 받아서 푼 `RapiLab.exe`가 실행 즉시 크래시.**
