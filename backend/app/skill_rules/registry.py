@@ -1544,6 +1544,32 @@ STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY = frozenset({
     "takina-inoue",
 })
 
+# 톡톡이 후보가 손으로 치는 **풀차지**의 멈춤, 그녀를 수동으로 재기 전까지.
+#
+# 후보라는 것은 그 좌석을 손으로 친다는 뜻이고, 그러면 그녀가 매거진에 섞어 쏘는
+# **풀차지도 수동**이다. `TIMED_CHARGE_MOTION_DELAY`의 자동 판독은 다른 조작을 잰
+# 값이라 여기서는 틀렸다 - 아인에서 그 차이가 **8.4프레임**이었다.
+#
+# 값은 아인의 수동 판독에서 옮겨 온다: `발간격 73.643f - 파일차지 56f = 17.643f`.
+# 실측 딜레이 14.143f가 아니라 이 값인 이유는 엔진이 `간격 = 파일차지 + 딜레이`로
+# **파일** 차지와 짝짓기 때문이고, 그 3.5프레임 차이가 **풀차지 도달을 눈으로 확인하는
+# 반응시간**이다(docs/measurements/ein-tap-fire.md). 톡톡이 샷에는 그 항이 없다 -
+# 게이지를 볼 필요가 없으니 놓으면 끝이라, `TAP_FIRE_INTERVAL`은 손 케이던스 그대로다.
+# 풀차지에만 잠금값 14.143f를 주면 **양쪽이 다른 손을 가정**하게 되어 비교가 풀차지에
+# 불리해진다.
+#
+# 옮겨 와도 되는 근거: 반응시간은 **플레이어의 상수**이고, 잠금은 자동 판독에서 유닛별
+# 차이가 작았다(아인 22.524f · 밀크 21.889f). 그래도 이것은 **stand-in이지 밀크의
+# 실측이 아니다** - 그녀를 수동으로 재면 이 항목은 사라진다.
+#
+# 앨리스는 여기 없다. 그녀는 처음부터 수동으로 쟀으므로 `TIMED_CHARGE_MOTION_DELAY`의
+# 15프레임이 이미 맞는 조작의 값이다.
+ASSUMED_MANUAL_CHARGE_MOTION_DELAY_SECONDS = 17.643 / 60
+
+TAP_FIRE_MANUAL_MOTION_DELAY = {
+    "milk-blooming-bunny": ASSUMED_MANUAL_CHARGE_MOTION_DELAY_SECONDS,
+}
+
 _CHARGE_MOTION_DELAY = {
     # Both stand-in groups carry the same value - they differ in whether anyone
     # is still going to measure them, not in what the engine does with them.
@@ -1552,6 +1578,9 @@ _CHARGE_MOTION_DELAY = {
     # A measured answer always wins over the stand-in, including a measured zero.
     **TIMED_CHARGE_MOTION_DELAY,
     **{slug: 0.0 for slug in NO_CHARGE_MOTION_DELAY | INFERRED_NO_CHARGE_MOTION_DELAY},
+    # 조작이 맞는 값은 조작이 틀린 실측을 이긴다 - 위 절 참고. 마지막에 오는 이유가
+    # 그것이다: 밀크의 22프레임은 진짜 측정이지만 **자동사격의** 측정이다.
+    **TAP_FIRE_MANUAL_MOTION_DELAY,
 }
 
 
@@ -1580,12 +1609,13 @@ def get_charge_motion_delay(slug):
 # 다르다** - 톡톡이 후보에게는 수동 멈춤을 재야 한다
 # (docs/measurements/ein-tap-fire.md, milk-blooming-bunny-tap-fire.md).
 #
-# ⚠ **그래서 밀크가 지금 어긋나 있다.** 후보라는 것은 그녀를 손으로 친다는 뜻인데
-# `optimal_full_charges`에 넘어가는 풀차지 멈춤은 그녀의 **자동** 값 22프레임이다
+# **그래서 밀크가 어긋나 있었다.** 후보라는 것은 그녀를 손으로 친다는 뜻인데
+# `optimal_full_charges`에 넘어가는 풀차지 멈춤이 그녀의 **자동** 값 22프레임이었다
 # (`attack_rate`의 호출부가 `charge_motion_delay`를 그대로 넘긴다). 그녀의 수동 멈춤은
-# 아직 안 쟀다. 아인의 수동 환산값 17.643f를 대입해 보면 정상상태 DPS가 160.56 →
-# 163.04로 오르고 톡톡이 이득이 10.76% → 7.74%로 줄어든다 - 케이던스 선택 자체는 안
-# 바뀐다(Pierce 창이 매거진당 풀차지 1발을 강제한다). **실측 전까지는 건드리지 않는다.**
+# 아직 실측이 없으므로 아인의 수동 환산값 17.643f를 옮겨 왔다 -
+# `TAP_FIRE_MANUAL_MOTION_DELAY`(Fienn 결정, 2026-08-20). 그녀의 정상상태 DPS가
+# 160.56 → 163.04로 오르고 톡톡이 이득은 10.76% → 7.74%로 줄어든다. **케이던스 선택
+# 자체는 안 바뀐다** - Pierce 창이 매거진당 풀차지 1발을 강제하기 때문이다.
 #
 # 실측이 없는 유닛은 여전히 멈춤으로 대신한다 - 그것이 지금까지의 동작이고, 값을
 # 모른다는 사실이 후보 자격을 막는 것은 `TAP_FIRE_CANDIDATES`가 옵트인이라는 사실
@@ -1594,8 +1624,10 @@ TAP_FIRE_INTERVAL = {
     # 앨리스: 톡톡이 발 간격 15.38f(n=8) - 그녀의 멈춤 14.75f와 같은 15프레임에 앉는다
     # (docs/measurements/alice-tap-fire.md).
     "alice": 15 / 60,
-    # 밀크: 14.810f(n=21, sd 0.602, 13~16). 그녀의 표 안 멈춤 22프레임과 다른 값인데,
-    # 그 22프레임이 **자동** 판독이기 때문이다 - 위 절 참고.
+    # 밀크: 14.810f(n=21, sd 0.602, 13~16). 그녀의 `get_charge_motion_delay`
+    # 17.643f와 아직 2.6프레임 다른데, 그것이 **눈으로 확인하는 반응시간**이다 -
+    # 풀차지는 게이지가 차는 걸 보고 놓아야 하고 톡톡이는 그냥 놓는다. 표 안의
+    # 22프레임과 벌어져 있던 8.4프레임 쪽은 자동/수동 차이였다 - 위 절 참고.
     "milk-blooming-bunny": 15 / 60,
 }
 

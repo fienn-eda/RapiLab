@@ -18,6 +18,7 @@ from app.skill_rules.registry import (  # noqa: E402
     INFERRED_NO_CHARGE_MOTION_DELAY,
     NO_CHARGE_MOTION_DELAY,
     STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY,
+    TAP_FIRE_MANUAL_MOTION_DELAY,
     TIMED_CHARGE_MOTION_DELAY,
     _ASSUMED_CHARGE_MOTION_DELAY,
     get_charge_motion_delay,
@@ -36,6 +37,30 @@ def test_milk_is_timed_at_the_frame_her_reading_lands_on():
     the stand-in carries - so registering her moves no damage, and the point of
     the entry is that it is now a measurement rather than a guess."""
     assert TIMED_CHARGE_MOTION_DELAY["milk-blooming-bunny"] == 22 / 60
+
+
+def test_milks_auto_reading_stays_on_record_even_though_she_is_played_by_hand():
+    """그녀를 손으로 치는 좌석으로 모델링한다고 해서 자동 판독이 틀린 것이 되지는 않는다.
+
+    21.889f(n=9)는 여전히 그녀의 **자동** 멈춤 실측이고 stand-in 22프레임을 떠받치는
+    네 근거 중 하나다. 갈아타는 것은 **엔진이 쓰는 값**뿐이다 —
+    `TAP_FIRE_MANUAL_MOTION_DELAY`가 조작에 맞는 값으로 덮는다. 이 테스트는 누가
+    「중복이네」 하며 둘 중 하나를 지우면 깨진다.
+    """
+    assert TIMED_CHARGE_MOTION_DELAY["milk-blooming-bunny"] == 22 / 60
+    assert get_charge_motion_delay("milk-blooming-bunny") == 17.643 / 60
+
+
+def test_only_a_tap_fire_candidate_ever_overrides_her_timed_reading():
+    """수동 멈춤이 자동 실측을 이기는 것은 **손으로 치는 좌석에서만** 옳다.
+
+    자동으로 도는 좌석에 수동값을 주면 그 유닛을 아무도 못 내는 속도로 쏘게 만든다
+    (아인에서 8.4프레임). 앨리스는 처음부터 수동으로 쟀으므로 이 표에 있으면 안 된다 —
+    그녀의 `TIMED_CHARGE_MOTION_DELAY` 값이 이미 맞는 조작의 값이다.
+    """
+    for slug in TAP_FIRE_MANUAL_MOTION_DELAY:
+        assert is_tap_fire_candidate(slug), slug
+    assert "alice" not in TAP_FIRE_MANUAL_MOTION_DELAY
 
 
 def test_ein_carries_her_auto_reading_and_not_her_manual_one():
@@ -69,8 +94,12 @@ def test_a_timed_unit_is_never_carrying_a_stand_in():
 
 def test_status_for_separates_the_accepted_stand_in_from_the_open_question():
     assert audit.status_for("rouge") == "stand-in (accepted)"
-    assert audit.status_for("milk-blooming-bunny") == "TIMED"
     assert audit.status_for("mint") == "TIMED"
+    # 밀크는 실측이 있는데도 TIMED가 아니다 - 그 실측이 **자동사격**이고 그녀는 손으로
+    # 치는 좌석이라 수동 stand-in이 덮기 때문이다. 감사가 그녀를 TIMED로 찍으면
+    # **빌려온 숫자를 「쟀다」는 라벨 아래** 인쇄하게 된다.
+    assert audit.status_for("milk-blooming-bunny") == "manual stand-in"
+    assert audit.status_for("ein") == "TIMED"
     assert audit.status_for("liberalio") == "none (confirmed)"
     assert audit.status_for("cinderella") == "none (confirmed)"
 

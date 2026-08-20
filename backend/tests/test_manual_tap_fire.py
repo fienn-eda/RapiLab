@@ -178,14 +178,24 @@ def test_a_unit_that_is_not_a_candidate_never_taps():
                for r in records)
 
 
-def test_milks_tap_interval_is_not_her_motion_delay():
-    """밀크의 두 실측은 다른 값이다 — 톡톡이 14.810f(n=21) 대 멈춤 21.889f(n=9),
-    약 16시그마. 앨리스에서 둘이 같게 나온 것은 우연이었고, 그녀에게 멈춤을
-    톡톡이 간격으로 주면 발수를 32% 과소평가한다(참 발수가 그 추정의 1.48배).
-    docs/measurements/milk-blooming-bunny-tap-fire.md
+def test_milks_tap_interval_is_not_her_full_charge_pause():
+    """두 값이 다른 이유는 유닛 차이가 아니라 **조작**이다.
+
+    한동안 이 자리는 「멈춤 21.889f(n=9) 대 톡톡이 14.810f(n=21), 약 16시그마」를
+    밀크라는 유닛에 대한 사실로 읽었다. 아인이 같은 계정에서 두 조작을 다 재서
+    갈랐다 — 자동 22.524f · 수동 14.143f · 톡톡이 14.826f. 그 8.4프레임은 **자동 대
+    수동**이었고, 밀크의 22프레임은 자동 판독이라 **손으로 치는 좌석의 풀차지 비용으로는
+    틀린 값**이었다. 지금은 아인의 수동 환산값을 진다(`TAP_FIRE_MANUAL_MOTION_DELAY`).
+
+    남은 2.6프레임 차이는 **풀차지 도달을 눈으로 확인하는 반응시간**이다 — 톡톡이엔
+    그 항이 없다(게이지를 볼 필요가 없으니 그냥 놓는다). 그래서 두 표는 여전히 따로
+    있어야 하고, 이 테스트가 그 둘이 붙어 버리는 것을 막는다.
+
+    docs/measurements/ein-tap-fire.md, milk-blooming-bunny-tap-fire.md
     """
     assert get_tap_fire_interval("milk-blooming-bunny") == pytest.approx(15 * FRAME_SECONDS)
-    assert get_charge_motion_delay("milk-blooming-bunny") == pytest.approx(22 * FRAME_SECONDS)
+    assert get_charge_motion_delay("milk-blooming-bunny") == pytest.approx(
+        17.643 * FRAME_SECONDS)
 
 
 def test_alices_two_values_agree_so_she_does_not_move():

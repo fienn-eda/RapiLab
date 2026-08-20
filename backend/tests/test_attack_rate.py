@@ -765,11 +765,15 @@ def test_an_untimed_charge_weapon_carries_the_measured_stand_in_not_zero():
     from app.skill_rules.registry import (ASSUMED_CHARGE_MOTION_DELAY_SECONDS,
                                           INFERRED_NO_CHARGE_MOTION_DELAY,
                                           NO_CHARGE_MOTION_DELAY,
+                                          TAP_FIRE_MANUAL_MOTION_DELAY,
                                           TIMED_CHARGE_MOTION_DELAY,
                                           get_charge_motion_delay)
 
     assert ASSUMED_CHARGE_MOTION_DELAY_SECONDS == pytest.approx(22 / 60)
-    for slug in ("maiden-ice-rose", "red-hood", "takina-inoue", "ein"):
+    # Ein used to be in this list and no longer belongs: she was timed on
+    # 2026-08-20 and her auto reading landed on the same 22 frames, so she stops
+    # being an example of "nobody looked" without any number moving.
+    for slug in ("maiden-ice-rose", "red-hood", "takina-inoue"):
         assert get_charge_motion_delay(slug) == pytest.approx(22 / 60), slug
     # Cinderella is not one of them either, but for the opposite reason: the
     # 10/29 she used to carry was never a pause, it was her weapon's 180
@@ -779,7 +783,16 @@ def test_an_untimed_charge_weapon_carries_the_measured_stand_in_not_zero():
     # A measured answer always wins over the stand-in, in both directions.
     for slug in NO_CHARGE_MOTION_DELAY | INFERRED_NO_CHARGE_MOTION_DELAY:
         assert get_charge_motion_delay(slug) == 0.0, slug
+    # One exception, and it is NOT about precedence between guess and
+    # measurement: a tap-fire candidate is played BY HAND, so her manual pause
+    # overrides an AUTO measurement of the same unit
+    # (registry.TAP_FIRE_MANUAL_MOTION_DELAY). The timed reading is not wrong -
+    # it is a reading of the other input, and Ein measured the two 8.4 frames
+    # apart. Milk: Blooming Bunny is the only unit in that position today.
     for slug, delay in TIMED_CHARGE_MOTION_DELAY.items():
+        if slug in TAP_FIRE_MANUAL_MOTION_DELAY:
+            assert get_charge_motion_delay(slug) == TAP_FIRE_MANUAL_MOTION_DELAY[slug], slug
+            continue
         assert get_charge_motion_delay(slug) == pytest.approx(delay), slug
 
 

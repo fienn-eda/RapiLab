@@ -32,8 +32,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.attack_rate import FRAME_SECONDS, generate_segmented_shots
+from app.skill_rules.registry import (
+    get_charge_motion_delay, get_full_charge_window, get_tap_fire_interval)
 
-WINDOW = 6.0
+SLUG = "milk-blooming-bunny"
+# 창·멈춤·톡톡이 간격은 **레지스트리에 묻는다.** 한동안 여기 상수로 박혀 있었고
+# (`charge_motion_delay = 22 * FRAME_SECONDS`), 2026-08-20에 그녀의 멈춤이 자동값
+# 22프레임에서 수동 stand-in 17.643프레임으로 바뀌었을 때 **이 스크립트만 옛 값으로
+# 계속 초록을 찍었다.** 검산 도구가 엔진과 다른 숫자를 세면 검산이 아니다.
+WINDOW = get_full_charge_window(SLUG)
 # 창 위반(Pierce 창 초과) 스캔 전용 - 매거진 몇 개 안에서 이미 드러나는 질문이라
 # 짧아도 안전하다. **이득 비율에는 안 쓴다** - 위 docstring 참고.
 FIGHT = 30.0
@@ -47,8 +54,8 @@ def milk_weapon(max_ammo=6, reload_time=2.0):
     return {
         "weapon": "SR", "charge_time": 1.0, "charge_damage_percent": 250.0,
         "damage_percent": 100.0, "max_ammo": max_ammo, "reload_time": reload_time,
-        "charge_motion_delay": 22 * FRAME_SECONDS, "tap_fire": True,
-        "tap_fire_interval": 15 * FRAME_SECONDS, "full_charge_window": WINDOW,
+        "charge_motion_delay": get_charge_motion_delay(SLUG), "tap_fire": True,
+        "tap_fire_interval": get_tap_fire_interval(SLUG), "full_charge_window": WINDOW,
     }
 
 

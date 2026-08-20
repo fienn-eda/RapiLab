@@ -56,6 +56,7 @@ from app.skill_rules.registry import (  # noqa: E402
     INFERRED_NO_CHARGE_MOTION_DELAY,
     NO_CHARGE_MOTION_DELAY,
     STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY,
+    TAP_FIRE_MANUAL_MOTION_DELAY,
     TIMED_CHARGE_MOTION_DELAY,
     _BUILDERS,
     get_charge_motion_delay,
@@ -87,7 +88,17 @@ def _base_candidates(slug):
 
 
 def status_for(slug):
-    """Which of the six answers this unit has about her fire-to-charge pause."""
+    """Which answer this unit has about her fire-to-charge pause.
+
+    The manual check comes FIRST because it is the only status that can shadow a
+    real measurement. A tap-fire candidate is played by hand, so an auto reading
+    of her is a reading of the wrong input and
+    `registry.TAP_FIRE_MANUAL_MOTION_DELAY` overrides it - reporting her as
+    TIMED would print a borrowed number under a label that promises a measured
+    one.
+    """
+    if slug in TAP_FIRE_MANUAL_MOTION_DELAY:
+        return "manual stand-in"
     if slug in TIMED_CHARGE_MOTION_DELAY:
         return "TIMED"
     if slug in NO_CHARGE_MOTION_DELAY:
@@ -127,16 +138,19 @@ def main():
         floor = charge_interval_floor_for(slug)
         rows.append((status, slug, weapon or "?", get_charge_motion_delay(slug), floor))
 
-    order = {"TIMED": 0, "assumed": 1, "stand-in (accepted)": 2,
-             "none (confirmed)": 3, "none (inferred)": 4, "UNVERIFIED": 5}
+    order = {"TIMED": 0, "manual stand-in": 1, "assumed": 2,
+             "stand-in (accepted)": 3, "none (confirmed)": 4,
+             "none (inferred)": 5, "UNVERIFIED": 6}
     print(f"{'status':<19} {'unit':<38} {'wpn':<4} {'delay':>6} {'floor':>7}")
     for status, slug, weapon, delay, floor in sorted(rows, key=lambda r: (order[r[0]], r[1])):
         shown = f"{floor:.3f}" if floor is not None else "-"
         print(f"{status:<19} {slug:<38} {weapon:<4} {delay:>6.2f} {shown:>7}")
 
     accepted = [r for r in rows if r[0] == "stand-in (accepted)"]
+    manual = [r for r in rows if r[0] == "manual stand-in"]
     print(f"\n{len(rows)} charge-weapon units: "
           f"{sum(1 for r in rows if r[0] == 'TIMED')} timed, "
+          f"{len(manual)} manual stand-in, "
           f"{sum(1 for r in rows if r[0] == 'assumed')} assumed, "
           f"{len(accepted)} stand-in accepted, "
           f"{sum(1 for r in rows if r[0] == 'none (confirmed)')} confirmed none, "
@@ -146,6 +160,14 @@ def main():
         print(f"\n{len(accepted)} units keep the stand-in as their answer - measuring them")
         print("was scored and would not move a recommendation "
               "(scripts/measure_charge_delay_sensitivity.py).")
+    if manual:
+        print(f"\n{len(manual)} tap-fire candidate(s) carry a MANUAL pause borrowed from"
+              " another unit's")
+        print("reading, because they are played by hand and their own manual pause is")
+        print("unmeasured. Unlike the accepted stand-in this one MOVES a number - Milk's")
+        print("tap-fire gain read 10.76% on her auto pause and 7.74% on this one - so it")
+        print("is worth a clock, and the exit code stays 0 only because a value is in place.")
+        print("   " + ", ".join(sorted(r[1] for r in manual)))
     unanswered = [r for r in rows if is_unanswered(r[0])]
     if unanswered:
         # Only explain the statuses actually present - a note about `assumed`
