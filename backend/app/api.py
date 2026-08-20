@@ -88,6 +88,18 @@ class BossProfileIn(BaseModel):
     elemental_interrupt_required: bool = False
 
 
+class RotationGuideEntry(BaseModel):
+    """가이드 타임라인의 한 줄.
+
+    `at`은 전투 시작으로부터 경과 초로 `part_destruction_times`와 같은 단위다 -
+    화면은 남은 시간(3:00 → 0:00)으로 뒤집어 보여주지만 저장은 경과로 한다.
+    그래야 전투 시간을 바꿔도 이벤트가 전투 시작에 그대로 붙어 있는다.
+    `None`은 시각에 매이지 않는 「상시」 항목이다.
+    """
+    at: float | None = None
+    text: str
+
+
 class RotationBoss(BaseModel):
     """공지가 적은 보스 하나.
 
@@ -118,6 +130,14 @@ class RotationBoss(BaseModel):
     # 잡몹이 주기적으로 생성되는가. 공지가 「소환」을 적더라도 그것만으로 켜지
     # 않는다 - 나오는 잡몹을 실제로 쳐야 하는지는 그 보스와 싸워 봐야 안다.
     spawns_adds: bool = False
+    # 이 보스를 상대하는 요령. 공지가 아니라 그 보스와 싸워 본 사람이 적는다.
+    # 엔진은 안 읽는다 - 시즌 가이드 카드의 세로 타임라인이 기본 내용으로 깔고,
+    # 사용자가 앱에서 고치면 그쪽(localStorage)이 이긴다.
+    #
+    # **여기 선언이 없으면 로더는 통과시키는데 라우트가 조용히 떨어뜨린다** -
+    # 데이터 파일에 가이드를 적어도 앱에는 안 뜨고, 그 사실은 가이드를 처음
+    # 적는 날에야 드러난다. stated가 같은 자리다.
+    guide: list[RotationGuideEntry] = []
     stated: dict[str, str | list[str]] = {}
 
 
