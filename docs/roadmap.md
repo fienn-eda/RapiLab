@@ -1042,19 +1042,24 @@
 - [x] **시즌 가이드 카드** — `components/SeasonGuideCard.tsx` +
       `hooks/useBossGuides.ts`(localStorage 키 `nikke-boss-guides`, 항목 키는
       `${rotation.id}::${boss_name}`). 뱃지 줄(약점·거리·기믹) + Fienn이 직접
-      쓰는 공략 문장(테두리 없는 textarea). **1단계는 localStorage 전용 —
-      릴리즈 빌드에 안 실린다**(아래 2단계 백로그). 상세: `docs/decisions.md`.
-- [x] **전투 타임라인** — `components/FightTimeline.tsx`, `fight_duration`·
-      `part_destruction_times`를 SVG 눈금 한 줄로. **잠정**(Fienn: 일단 넣고
-      앱에 띄워 본 뒤 남길지 정한다). `part_destructible`이 꺼져 있거나 시각이
-      없으면 안 그린다.
+      쓰는 이벤트 목록(`GuideEvent[]`, 세로 타임라인 안에서 편집 — 아래
+      「전투 타임라인」 참고). **1단계는 localStorage 전용 — 릴리즈 빌드에 안
+      실린다**(아래 2단계 백로그). 상세: `docs/decisions.md`.
+- [x] **전투 타임라인** — `components/FightTimeline.tsx`, 세로 이벤트 목록.
+      `fight_duration`·`part_destruction_times`(읽기 전용, 자동 ◆)와 Fienn이
+      직접 적는 패턴(직접 ◯, 시각 없는 「상시」도 가능)이 한 줄씩 선다. 시각은
+      잔여시간(mm:ss)으로 보여주고 경과 초로 저장한다(`lib/fightClock.ts`).
+      **개정으로 자유 문장 textarea를 대체했다 — 더는 잠정이 아니다.**
+      `part_destructible`이 꺼져 있거나 시각이 없으면 안 그린다. 상세:
+      `docs/decisions.md`.
 - [x] 검증: 새 파일마다 테스트 한 벌 + `RecommendPanel.test.tsx` 11곳을 「먼저
       펼치기」 헬퍼(`expandBossProfile`)로 정정, `App.test.tsx`도 솔로 탭 진입
       시 보스 설정을 펼치도록 보강. 백엔드 파일은 **한 개도 안 건드렸다**(스키마
-      무변경) — `engine-capabilities.md`도 변경 없음(확인 완료). 최종 확인
-      (2026-08-20): 프론트 **1006 passed / 79 files**, 타입에러 0, lint 에러 0
-      (경고만, 전부 이 브랜치 밖의 기존 항목) · 백엔드 **2597 passed / 3
-      skipped**(이 브랜치는 건드리지 않았고 손 안 댄 채로 재확인만 했다).
+      무변경) — `engine-capabilities.md`도 변경 없음(확인 완료). 세로 타임라인
+      개정(`6d36f627`·`b8053063`·`2571dac1`) 뒤 최종 확인(2026-08-20):
+      프론트 **1022 passed / 80 files**, 타입에러 0, lint 에러 0(경고만,
+      전부 이 브랜치 밖의 기존 항목) · 백엔드는 이 브랜치가 건드리지 않는다
+      (직전 확인 **2597 passed / 3 skipped**에서 무변화).
 - [x] `docs/decisions.md`·`docs/insights.md` 갱신.
 
   설계: `docs/superpowers/specs/2026-08-20-solo-raid-setup-layout-design.md`,
