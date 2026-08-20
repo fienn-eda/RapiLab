@@ -13,7 +13,7 @@ STDLIB = set(sys.stdlib_module_names)
 LOCAL = {"app", "tests"}
 
 # 임포트 이름과 배포 이름이 다른 것들.
-IMPORT_TO_PACKAGE = {"webview": "pywebview"}
+IMPORT_TO_PACKAGE = {"webview": "pywebview", "clr": "pythonnet"}
 
 # pythonnet이 CLR에서 노출하는 이름들 - pip에는 없고 `clr.AddReference`가 만든다.
 # 셸이 WebView2 이벤트를 다루려면 `Microsoft.Web.WebView2.Core`를 임포트해야

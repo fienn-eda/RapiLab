@@ -34,6 +34,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from app.paths import bundle_root
+
 HOST = "127.0.0.1"
 WINDOW_TITLE = "RapiLab"
 STARTUP_TIMEOUT = 20.0
@@ -112,12 +114,53 @@ def _serve(port: int) -> None:
     uvicorn.run(build_app(), host=HOST, port=port, log_level="warning")
 
 
+def _clear_zone_marks(root: Path) -> int:
+    """`root` 아래 파일들에서 Zone.Identifier 스트림을 지우고 지운 수를 돌려준다.
+
+    한 파일을 못 지워도 멈추지 않는다 - 하나 때문에 앱이 못 뜨면 사용자에게는
+    고치기 전과 똑같다.
+    """
+    removed = 0
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        try:
+            os.remove(f"{path}:Zone.Identifier")
+        except OSError:
+            # 표시가 아예 없거나(대부분) 잠겨서 못 지운다. 둘 다 할 일이 없다.
+            continue
+        removed += 1
+    return removed
+
+
+def unblock_bundle() -> int:
+    """번들에서 「인터넷에서 받음」 표시를 지운다. 지운 파일 수를 돌려준다.
+
+    브라우저로 받은 zip에는 Zone.Identifier(대체 데이터 스트림)가 붙고, **탐색기의
+    압축 해제가 그 표시를 푼 파일 전부에 전파한다** - v0.1.2 배포본은 364개 중
+    363개가 표시된 채였다. .NET Framework의 어셈블리 로더는 그렇게 표시된 DLL을
+    거부하므로 pythonnet의 `Python.Runtime.dll`을 못 읽고, pywebview가 창을
+    띄우기도 전에 죽는다(`RuntimeError: Failed to resolve
+    Python.Runtime.Loader.Initialize`).
+
+    사람이 폴더를 우클릭해 차단 해제하면 풀리지만, 받아서 더블클릭한 사람이
+    트레이스백을 먼저 만나는 것은 기본값으로 나쁘다. 그 시점에 파이썬은 이미
+    돌고 있으므로(죽는 것은 .NET 적재다) 앱이 스스로 지운다.
+
+    얼렸을 때만, Windows에서만 돈다 - 개발 트리에는 그런 표시가 붙지 않고,
+    남의 소스 디렉터리를 훑을 이유도 없다.
+    """
+    if not getattr(sys, "frozen", False) or os.name != "nt":
+        return 0
+    return _clear_zone_marks(bundle_root())
+
+
 def selftest() -> int:
     """창을 열지 않고 얼린 빌드가 성한지 확인한다. 성공하면 0.
 
     이것이 있는 이유: 얼린 앱은 포트를 OS에게 받으므로 밖에서 접근할 방법이
     없고, 그러면 릴리스를 사람이 눌러보는 것 외에 검증할 길이 없다. 여기서
-    보는 넷은 전부 "얼렸을 때만" 깨질 수 있는 것들이다.
+    보는 다섯은 전부 "얼렸을 때만" 깨질 수 있는 것들이다.
 
         RapiLab.exe --selftest
 
@@ -175,6 +218,20 @@ def selftest() -> int:
             report("FAIL: process pool returned the wrong answer")
             return finish(1)
     report("process pool: ok")
+
+    # ⑤ 창을 띄우는 백엔드 - pywebview의 winforms는 pythonnet을 통해 .NET을
+    # 적재하는데, 그 적재는 **얼렸을 때만** 깨진다(번들된 Python.Runtime.dll을
+    # 못 읽는다). 창을 실제로 열지는 않는다: 여기서 보려는 것은 「적재가 되는가」
+    # 이고, 창을 열면 사람의 화면을 뺏는 데다 CI에서는 띄울 데스크톱도 없다.
+    #
+    # v0.1.2가 이 자리를 안 보고 나갔다 - selftest는 넷 다 초록인데 받아서
+    # 실행하면 트레이스백이 떴다.
+    try:
+        import clr  # noqa: F401  (pythonnet - winforms 백엔드가 이것으로 .NET을 연다)
+    except Exception as exc:  # pythonnet은 RuntimeError/ImportError 둘 다 낸다
+        report(f"FAIL: GUI backend cannot load .NET - {exc}")
+        return finish(1)
+    report("gui backend: ok")
     return finish(0)
 
 
@@ -301,6 +358,9 @@ def guard_webview() -> None:
 
 def main() -> None:
     multiprocessing.freeze_support()
+    # .NET을 건드리는 것보다 먼저. 받아서 푼 번들은 파일마다 「인터넷에서 받음」
+    # 표시를 달고 있고, 그 표시가 있으면 pywebview가 창을 못 띄운다.
+    unblock_bundle()
     if "--selftest" in sys.argv[1:]:
         raise SystemExit(selftest())
 

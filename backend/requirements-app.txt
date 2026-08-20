@@ -7,5 +7,9 @@
 
 # 네이티브 창. Windows 백엔드는 pythonnet + WebView2를 쓴다.
 pywebview
+# pywebview가 끌고 오지만, selftest가 `import clr`로 **직접** 확인한다 -
+# .NET 적재는 얼렸을 때만 깨지는 자리라 창을 열기 전에 봐야 한다(desktop.selftest ⑤).
+# 직접 임포트하는 것은 직접 선언한다: 이 파일의 존재 이유가 "내 PC에서는 되던데"다.
+pythonnet
 # 얼리는 도구. scripts/build_app.py가 spec과 함께 호출한다.
 pyinstaller

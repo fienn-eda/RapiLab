@@ -5,6 +5,7 @@
 것은 창을 열기 **전에** 서버가 실제로 응답하는지 기다리는 부분이다 - 그것이
 없으면 빈 창이 뜨고, 그 증상은 "앱이 안 켜진다"로 보고된다.
 """
+import os
 import socket
 import sys
 import threading
@@ -122,6 +123,98 @@ def restart_probe(monkeypatch):
                         lambda code: (_ for _ in ()).throw(_Exited(code)))
     monkeypatch.delenv(desktop.WEBVIEW_ATTEMPT_ENV, raising=False)
     return spawned
+
+
+# --- 「인터넷에서 받음」 표시 지우기 -------------------------------------
+#
+# 이것이 왜 테스트되나: 브라우저로 받은 zip을 탐색기가 풀면 푼 파일 **전부**에
+# Zone.Identifier가 붙고, .NET Framework 로더는 그렇게 표시된 어셈블리를 거부한다.
+# 그러면 pythonnet의 Python.Runtime.dll을 못 읽어 pywebview가 창을 띄우기도 전에
+# 죽는다 - v0.1.2 릴리스에서 실제로 났다.
+
+ntfs_only = pytest.mark.skipif(
+    os.name != "nt", reason="대체 데이터 스트림은 NTFS에만 있다")
+
+
+def _mark_as_downloaded(path):
+    """탐색기가 압축을 풀 때 붙이는 것과 같은 표시를 붙인다."""
+    with open(f"{path}:Zone.Identifier", "w", encoding="utf-8") as stream:
+        stream.write("[ZoneTransfer]\nZoneId=3\n")
+
+
+def _is_marked(path) -> bool:
+    try:
+        with open(f"{path}:Zone.Identifier", "r", encoding="utf-8"):
+            return True
+    except OSError:
+        return False
+
+
+@ntfs_only
+def test_zone_marks_are_cleared_from_every_file_in_the_tree(tmp_path):
+    (tmp_path / "nested").mkdir()
+    marked = [tmp_path / "a.dll", tmp_path / "nested" / "b.dll"]
+    for path in marked:
+        path.write_bytes(b"x")
+        _mark_as_downloaded(path)
+    assert all(_is_marked(path) for path in marked)
+
+    assert desktop._clear_zone_marks(tmp_path) == 2
+
+    assert not any(_is_marked(path) for path in marked)
+
+
+@ntfs_only
+def test_files_without_the_mark_are_left_alone(tmp_path):
+    plain = tmp_path / "plain.dll"
+    plain.write_bytes(b"x")
+
+    assert desktop._clear_zone_marks(tmp_path) == 0
+
+    assert plain.read_bytes() == b"x"
+
+
+@ntfs_only
+def test_one_unremovable_file_does_not_stop_the_rest(tmp_path, monkeypatch):
+    # 한 파일이 잠겨 있어도 나머지는 풀려야 한다 - 하나 때문에 앱이 못 뜨면
+    # 사용자에게는 고치기 전과 똑같다.
+    good, bad = tmp_path / "good.dll", tmp_path / "bad.dll"
+    for path in (good, bad):
+        path.write_bytes(b"x")
+        _mark_as_downloaded(path)
+
+    real_remove = os.remove
+
+    def refuse_one(target):
+        if str(target).startswith(str(bad)):
+            raise PermissionError(target)
+        return real_remove(target)
+
+    monkeypatch.setattr(desktop.os, "remove", refuse_one)
+
+    assert desktop._clear_zone_marks(tmp_path) == 1
+    assert not _is_marked(good)
+
+
+def test_unblock_does_nothing_when_not_frozen(monkeypatch):
+    # 개발 중에는 그런 표시가 붙지 않는다. 남의 소스 트리를 훑을 이유가 없다.
+    monkeypatch.setattr(desktop.sys, "frozen", False, raising=False)
+    called = []
+    monkeypatch.setattr(desktop, "_clear_zone_marks", lambda root: called.append(root))
+
+    assert desktop.unblock_bundle() == 0
+    assert called == []
+
+
+def test_unblock_clears_the_bundle_when_frozen(monkeypatch, tmp_path):
+    monkeypatch.setattr(desktop.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(desktop, "bundle_root", lambda: tmp_path)
+    seen = []
+    monkeypatch.setattr(desktop, "_clear_zone_marks",
+                        lambda root: seen.append(root) or 3)
+
+    assert desktop.unblock_bundle() == 3
+    assert seen == [tmp_path]
 
 
 def test_relaunch_runs_the_exe_itself_when_frozen(monkeypatch):
