@@ -497,12 +497,10 @@ def test_the_cadence_choice_weighs_taps_at_103():
         else:
             hi = mid
     breakeven = lo
-    # 이 경계는 함수가 **자기가 쓰는 배율로** 찾은 것이다. 함수가 1.03을 쓴다면
-    # 경계에서 톡톡이(1.03)와 풀차지가 정확히 비겨야 한다.
+    # 이 경계는 함수가 **자기가 쓰는 배율로** 찾은 것이다. 그래서 함수가 1.03을 쓴다면
+    # 경계에서 톡톡이(1.03)와 풀차지가 정확히 비겨야 한다. 저울질만 100%로 남으면
+    # (타임라인은 103%인데) `full`이 다른 breakeven에서 계산되어 이 등식이 깨진다 -
+    # 그것이 이 테스트가 잡는 회귀다.
     lifted = 6 * (1 + TAP_FIRE_CHARGE_BONUS) / (6 * breakeven + 2.0)
     full = 6 * 2.5 / (6 * (1.0 + breakeven) + 2.0)
     assert lifted == pytest.approx(full, rel=1e-6)
-    # 그리고 같은 지점에서 100% 가정이라면 톡톡이가 **졌어야** 한다 - 그것이 이
-    # 테스트가 잡으려는 회귀다(타임라인은 103%인데 저울질만 100%로 남는 것).
-    naive = 6 * 1.00 / (6 * breakeven + 2.0)
-    assert naive < full
