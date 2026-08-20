@@ -1,10 +1,8 @@
 // 결과가 어떤 보스를 상대로 나온 것인지 한 줄로 적는다. 보스 폼이 방어력과
 // 전투 시간을 접어 두므로, 그 두 값이 결과에 남는 유일한 자리이기도 하다.
-//
-// 켜진 기믹만 나온다 — 꺼진 기믹까지 적으면 줄만 길어지고, 없는 것은 화면에
-// 없는 것으로 읽힌다.
 
 import type { BossProfile, BossRangeBand } from '../types/recommend'
+import { gimmickBadges } from '../lib/bossBadges'
 import { elementLabel } from '../lib/elementName'
 import { weaknessFor } from '../lib/elementAdvantage'
 import { formatDamage } from './formatDamage'
@@ -20,13 +18,7 @@ interface BossSummaryProps {
 }
 
 export function BossSummary({ boss }: BossSummaryProps) {
-  const gimmicks = [
-    boss.core_hittable && '코어 피격',
-    boss.pierce_hits_body_behind_core && '2관통',
-    boss.part_destructible && '부위파괴',
-    boss.spawns_adds && '잡몹 생성',
-    boss.elemental_interrupt_required && '속성저지 필수',
-  ].filter((label): label is string => typeof label === 'string')
+  const gimmicks = gimmickBadges(boss)
 
   return (
     <p className="boss-summary">
