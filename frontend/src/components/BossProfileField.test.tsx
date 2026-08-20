@@ -228,6 +228,36 @@ const timedRotation: RaidRotation = {
              spawns_adds: true, stated: {} }],
 }
 
+describe('BossProfileField 기본 접힘', () => {
+  it('defaultCollapsed면 회차 카드까지 통째로 접힌 채로 뜬다', () => {
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft('31784')}
+        onChange={vi.fn()}
+        rotation={timedRotation}
+        defaultCollapsed
+      />,
+    )
+
+    expect(screen.queryByLabelText('코어 타격 가능')).not.toBeInTheDocument()
+    expect(screen.queryByText('사치스러운 거미')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { expanded: false })).toBeInTheDocument()
+  })
+
+  it('넘기지 않으면 펼친 채로 뜬다 - 유니온 탭이 이 기본값에 기댄다', () => {
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft('31784')}
+        onChange={vi.fn()}
+        rotation={timedRotation}
+      />,
+    )
+
+    expect(screen.getByLabelText('코어 타격 가능')).toBeInTheDocument()
+    expect(screen.getByText('사치스러운 거미')).toBeInTheDocument()
+  })
+})
+
 describe('BossProfileField 회차 보스 피커', () => {
   it('회차가 없으면 피커를 그리지 않는다', () => {
     render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />)

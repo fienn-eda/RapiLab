@@ -164,6 +164,10 @@ interface BossProfileFieldProps {
   showElementalInterrupt?: boolean
   /** 이번 회차 보스 목록. 없으면 카드 피커를 그리지 않는다. */
   rotation?: RaidRotation | null
+  /** 접힌 채로 시작할지. 솔로 탭은 보스를 시즌마다 한 번 정하고 나면 거의 안
+   * 건드리므로 접어 둔다. 유니온은 전투마다 다른 보스를 고르므로 펼친 채로
+   * 둔다 - 접으면 실행할 때마다 전투 수만큼 펼쳐야 한다. */
+  defaultCollapsed?: boolean
   /** 카드를 골랐을 때 방어력이 되돌아갈 값. 솔로 보스와 유니온 보스는 방어력이
    *  달라 공유 기본값 하나로는 한쪽이 틀린 값으로 계산된다 —
    *  makeDefaultBossProfileDraft가 인자를 받는 것과 같은 이유다. */
@@ -177,11 +181,12 @@ export function BossProfileField({
   showElementalInterrupt = true,
   rotation = null,
   defaultEnemyDef,
+  defaultCollapsed = false,
 }: BossProfileFieldProps) {
   const elementId = useId()
   const rangeBandId = useId()
   const destructionTimesId = useId()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(defaultCollapsed)
   const bodyId = useId()
 
   // 오류가 접힌 안에 숨으면 화면에는 이유 없이 계산이 안 되는 것처럼 보인다.

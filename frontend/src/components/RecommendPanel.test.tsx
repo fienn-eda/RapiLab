@@ -98,9 +98,22 @@ afterEach(() => {
   vi.mocked(getSupportedUnits).mockReset()
 })
 
+/** 솔로 탭의 보스 설정은 접힌 채로 뜬다(defaultCollapsed). 보스 칸을 만지는
+ * 테스트는 먼저 펼쳐야 한다.
+ *
+ * 접힘 버튼은 이 화면에서 aria-expanded를 가진 유일한 버튼이라 역할로 찾는다 -
+ * 클래스 이름으로 찾으면 CSS를 고치는 날 조용히 깨진다. 이미 펼쳐져 있으면
+ * 아무것도 안 하므로 한 테스트에서 여러 번 불러도 안전하다. */
+const expandBossProfile = async (user: ReturnType<typeof userEvent.setup>) => {
+  const [toggle] = screen.queryAllByRole('button', { expanded: false })
+  if (toggle) await user.click(toggle)
+}
+
 describe('RecommendPanel', () => {
   it('opens with the solo raid boss DEF prefilled', async () => {
+    const user = userEvent.setup()
     await renderSettled(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await expandBossProfile(user)
     expect(screen.getByLabelText(/적 방어력/)).toHaveValue(31784)
   })
 
@@ -176,6 +189,7 @@ describe('RecommendPanel', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await expandBossProfile(user)
     await user.click(screen.getByRole('radio', { name: '작열' }))
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
@@ -201,6 +215,7 @@ describe('RecommendPanel', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await expandBossProfile(user)
     await user.click(screen.getByRole('radio', { name: '작열' }))
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await screen.findByText(/약점 작열/)
@@ -319,6 +334,7 @@ describe('RecommendPanel', () => {
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     // The picker speaks in the boss's weakness, not its own element - 수냉
     // (Water) weak means the boss's own element is Fire.
+    await expandBossProfile(user)
     await user.click(screen.getByLabelText('수냉'))
     // Exact, not a substring: the help button beside it is named after the
     // same setting, so a loose match finds both.
@@ -352,6 +368,7 @@ describe('RecommendPanel', () => {
     vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await expandBossProfile(user)
     await user.click(screen.getByLabelText('부위파괴 기믹'))
 
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
@@ -383,6 +400,7 @@ describe('RecommendPanel', () => {
     vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await expandBossProfile(user)
     await user.selectOptions(screen.getByLabelText('보스 적정거리'), 'mid')
 
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
@@ -915,6 +933,7 @@ describe('RecommendPanel evaluate mode', () => {
 
     expect(await screen.findByText('1번 덱 · 무속성')).toBeInTheDocument()
 
+    await expandBossProfile(user)
     await user.click(screen.getByLabelText('수냉'))
 
     expect(screen.getByText('1번 덱 · 무속성')).toBeInTheDocument()
@@ -1055,6 +1074,7 @@ describe('RecommendPanel mode switch', () => {
 
     // 단일 덱: 약점 수냉(보스는 작열), 속성저지 필수를 켜고 제출한다 - 로스터
     // 전원이 Iron이라 파훼할 수 없는 덱이 나온다.
+    await expandBossProfile(user)
     await user.click(screen.getByLabelText('수냉'))
     await user.click(screen.getByLabelText('속성저지 필수'))
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
@@ -1738,6 +1758,7 @@ describe('RecommendPanel 결과 보관', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /지난 주 배분/ }))
+    await expandBossProfile(user)
     expect(screen.getByLabelText(/적 방어력/)).toHaveValue(31784)
 
     await user.click(screen.getByRole('button', { name: '이 설정으로 폼 채우기' }))
@@ -1918,6 +1939,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     // 보스 본인 속성이다: 'Water' 보스의 약점은 '전격'이다. 기본값은
     // element: null이라 아무 라디오도 안 켜져 있으므로, 이 체크는 가져오기가
     // 실제로 보스를 넣었을 때만 통과한다.
+    await expandBossProfile(user)
     expect(screen.getByRole('radio', { name: '전격' })).toBeChecked()
   })
 
@@ -2174,6 +2196,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     const user = await openWithRuns([])
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '2')
+    await expandBossProfile(user)
     await user.click(screen.getByRole('radio', { name: '작열' }))
     dropOnDeck(1, 'a')
 

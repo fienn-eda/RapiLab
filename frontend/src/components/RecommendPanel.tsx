@@ -858,6 +858,7 @@ export function RecommendPanel({
             onChange={setDraft}
             rotation={latestRotationFor(rotations, 'solo')}
             defaultEnemyDef={SOLO_RAID_DEFAULT_ENEMY_DEF}
+            defaultCollapsed
           />
 
           <fieldset className="group">
