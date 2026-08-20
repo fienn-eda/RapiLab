@@ -8,6 +8,7 @@
 // 문장만 사람이 쓴다. 지금은 localStorage에만 남는다(useBossGuides의 주석 참조).
 
 import { gimmickBadges } from '../lib/bossBadges'
+import { guideTitle } from '../lib/bossLabel'
 import { weaknessFor } from '../lib/elementAdvantage'
 import { elementLabel } from '../lib/elementName'
 import { useBossGuides } from '../hooks/useBossGuides'
@@ -20,15 +21,6 @@ const RANGE_BAND_LABEL: Record<Exclude<BossRangeBand, null>, string> = {
   near: '근거리',
   mid: '중거리',
   far: '원거리',
-}
-
-/** 카드 제목. 「솔로 레이드 40시즌」에서 회차만 뽑는 이유는 이 카드가 솔로 탭
- * 안에만 서기 때문이다 - 「솔로 레이드」는 탭이 이미 말하고 있다. 형식이 다른
- * 회차(「유니온 레이드 7/31」)는 뽑을 것이 없으므로 제목을 통째로 쓴다. */
-export const guideTitle = (rotation: RaidRotation | null): string => {
-  if (rotation === null) return '보스 가이드'
-  const season = /\d+시즌/.exec(rotation.title)
-  return `${season === null ? rotation.title : season[0]} 가이드`
 }
 
 /** 「1, 61, 126」을 숫자로. 폼은 편집 중일 수 있으므로 빈 조각을 버린다 -

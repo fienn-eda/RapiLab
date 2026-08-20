@@ -213,6 +213,9 @@ describe('App', () => {
     render(<App />)
 
     await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
+    // 솔로 탭의 보스 설정은 접힌 채로 뜬다(defaultCollapsed) - 회차 카드도 그
+    // 안에 있다. 속성을 안 고른 상태라 접힘 버튼의 이름은 폴백인 「보스 설정」이다.
+    await user.click(await screen.findByRole('button', { name: '보스 설정' }))
     expect(await screen.findByRole('radio', { name: '철갑아일랜드 이터' })).toBeInTheDocument()
     expect(screen.queryByRole('radio', { name: '전격선바스' })).not.toBeInTheDocument()
 

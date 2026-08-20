@@ -1,10 +1,11 @@
-// 보스를 한 줄로 부르는 이름. 유니온 저장 이름, 덱 라벨, 접힌 보스 설정 머리가
-// 같은 낱말을 써야 해서 여기 한 곳에서 만든다.
+// 보스와 회차를 한 줄로 부르는 이름. 유니온 저장 이름, 덱 라벨, 접힌 보스 설정
+// 머리, 시즌 가이드 카드 제목이 같은 낱말을 써야 해서 여기 한 곳에서 만든다.
 
 import { weaknessFor } from './elementAdvantage'
 import { elementLabel } from './elementName'
 import { WEAKNESS_ICON } from './elementIcon'
 import type { BossElement } from '../types/recommend'
+import type { RaidRotation } from '../types/raidRotation'
 
 /** 이 보스의 약점 속성 이름. 속성을 안 고른 보스도 자리를 지켜야 하는 곳
  * (유니온 저장 이름의 덱 나열)이 있어서 빈 문자열이 아니라 낱말을 준다. */
@@ -28,4 +29,14 @@ export const bossHeading = (args: {
   if (args.element === null) return { text: args.fallback, iconSrc: null }
   const iconSrc = WEAKNESS_ICON[weaknessFor(args.element)]
   return { text: args.bossName ?? weaknessLabelOf(args.element), iconSrc }
+}
+
+/** 시즌 가이드 카드의 제목. 「솔로 레이드 40시즌」에서 회차만 뽑는 이유는 그
+ * 카드가 솔로 탭 안에만 서기 때문이다 - 「솔로 레이드」는 탭이 이미 말하고
+ * 있다. 형식이 다른 회차(「유니온 레이드 7/31」)는 뽑을 것이 없으므로 제목을
+ * 통째로 쓴다. */
+export const guideTitle = (rotation: RaidRotation | null): string => {
+  if (rotation === null) return '보스 가이드'
+  const season = /\d+시즌/.exec(rotation.title)
+  return `${season === null ? rotation.title : season[0]} 가이드`
 }
