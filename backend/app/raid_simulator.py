@@ -1398,6 +1398,9 @@ def _simulate_raid_once(
             # circle tightens as the magazine empties. None = not a magazine
             # round, so the converged diameter applies.
             "magazine_index": magazine_index,
+            # Whether this shot was released before its charge finished. A tap
+            # shot collects only its own gauge bonus, never the squad's Charge
+            # Damage buff - that multiplies a fully-charged shot and nothing else.
             "is_tap_fire": is_tap_fire,
         })
 

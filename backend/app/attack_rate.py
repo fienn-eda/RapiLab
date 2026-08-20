@@ -841,9 +841,9 @@ def shot_interval_with_speed(charge_time, charge_speed_percent, flat_reduction_s
 # 관측된 최소값이다(Fienn, 2026-08-20). 브래디를 차지 대미지 두 세팅으로 잰 판독에서
 # 두 세팅 모두 최소 게이지가 103%였다 - 차지 대미지는 발사 문턱을 옮기지 않는다.
 #
-# 유닛별 표가 아니라 상수인 이유: 브래디와 앨리스 두 유닛에서 같은 하한이 나왔고,
-# 엔진은 케이던스도 이상적 수동 플레이로 모델링한다(앨리스 멈춤 15프레임은 자동사격
-# 26.1프레임이 아니라 수동 기준이다). 유닛별로 가르면 없는 정밀도를 주장하게 된다.
+# 유닛별 표가 아니라 상수인 이유: 바닥 판독이 있는 것은 브래디 하나뿐이다(앨리스의
+# RAW 최소값은 104%로, 103% 바닥과 양립할 뿐 그 증거는 아니다 - 손이 한두 프레임
+# 더 붙든 경우로 문서화됨). 유닛별로 가를 근거가 없으므로 없는 정밀도를 주장하지 않는다.
 #
 # docs/measurements/bready-charge-damage.md
 TAP_FIRE_CHARGE_BONUS = 0.03
@@ -910,7 +910,7 @@ def optimal_full_charges(capacity, reload_seconds, charge_seconds, full_delay,
     걸리고 배율은 각각 `full_charge_percent/100`과 `1 + TAP_FIRE_CHARGE_BONUS`다.
     그러면
 
-        효율(k) = (C·tap + k(M−tap)) / (C*tap + R + k(charge + delay - tap))
+        효율(k) = (C*tap + k(M-tap)) / (C*tap + R + k(charge + delay - tap))
 
     가 되어 `(p+ak)/(q+bk)` 꼴이므로 **k에 대해 단조**다 - 도함수 부호가 k와
     무관하다. 그래서 답은 언제나 허용 구간의 **양 끝** 중 하나이지 중간의 어떤
@@ -943,6 +943,7 @@ def optimal_full_charges(capacity, reload_seconds, charge_seconds, full_delay,
         return capacity
     full_cost = charge_seconds + full_delay
     multiplier = full_charge_percent / 100
+    tap_multiplier = 1 + TAP_FIRE_CHARGE_BONUS
     best_k, best_rate = capacity, None
     for k in range(capacity + 1):
         if window is not None:
@@ -953,7 +954,6 @@ def optimal_full_charges(capacity, reload_seconds, charge_seconds, full_delay,
             worst_gap = (full_cost + (block - 1) * tap_interval + reload_seconds)
             if worst_gap > window:
                 continue
-        tap_multiplier = 1 + TAP_FIRE_CHARGE_BONUS
         damage = capacity * tap_multiplier + k * (multiplier - tap_multiplier)
         duration = (capacity * tap_interval + reload_seconds
                     + k * (full_cost - tap_interval))

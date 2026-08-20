@@ -1233,9 +1233,12 @@ that shot is (docs/measurements/alice-tap-fire.md):
   `attack_rate.TAP_FIRE_CHARGE_BONUS = 0.03` is that
   floor. This also settled a second question the same reading answered: **a
   tapped shot does not receive the Charge Damage buff** — Charge Damage
-  multiplies a FULLY-CHARGED shot and nothing else (nikke.gg's damage-formula
-  glossary already said so; the engine had been multiplying it onto every
-  charge-weapon shot regardless). Raising Charge Damage from 7.59% to 11.11% on
+  multiplies a FULLY-CHARGED shot and nothing else. The nikke.gg damage-formula
+  glossary only says the buff belongs to a charge weapon's normal attacks in
+  general (silent on tap vs. full charge); the FULLY-CHARGED-only restriction
+  is Fienn's Brady reading above, not the glossary — the engine had been
+  multiplying it onto every charge-weapon shot regardless. Raising Charge
+  Damage from 7.59% to 11.11% on
   the same account moved the damage of an identically-gauged shot by only
   +0.06% (a direct multiply would have moved it +3.27%). `raid_simulator`
   therefore adds `charge_damage_bonus` for a full-charge `ShotRecord` but not
