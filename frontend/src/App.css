@@ -1395,6 +1395,13 @@
   gap: var(--sp-3);
 }
 
+/* 접힌 그룹은 legend 한 줄이 전부다. 펼쳤을 때의 세로 여백이 남으면 머리 아래
+   빈 상자가 그려지고, 그건 접힌 것이 아니라 못 그린 것으로 읽힌다. */
+.group--collapsed {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 /* 접이식 그룹의 요약문은 문장이라 읽기 폭을 넘지 않는다. */
 .group__details > summary {
   max-width: var(--measure);
@@ -1846,10 +1853,15 @@
    것(시즌 가이드).
 
    왼쪽이 좁은 쪽인 이유는 그 안의 입력들이 고정 폭이어서다. 남는 가로는 가이드가
-   전부 받는다 - 예전에는 이 자리에 모드 하나만 서서 오른쪽 아래가 비어 있었다. */
+   전부 받는다 - 예전에는 이 자리에 모드 하나만 서서 오른쪽 아래가 비어 있었다.
+
+   가이드 칸에 24rem이라는 **최소**가 붙어 있는 이유: 이 패널을 담은 .card는
+   main의 flex-start 때문에 내용만큼만 넓다. 그래서 1fr에는 늘어날 여지가 없고,
+   최소를 안 주면 가이드가 자기 글자 폭까지 눌린다(실측 239px). 최소가 카드의
+   요구 폭을 만들고, 결과가 떠서 카드가 넓어지면 1fr이 그만큼을 받는다. */
 .recommend-form__setup {
   display: grid;
-  grid-template-columns: minmax(260px, 22rem) minmax(0, 1fr);
+  grid-template-columns: minmax(260px, 22rem) minmax(24rem, 1fr);
   gap: var(--sp-4);
   align-items: start;
   width: 100%;
