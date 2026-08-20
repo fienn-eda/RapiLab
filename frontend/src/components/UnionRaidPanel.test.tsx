@@ -78,8 +78,8 @@ const unionRotation: RaidRotation = {
   source_locale: 'ko',
   read_on: '2026-08-07',
   bosses: [
-    { name: '선바스', weakness: 'Electric', range_band: null, core_diameter_px: null, stated: {} },
-    { name: '토커티브', weakness: 'Water', range_band: null, core_diameter_px: null, stated: {} },
+    { name: '선바스', weakness: 'Electric', range_band: null, core_diameter_px: null, part_destruction_times: [], stated: {} },
+    { name: '토커티브', weakness: 'Water', range_band: null, core_diameter_px: null, part_destruction_times: [], stated: {} },
   ],
 }
 
@@ -663,6 +663,7 @@ describe('UnionRaidPanel 결과 보관', () => {
       enemy_def: 0,
       fight_duration: 180,
       part_destructible: false,
+      part_destruction_times: [],
       effective_range_band: null,
       elemental_interrupt_required: false,
     }
@@ -701,6 +702,7 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
     enemy_def: 31784,
     fight_duration: 180,
     part_destructible: false,
+    part_destruction_times: [],
     core_diameter_px: null,
     effective_range_band: null,
     elemental_interrupt_required: false,

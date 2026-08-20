@@ -997,6 +997,9 @@ def _simulate_raid_once(
     weapon_stats=None,
     boss_element=None,
     part_destructible=False,
+    # 이 인카운터에서 파츠가 실제로 깨지는 시각들(초). 관측값이고, 비어 있으면
+    # 파괴에 반응하는 스킬은 `part_destructible` 불리언만 보던 근사 그대로 돈다.
+    part_destruction_times=(),
     # A boss that keeps its core as a separate object from its body: a Pierce
     # holder's shot passes through the core and lands on the body behind it, so
     # one normal attack produces two instances (Fienn, 2026-08-03). Read together
@@ -1083,6 +1086,7 @@ def _simulate_raid_once(
         },
         boss_element=boss_element,
         part_destructible=part_destructible,
+        part_destruction_times=tuple(part_destruction_times),
         core_hittable=core_hittable,
         target_grants=target_grants,
         adjacency=adjacency,
@@ -1580,6 +1584,19 @@ def _simulate_raid_once(
                     if rule.condition(context, slug) and rule.time_condition(context, slug, tick):
                         rule.action(context, slug, tick, registry)
                 tick += cooldown
+
+    # 파츠가 깨지는 시각. 「깨진다」가 아니라 「이 시각에 깨진다」를 인카운터가
+    # 선언하고, 파괴에 걸린 버프가 그 시각마다 자기 지속시간만큼 산다. 위의
+    # periodic_rules와 같은 자리에 같은 이유로 있다 - 버프는 딜의 입력이므로 버스트
+    # 사이클이 그것을 반영해야 할 nuke를 계산하기 전에 레지스트리에 들어가야 하고,
+    # Effect는 replay-safe라 미리 넣어도 나중의 모든 읽기에 대해 옳다.
+    #
+    # 전투 길이를 넘는 시각은 그 전투에서 일어나지 않으므로 버린다(같은 보스를
+    # 더 짧은 전투로 재는 경우) - periodic_rules의 `while tick < fight_duration`과
+    # 같은 규칙이다.
+    for destroyed_at in part_destruction_times:
+        if destroyed_at < fight_duration:
+            fire_trigger("part_destroyed", rules_by_slug, context, registry, destroyed_at)
 
     events = simulate_burst_cycle(
         deck,

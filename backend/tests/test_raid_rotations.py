@@ -103,6 +103,28 @@ def test_a_boss_with_no_core_diameter_key_is_allowed():
     assert validate_rotations(a_doc(a_rotation(bosses=boss)))
 
 
+def test_declared_part_destruction_times_are_allowed():
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "part_destruction_times": [1, 61, 126], "stated": {}}]
+    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_negative_part_destruction_time_is_rejected():
+    # 전투가 시작하기 전에 깨지는 파츠는 없다. 음수가 들어오면 판독이 시각이
+    # 아닌 것을 시각 자리에 넣은 것이다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "part_destruction_times": [1, -5], "stated": {}}]
+    with pytest.raises(ValueError, match="보스"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_boss_with_no_part_destruction_times_key_is_allowed():
+    # 코어 지름과 같은 계열이다 - 관측해야만 존재하는 값이라 키 자체가 없을 수 있고,
+    # 그때 파괴에 반응하는 스킬은 part_destructible 불리언만 보던 근사로 돈다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None, "stated": {}}]
+    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
 def test_the_shipped_union_bosses_all_carry_a_range_band():
     # 유니온 공지는 보스마다 거리를 적으므로, 비어 있으면 판독에서 빠뜨린 것이다.
     doc = load_rotations()

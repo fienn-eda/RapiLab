@@ -103,13 +103,25 @@
    **조준하지 않고 흩뿌렸을 때**의 값이라 그 자체로는 상한이 아니라 하한에 가깝다. 지금
    SMG 0.997·AR 0.958이 1.0 아래인 것이 조준 항의 크기를 위에서 눌러 준다 —
    `sim/record`는 이제 상한도 하한도 아니고, 두 항이 비율을 반대 방향으로 민다.
-2. **부위(parts) 개념 부재 — 착수 대상 6모듈.** 이 갭은 세 갈래로 나타나는데
+2. **부위(parts) 개념 부재 — 착수 대상 6모듈 중 2모듈 해소, 4모듈 잔여.** 이 갭은 세 갈래로 나타나는데
    **셋이 같은 무게가 아니다.** 세는 사람이 헷갈리기 쉬우니 갈라 적는다:
-   - **(a) 부위파괴 트리거 — 4모듈, 전부 실제 딜 손실.** `ark-ranger-black`(배터리
-     충전) · `sakura-bloom-in-summer`(Bloom의 라이더 3개) ·
-     `rosanna-chic-ocean`(Ferita ATK +3%, 5스택) · `diesel-winter-sweets`(Mute 스택을
-     보스 플래그 분기로 대체). **아크레인저는 점수가 아니라 floor/ceiling 브래킷**이라
-     추천기가 순위를 못 매기고 캘리브레이션에서도 캐비엇으로 빠진다. 나머지 셋은 floor.
+   - **(a) 부위파괴 트리거 — 4모듈 중 2모듈 해소(2026-08-20), 2모듈 잔여.**
+     **트리거 자체는 생겼다**: 엔진이 언제 깨지는지 *유도*할 수는 여전히 없지만
+     (적/파츠 체력이 없다), **인카운터가 관측한 파괴 시각을 선언하면**
+     `BossProfile.part_destruction_times` → `part_destroyed` 트리거가 그 시각마다
+     스킬 자신의 지속시간만큼 창을 연다. 코어 지름과 같은 계열의 관측값이다.
+     - ✅ `raven`(Single Point Attack 15초) · `diesel-winter-sweets`(지속댐 +68.04%
+       15초). 솔로 40시즌 실측(1·61·126초)에서 **레이븐 +1.36% · 디젤 −2.91%** —
+       방향이 반대인 것은 레이븐의 옛 근사가 창 하나(15초)였고 디젤은 영구였기
+       때문이다.
+     - 잔여: `sakura-bloom-in-summer`(Bloom의 라이더 3개) ·
+       `rosanna-chic-ocean`(Ferita ATK +3%, 5스택). 둘 다 floor.
+     - 잔여(다른 성격): `ark-ranger-black`의 배터리 충전. 파괴 1회 = 배터리 +50%
+       = 변신 10초인데 **버스트도 같은 게이지를 채우고 캡이 100%**라, 시각만으로는
+       안 되고 버스트 시각과 같은 타임라인에서 게이지를 굴려야 한다. 그때까지
+       **점수가 아니라 floor/ceiling 브래킷**이라 추천기가 순위를 못 매긴다.
+     - 잔여: `diesel-winter-sweets`의 **Mute 스택**은 여전히 보스 플래그 분기다.
+       시각이 선언돼도 3회 파괴로 3스택을 계속 유지한다는 근사는 그대로다.
    - **(b) 부위 타격 트리거 — 2모듈.** `laplace`·`laplace-signature`의 Hero Bomber
      파츠히트 14.78% 추가딜.
    - **(c) `damage_to_parts_up` 버킷이 inert — 3모듈, 이건 defer가 옳다.**
@@ -1794,7 +1806,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | ~~10~~ | ~~소환체 가변 케이던스 스케줄~~ (살아있는 개체 수가 공격 주기를 바꿈) | 1 (Ein) | **완료 (2026-07-17, `scheduled_nukes`)** | 신규 방출 경로 |
 | ~~10~~ | ~~창 한정 per-shot threshold 오버라이드~~ (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | **완료 (2026-07-18, `per_shot_rules` `"sequence"` 모드 — Scarlet 인코딩)** | 트리거 변형 |
 | ~~11~~ | ~~**강제 재장전 / 탄약 제거 상태머신**~~ | 1 (Milk: Blooming Bunny) | **완료 (2026-07-20)** — 신규 타임라인 프리미티브 불필요(샷 0개 세그먼트 + `reload_time_with_speed` 음수 분기 + `burst_anchored_buffs`) | 재분류 |
-| — | **부위(parts) 개념 부재** (gap #2 Pattern B와 동근) | ~~3+~~ → **착수 대상 6모듈 (2026-08-13 재집계)**: 파괴 트리거 4(ark-ranger-black·sakura-bloom-in-summer·rosanna-chic-ocean·diesel-winter-sweets) + 파츠 타격 2(laplace·laplace-signature). **`damage_to_parts_up`이 inert인 3모듈(raven·ark-ranger-black·cinderella-crystal-wave)은 여기 안 센다 — defer가 옳다** | 미착수 — ark-ranger는 `part_destructible` 브래킷으로 개별 우회(점수가 아니라 **브래킷**이라 추천기가 순위를 못 매긴다). 나머지는 전부 floor | 신규 이벤트 |
+| — | **부위(parts) 개념 부재** (gap #2 Pattern B와 동근) | ~~3+~~ → **착수 대상 6모듈 (2026-08-13 재집계)**: 파괴 트리거 4(ark-ranger-black·sakura-bloom-in-summer·rosanna-chic-ocean·diesel-winter-sweets) + 파츠 타격 2(laplace·laplace-signature). **`damage_to_parts_up`이 inert인 3모듈(raven·ark-ranger-black·cinderella-crystal-wave)은 여기 안 센다 — defer가 옳다** | **부분 해소 (2026-08-20)** — 인카운터가 관측한 파괴 시각을 선언하면(`part_destruction_times`) `part_destroyed` 트리거가 시각마다 창을 연다. `raven`·`diesel-winter-sweets`의 지속댐 두 건이 이걸로 닫혔다. 잔여 4: sakura-bloom-in-summer·rosanna-chic-ocean(floor) · ark-ranger-black(배터리는 버스트와 캡이 얽혀 시각만으로 안 된다, 여전히 **브래킷**이라 추천기가 순위를 못 매긴다) · diesel의 Mute 스택 | 신규 이벤트 |
 | ~~13~~ | ~~**차지-카운트 트리거 무기 변환**~~ (Warm Up 스택 → 변신 + 변환상태 카운터/단계 자원) | 1 (Laplace: Ultimate Hero) | **해소 (2026-07-24) — 프리미티브 없이 우회** | 재분류 |
 | ~~16~~ | ~~**적정사거리(effective range) 보너스**~~ — 배수 실측 확정(+0.30) | 1 (Ade: Agent Bunny) | **해소 (2026-07-31)** — `BossProfile.effective_range_band`(`near`/`mid`/`far`, RL은 어디에도 없음). 거리는 **스테이지가 정하고**, 밴드가 **어느 무기가 받는지**까지 정한다 · 애니힐리오=**mid**라 실기록은 AR·MG만 수령(Fienn). 합계 1.055x → **1.077x** | 스탯 배선 |
 | ~~17~~ | ~~소장품 스킬 효과 미모델~~ (무기군별 스탯 보너스; 에이드 = 차지대미지 6.31% 배율) | 8+ 확인, **실제로는 소장품 낀 전원** | **해소 (2026-07-27)** — 데이터 테이블 + 리졸버 + 유닛별 배선 + 데미지 적용 전부 완료. SMG·RL 무기군 데이터 없음, SR/SG/AR은 CDN 캡처가 아니라 손으로 유도한 값, R 등급 사다리 미상. **실제 로스터가 소장품을 안 실어 캘리브레이션은 아직 무변동** — Fienn 재동기화 대기 | 신규 스탯 소스 |

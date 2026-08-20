@@ -14,6 +14,8 @@ export interface BossProfileDraft {
   enemy_def: string
   fight_duration: string
   part_destructible: boolean
+  /** 파츠가 깨지는 시각을 쉼표로 구분한 초. 빈 문자열 = 관측 안 함. */
+  part_destruction_times: string
   /** 빈 문자열 = 안 쟀다. 필수가 아니라서 다른 숫자 칸과 파싱 규칙이 다르다. */
   core_diameter_px: string
   effective_range_band: BossRangeBand
@@ -30,6 +32,7 @@ export const makeDefaultBossProfileDraft = (enemyDef = '0'): BossProfileDraft =>
   enemy_def: enemyDef,
   fight_duration: '180',
   part_destructible: false,
+  part_destruction_times: '',
   core_diameter_px: '',
   effective_range_band: null,
   elemental_interrupt_required: false,
@@ -39,6 +42,7 @@ export interface BossProfileDraftErrors {
   enemy_def?: string
   fight_duration?: string
   core_diameter_px?: string
+  part_destruction_times?: string
 }
 
 export interface BossProfileValidationResult {
@@ -60,6 +64,8 @@ export const bossProfileToDraft = (boss: BossProfile): BossProfileDraft => ({
   enemy_def: String(boss.enemy_def),
   fight_duration: String(boss.fight_duration),
   part_destructible: boss.part_destructible,
+  // 이 필드가 생기기 전에 저장된 프로필은 undefined라, 빈 칸으로 돌아간다.
+  part_destruction_times: (boss.part_destruction_times ?? []).join(', '),
   // 이 필드가 생기기 전에 저장된 프로필은 undefined이고, null은 「안 쟀다」다.
   // 둘 다 빈 칸으로 돌아간다.
   core_diameter_px: boss.core_diameter_px == null ? '' : String(boss.core_diameter_px),
@@ -96,6 +102,26 @@ const parseOptionalPositive = (raw: string): ParsedNumber => {
   return { value }
 }
 
+interface ParsedTimes {
+  error?: string
+  value: number[]
+}
+
+/** 쉼표로 구분된 초. 빈 칸은 오류가 아니라 「관측 안 함」이라 빈 목록이다.
+ * 0은 허용한다 - 전투 시작과 동시에 깨지는 파츠가 있을 수 있고, 엔진에도 t=0은
+ * 유효한 시각이다(battle_start가 거기 있다). */
+const parseDestructionTimes = (raw: string): ParsedTimes => {
+  const tokens = raw.split(',').map((token) => token.trim()).filter((token) => token !== '')
+  const value: number[] = []
+  for (const token of tokens) {
+    const time = Number(token)
+    if (!Number.isFinite(time)) return { error: '초를 쉼표로 구분해 적으세요', value: [] }
+    if (time < 0) return { error: '0 이상이어야 해요', value: [] }
+    value.push(time)
+  }
+  return { value }
+}
+
 /**
  * Validate a boss profile draft. Returns field-level errors and, only when
  * the whole draft is valid, the parsed BossProfile.
@@ -115,6 +141,9 @@ export const validateBossProfileDraft = (
   const coreDiameter = parseOptionalPositive(draft.core_diameter_px)
   if (coreDiameter.error) errors.core_diameter_px = coreDiameter.error
 
+  const destructionTimes = parseDestructionTimes(draft.part_destruction_times)
+  if (destructionTimes.error) errors.part_destruction_times = destructionTimes.error
+
   if (Object.keys(errors).length > 0) return { errors }
 
   const value: BossProfile = {
@@ -124,6 +153,7 @@ export const validateBossProfileDraft = (
     enemy_def: enemyDef.value!,
     fight_duration: fightDuration.value!,
     part_destructible: draft.part_destructible,
+    part_destruction_times: destructionTimes.value,
     core_diameter_px: coreDiameter.value ?? null,
     effective_range_band: draft.effective_range_band,
     elemental_interrupt_required: draft.elemental_interrupt_required,

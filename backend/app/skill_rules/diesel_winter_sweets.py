@@ -43,12 +43,17 @@ Modeled (DPS-relevant):
   9-tick 1s DoT. The all-enemy tick (18.43%) and the stage-target tick
   (181.2%) are summed to 199.63% - a raid is a single boss, so it is always
   the stage target and takes both.
-- The part-destruction Sustained Damage +68.04%: a floor/ceiling bracket on
-  BossProfile.part_destructible, the same shape ark_ranger_black uses. On a
-  destructible boss it is applied permanently from battle start (parts are
-  destroyed repeatedly through a raid, so the 15s window is re-taken often
-  enough to read as continuous); on a non-destructible boss it is absent.
-  Approximation, because there is no on-part-destroyed trigger to time it.
+- The part-destruction Sustained Damage +68.04% for 15 sec: timed when the
+  encounter knows the times, bracketed when it does not.
+  - `BossProfile.part_destruction_times` declared (2026-08-20): the
+    `part_destroyed` trigger opens the skill's own 15s window at each time.
+    Fienn's solo-40 reading (1 · 61 · 126 s) is 45s of a 180s fight, which is
+    -2.91% on the deck total against the untimed reading below.
+  - destructible but untimed: applied permanently from battle start, on the
+    reading that parts are destroyed often enough for the 15s window to read as
+    continuous. That is the more generous half of the original bracket, and the
+    declared times exist to replace it.
+  - not destructible: absent.
 
 - Noise Pollution (La La La, Highlight only): Hit Rate -100% for 1 sec on all
   allies EXCEPT herself, on her burst. This is Highlight's price, and it is a
@@ -72,7 +77,11 @@ Numbers sourced from data/lootandwaifus/char_diesel-winter-sweets.json.
 """
 from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import buff_rule, linear_resource_buff, refreshing_buff_rule
-from app.squad_engine import SkillRule, boss_part_destructible, boss_part_indestructible
+from app.squad_engine import (
+    SkillRule,
+    boss_part_destruction_untimed,
+    boss_part_indestructible,
+)
 
 _MANIFEST_KEYS = {
     "mic_test": ("skills", 0),
@@ -112,10 +121,18 @@ def _shared_rules(values):
             ("damage_taken_up", _f(values, "la_la_la", 1) / 100, "squad",
              _f(values, "la_la_la", 2)),
         ]),
+        # 파괴 시각을 모르는 인카운터: 15초 창이 자주 다시 열려 연속으로 읽힌다는
+        # 근사라 지속시간이 없다(영구). 시각이 선언되면 이 근사는 꺼지고 아래 규칙이
+        # 시각마다 원문 그대로의 15초 창을 연다.
         buff_rule(
             "battle_start",
             [("sustained_damage_up", _f(values, "sing_now", 2) / 100, "self", None)],
-            condition=boss_part_destructible(),
+            condition=boss_part_destruction_untimed(),
+        ),
+        buff_rule(
+            "part_destroyed",
+            [("sustained_damage_up", _f(values, "sing_now", 2) / 100, "self",
+              _f(values, "sing_now", 3))],
         ),
     ]
 

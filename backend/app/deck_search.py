@@ -196,6 +196,11 @@ class BossProfile:
     gauge_charge_time: float = 2.4
     mode: str = "manual"
     part_destructible: bool = False
+    # 이 인카운터에서 파츠가 실제로 깨지는 시각들(초). 공지에는 없고 그 보스를
+    # 관측해서 나오는 값이라 `core_diameter_px`와 같은 계열이다 - 비어 있으면
+    # (기본값) 파괴에 반응하는 스킬은 `part_destructible` 불리언만 보던 근사
+    # 그대로 돈다. 전투 길이를 넘는 시각은 그 전투에서 일어나지 않는다.
+    part_destruction_times: tuple[float, ...] = ()
     # How far away this boss is fought, which decides WHICH weapons are inside
     # their effective range and collect +0.30 in the major bucket on their
     # normal attacks (measured on Ade: Agent Bunny, engine-gaps item 16).
@@ -486,6 +491,7 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
         core_hittable=boss.core_hittable,
         boss_element=boss.element,
         part_destructible=boss.part_destructible,
+        part_destruction_times=boss.part_destruction_times,
         effective_range_band=boss.effective_range_band,
         pierce_hits_body_behind_core=boss.pierce_hits_body_behind_core,
         core_diameter_px=boss.core_diameter_px,

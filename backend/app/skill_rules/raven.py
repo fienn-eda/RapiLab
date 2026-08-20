@@ -28,19 +28,24 @@ Modeled (DPS-relevant):
 - Single Point Attack (skills[1]) is bracketed on the boss, NOT dropped - see
   below.
 
-Bracketed on `part_destructible` (Ark Ranger Black's precedent, Fienn 2026-07-17):
-- Blue Blade's Single Point Attack (self Sustained Damage +47.32% for 15 sec)
-  triggers on "an ally or self destroys an enemy's part". The engine has no part
-  concept and cannot say WHEN that happens, but it does know WHETHER the boss has
-  destructible parts at all. So:
-  - floor (`part_destructible` False): parts can never be destroyed, so Single
-    Point Attack never fires. Not granted.
-  - ceiling (`part_destructible` True): parts do get destroyed, and Raven's own
-    Vital Attack exists to do it, so the buff is treated as up from battle start.
-  The real answer sits between the two. The gauge/timing of part destruction is
-  still unmodeled - this only brackets it. A.N. Mode's "Removes Single Point
-  Attack" is deliberately NOT modeled: it would cut the ceiling's own buff during
-  the burst, and we have no evidence Raven's rotation actually loses it there.
+Blue Blade's Single Point Attack (self Sustained Damage +47.32% for 15 sec)
+triggers on "an ally or self destroys an enemy's part". The engine still cannot
+DERIVE when a part falls - there is no enemy or part HP anywhere - so the
+encounter says so instead. Three cases, and the first two are the original
+2026-07-17 bracket (Ark Ranger Black's precedent, Fienn):
+- no destructible parts (`part_destructible` False, no times): Single Point
+  Attack can never fire. Not granted.
+- destructible but untimed (`boss_part_destruction_untimed`): one window at
+  battle start, i.e. destroyed exactly once and we don't know when. NOTE this
+  is a 15s window, not the whole fight - the duration has always come from the
+  skill text.
+- declared times (`BossProfile.part_destruction_times`, 2026-08-20): the
+  `part_destroyed` trigger opens the same 15s window at each observed time.
+  Fienn's solo-40 reading (1 · 61 · 126 s) puts her at 45s of a 180s fight
+  instead of 15, worth +1.36% on the deck total.
+A.N. Mode's "Removes Single Point Attack" is deliberately NOT modeled: it would
+cut the buff during the burst, and we have no evidence Raven's rotation actually
+loses it there.
 
 Not modeled / deferred:
 - Vital Attack (Damage to Parts +21.12%, at battle start and each Full Burst).
@@ -49,7 +54,7 @@ Not modeled / deferred:
   bracketed over, which is why the ceiling assumes it does its job.
 """
 from app.skill_rules._helpers import buff_rule
-from app.squad_engine import boss_part_destructible
+from app.squad_engine import boss_part_destruction_untimed
 
 # Shock Wave's stack cap and the counter's life, both from skills[0]'s text.
 # Defaults for the helpers; the builder reads the real values off the data.
@@ -93,12 +98,19 @@ def build_raven_rules(values):
         buff_rule("own_burst_activate", [
             ("sustained_damage_up", an_mode_sustained, "self", an_mode_duration),
         ]),
-        # Ceiling only: with destructible parts, Single Point Attack is treated as
-        # up all fight. Under the floor it never fires, so nothing is granted.
+        # 파괴 시각을 모르는 인카운터: 파츠가 깨진다는 것만 알고 언제인지는 모르므로
+        # 전투 시작에 한 번 깨진 셈으로 근사한다(그래서 창 하나, 15초). 파괴 시각이
+        # 선언되면 이 근사는 꺼지고 아래 규칙이 시각마다 같은 창을 연다.
         buff_rule(
             "battle_start",
             [("sustained_damage_up", single_point, "self", single_point_duration)],
-            condition=boss_part_destructible(),
+            condition=boss_part_destruction_untimed(),
+        ),
+        # "Activates when an ally or self destroys an enemy's part" 그대로 -
+        # 선언된 파괴 시각마다 15초.
+        buff_rule(
+            "part_destroyed",
+            [("sustained_damage_up", single_point, "self", single_point_duration)],
         ),
     ]
 

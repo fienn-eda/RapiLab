@@ -1612,6 +1612,7 @@ engine-extension decision rather than making it silently mid-encoding.
 | `ally_burst_activate` | when ANY unit's burst tier fires — for a skill that reacts to another unit bursting (e.g. Prika's Encore on Mint's Sing Along). Fired across all units' rules after the burster's own `own_burst_activate`; gate with `ally_bursted("<slug>")`, which reads `context.last_burst_slug`. **Instant nukes work here too** (2026-08-13): `drain_instant_damage` runs AFTER this trigger, so a reacting bullet may deal damage and not only apply buffs — Queen (Makoto Nijima)'s "when Follow Up takes effect" answers Yukiko's burst with 548.99% as distributed damage. Draining between the two triggers used to bank such a pulse until the next drain point (Full Burst enter), which both moved the hit off the burst it answered and paid it that window's bonus. |
 | `full_burst_enter` | when the Full Burst window opens — `FULL_BURST_OPEN_DELAY` AFTER tier-3 fires, so it does NOT reach the B3's own burst damage. Use only for text that really says "at the start of Full Burst" (Crown's One for All is the only encoded one). |
 | `full_burst_end` | when the 10s Full Burst window ends |
+| `part_destroyed` | at each time in `BossProfile.part_destruction_times` (2026-08-20). "Activates when an ally or self destroys an enemy's part" — the engine has no part concept and cannot DERIVE when a part falls (no enemy/part HP anywhere, and `damage_to_parts_up` has no consumer), so the ENCOUNTER declares the observed times and the rule fires at each of them, buff duration included. Times ≥ `fight_duration` are dropped. Fired beside the `periodic_rules` loop, before the burst cycle, for the same reason: buffs are inputs to damage and Effects are replay-safe. Consumers: `raven` (Single Point Attack), `diesel_winter_sweets` (the Sustained bracket). |
 
 **"Activates when entering Burst (Skill) Stage N" is NOT `own_burst_activate`.**
 It describes the STAGE, so it fires in every cycle ANY ally of that tier takes
@@ -1655,6 +1656,16 @@ For skills that branch on squad composition or a per-Nikke status flag, use
   bursted is `slug` (cross-unit reactive trigger, e.g. Prika↔Mint).
 - `all_conditions(*conds)` — logical AND of conditions (e.g. Prika's Encore needs
   `ally_bursted("mint")` AND her own Performance `has_status`).
+- `boss_part_destructible()` / `boss_part_indestructible()` — the boss has (or
+  has not) destructible parts. A bracket selector for kit whose real driver is
+  unmodeled (Ark Ranger Black's battery, Diesel: Winter Sweets' Mute stacks),
+  NOT an event.
+- `boss_part_destruction_untimed()` — destructible parts but no declared
+  destruction times (2026-08-20). Hang the old "treated as up from battle start"
+  approximation on THIS, not on `boss_part_destructible()`: the moment an
+  encounter declares times, the approximation switches itself off and the
+  `part_destroyed` trigger takes its place. Leaving both on double-applies the
+  same buff.
 - `context.burst_used_this_cycle` — which slugs have burst this cycle (Crown's
   "allies who previously cast their Burst Skill").
 

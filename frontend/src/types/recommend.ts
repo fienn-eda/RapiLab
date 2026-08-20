@@ -23,6 +23,10 @@ export interface BossProfile {
   part_destructible: boolean // default false — boss has a part-destruction gimmick;
   // selects the ceiling (max-potential) model for units whose kit depends on
   // part destruction (e.g. Ark Ranger Black), false = floor (lower-bound) model.
+  part_destruction_times: number[] // default [] — 파츠가 실제로 깨지는 시각(초).
+  // 그 보스를 관측해야 나오는 값이라 공지에서 오지 않는다. 비어 있으면 파괴에
+  // 반응하는 스킬은 위 불리언만 보던 근사로 돌고, 시각이 있으면 그 시각마다
+  // 자기 지속시간만큼 창을 연다(레이븐·디젤).
   effective_range_band: BossRangeBand // default null — how far away the boss is
   // fought. The band decides WHICH weapons are inside their effective range and
   // collect +0.30 on their normal attacks: near pays SG/SMG, mid pays AR/MG, far

@@ -1,11 +1,13 @@
 """이번 회차 레이드 보스. `/update-raid-bosses` 스킬이 공지를 읽어 적고, 보스
 설정 화면의 카드 피커가 읽는다.
 
-기계가 읽는 필드는 보스마다 `weakness` · `range_band` · `core_diameter_px` 셋이다.
-앞의 둘은 공지가 그 단어로 적은 것을 엔진 어휘로 옮긴 값이고, 판독 시점에 스킬이
-채운다 — 앱이 `stated`의 한글 산문을 파싱하는 일은 없다. 코어 지름만 출처가
-다르다: 공지에 없고, 그 보스와 싸우며 화면에서 잰 값을 엔진 단위로 환산해 적는다
-(docs/measurements/accuracy-circle-and-core-px.md). 나머지(부위파괴·스쿼드 추천 등)는
+기계가 읽는 필드는 보스마다 `weakness` · `range_band` · `core_diameter_px` ·
+`part_destruction_times` 넷이다. 앞의 둘은 공지가 그 단어로 적은 것을 엔진 어휘로
+옮긴 값이고, 판독 시점에 스킬이 채운다 — 앱이 `stated`의 한글 산문을 파싱하는 일은
+없다. 뒤의 둘만 출처가 다르다: 공지에 없고, 그 보스와 싸우며 관측한 값이다. 코어
+지름은 화면에서 잰 길이를 엔진 단위로 환산해 적고
+(docs/measurements/accuracy-circle-and-core-px.md), 파괴 시각은 파츠가 실제로
+깨지는 초를 적는다. 나머지(부위파괴·스쿼드 추천 등)는
 대응이 확인되지 않아 `stated`에 원문 그대로만 남는다
 (docs/superpowers/specs/2026-08-07-raid-boss-rotation-import-design.md D3).
 
@@ -77,6 +79,15 @@ def validate_rotations(doc):
             if core is not None and not (isinstance(core, (int, float)) and core > 0):
                 raise ValueError(
                     f"{rid}/{boss['name']}: 코어 지름은 양수여야 한다 {core!r}")
+            # 코어 지름과 같은 이유로 .get이다 - 관측해야만 존재한다.
+            for moment in boss.get("part_destruction_times") or []:
+                # bool은 int의 하위형이라 따로 막는다: True가 시각 1.0으로 통과하면
+                # 판독이 「파괴된다」를 시각 자리에 적은 것이 조용히 살아남는다.
+                if isinstance(moment, bool) or not isinstance(moment, (int, float)) \
+                        or moment < 0:
+                    raise ValueError(
+                        f"{rid}/{boss['name']}: 파괴 시각은 0 이상의 수여야 한다 "
+                        f"{moment!r}")
     return doc
 
 

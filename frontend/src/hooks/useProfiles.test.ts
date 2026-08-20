@@ -10,7 +10,7 @@ const savedRun = (id: string): SavedRun => ({
   tab: 'solo',
   view: {
     mode: 'raid',
-    boss: { element: null, core_hittable: false, pierce_hits_body_behind_core: false, enemy_def: 31784, fight_duration: 180, part_destructible: false, core_diameter_px: null, effective_range_band: null, elemental_interrupt_required: false },
+    boss: { element: null, core_hittable: false, pierce_hits_body_behind_core: false, enemy_def: 31784, fight_duration: 180, part_destructible: false, part_destruction_times: [], core_diameter_px: null, effective_range_band: null, elemental_interrupt_required: false },
     numDecks: 5,
     decks: [],
     combinedTotalDamage: 1,
@@ -31,7 +31,7 @@ const storedResult = (n: number): StoredResult => ({
 const storedInputs: StoredInputs = {
   mode: 'raid',
   numDecks: 5,
-  boss: { element: null, core_hittable: false, pierce_hits_body_behind_core: false, enemy_def: 0, fight_duration: 180, part_destructible: false, core_diameter_px: null, effective_range_band: null, elemental_interrupt_required: false },
+  boss: { element: null, core_hittable: false, pierce_hits_body_behind_core: false, enemy_def: 0, fight_duration: 180, part_destructible: false, part_destruction_times: [], core_diameter_px: null, effective_range_band: null, elemental_interrupt_required: false },
   draft: null,
 }
 

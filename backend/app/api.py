@@ -57,6 +57,11 @@ class BossProfileIn(BaseModel):
     enemy_def: float = 0.0
     fight_duration: float = 180.0
     part_destructible: bool = False
+    # 이 인카운터에서 파츠가 실제로 깨지는 시각들(초). 파괴에 반응하는 스킬은
+    # 이것이 비어 있으면 `part_destructible` 불리언만 보던 근사로 돌고, 시각이
+    # 있으면 그 시각마다 자기 지속시간만큼 창을 연다 - squad_engine의
+    # boss_part_destruction_untimed가 둘을 가른다.
+    part_destruction_times: tuple[float, ...] = ()
     # How far away this boss is fought. The band decides WHICH weapons are
     # inside their effective range and collect +0.30 on their normal attacks:
     # near pays SG/SMG, mid pays AR/MG, far pays SR, and a Rocket Launcher is
@@ -97,6 +102,10 @@ class RotationBoss(BaseModel):
     # 보스는 None이고, 그때 코어히트율은 모델링되지 않는다 - 적격 평타가 전부
     # p=1.0을 받는 동작 그대로다.
     core_diameter_px: float | None = None
+    # 그 보스와 싸우며 관측한 파츠 파괴 시각들(초). 코어 지름과 같은 계열이라
+    # 공지에서 오지 않는다 - 안 관측한 보스는 빈 목록이고, 그때 파괴에 반응하는
+    # 스킬은 지금까지의 근사 그대로 돈다.
+    part_destruction_times: list[float] = []
     stated: dict[str, str | list[str]] = {}
 
 

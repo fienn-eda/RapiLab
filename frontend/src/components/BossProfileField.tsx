@@ -49,6 +49,10 @@ const foldedSummary = (draft: BossProfileDraft): string => {
   const secondsText = seconds === '' ? '—' : seconds
   const parts = [`방어력 ${defText}`, `${secondsText}초`]
   if (draft.core_hittable) parts.push(`코어 ${core === '' ? '—' : core}`)
+  // 부위파괴만 켜고 시각을 안 적은 상태는 「언제 깨지는지 모른다」이고 그때는
+  // 옛 근사로 도는 것이 맞다 - 「파괴 —」를 적으면 값이 있는데 못 읽은 것처럼 보인다.
+  const destructionTimes = draft.part_destruction_times.trim()
+  if (destructionTimes !== '') parts.push(`파괴 ${destructionTimes}`)
   return parts.join(' · ')
 }
 
@@ -171,6 +175,7 @@ export function BossProfileField({
 }: BossProfileFieldProps) {
   const elementId = useId()
   const rangeBandId = useId()
+  const destructionTimesId = useId()
   const [collapsed, setCollapsed] = useState(false)
   const bodyId = useId()
 
@@ -203,6 +208,11 @@ export function BossProfileField({
       // 코어 지름이 기록돼 있다는 것은 그 보스를 코어로 때릴 수 있다는 뜻이다.
       // 같이 켜지 않으면 엔진이 값을 무시해, 카드를 눌러도 아무 일이 없다.
       core_hittable: boss.core_diameter_px !== null,
+      part_destruction_times: boss.part_destruction_times.join(', '),
+      // 같은 규칙: 파괴 시각이 기록돼 있다는 것은 그 보스에 깨지는 파츠가 있다는
+      // 뜻이다. 같이 켜지 않으면 불리언만 보는 소비자(아크레인저의 브래킷 ·
+      // 디젤의 Mute)가 파츠 없는 보스를 가정한 채로 남는다.
+      part_destructible: boss.part_destruction_times.length > 0,
     })
   }
 
@@ -400,6 +410,7 @@ export function BossProfileField({
             className="group__details boss-profile__folded"
             open={
               errors?.enemy_def || errors?.fight_duration || errors?.core_diameter_px
+                || errors?.part_destruction_times
                 ? true
                 : undefined
             }
@@ -445,6 +456,50 @@ export function BossProfileField({
                   onFill={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
                 />
               </>
+            )}
+            {/* 파츠가 안 깨지는 보스에서는 적을 시각이 없으므로 칸도 없앤다 -
+                코어 지름과 같은 규칙이다. 시각이 여러 개라 NumberField로는 담기지
+                않아 자유 텍스트로 받고, 파싱은 validateBossProfileDraft가 한다. */}
+            {value.part_destructible && (
+              <div
+                className={`field${errors?.part_destruction_times ? ' field--invalid' : ''}`}
+              >
+                <span className="field__label-row">
+                  <label className="field__label" htmlFor={destructionTimesId}>
+                    파괴 시각
+                    <span className="field__hint"> 초, 쉼표로 구분</span>
+                  </label>
+                  <HelpTip label="파괴 시각">
+                    <HelpText>{HELP.boss.partDestructionTimes}</HelpText>
+                  </HelpTip>
+                </span>
+                <input
+                  id={destructionTimesId}
+                  className="field__input"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="예: 1, 61, 126"
+                  value={value.part_destruction_times}
+                  aria-invalid={errors?.part_destruction_times ? true : undefined}
+                  aria-describedby={
+                    errors?.part_destruction_times
+                      ? `${destructionTimesId}-error`
+                      : undefined
+                  }
+                  onChange={(event) =>
+                    onChange({ ...value, part_destruction_times: event.target.value })
+                  }
+                />
+                {errors?.part_destruction_times && (
+                  <span
+                    id={`${destructionTimesId}-error`}
+                    className="field__error"
+                    role="alert"
+                  >
+                    {errors.part_destruction_times}
+                  </span>
+                )}
+              </div>
             )}
           </details>
         </div>

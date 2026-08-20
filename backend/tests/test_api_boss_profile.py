@@ -57,6 +57,18 @@ def test_the_pierce_flag_a_caller_sends_is_the_flag_the_engine_gets():
         pierce_hits_body_behind_core=True)).pierce_hits_body_behind_core is True
 
 
+def test_declared_part_destruction_times_reach_the_engine():
+    # 튜플로 도착해야 한다 - BossProfile은 해시 가능한 값을 기대하는 자리(캐시 키)에
+    # 실릴 수 있고, 무엇보다 리스트면 호출자가 나중에 고칠 수 있다.
+    profile = boss_profile(BossProfileIn(
+        part_destructible=True, part_destruction_times=[1.0, 61.0, 126.0]))
+    assert profile.part_destruction_times == (1.0, 61.0, 126.0)
+
+
+def test_a_caller_that_sends_no_destruction_times_gets_the_untimed_default():
+    assert boss_profile(BossProfileIn()).part_destruction_times == ()
+
+
 def test_evaluate_deck_forwards_every_boss_field_the_simulator_accepts(monkeypatch):
     """The API's spread fixed one listing trap; this is the same trap one layer
     down. `evaluate_deck` hands simulate_raid its boss kwargs by NAME, so a new

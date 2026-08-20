@@ -201,9 +201,9 @@ const rotation: RaidRotation = {
   read_on: '2026-08-07',
   bosses: [
     { name: '선바스', weakness: 'Electric', range_band: 'near', core_diameter_px: null,
-      stated: { 거리: '근거리' } },
+      part_destruction_times: [], stated: { 거리: '근거리' } },
     { name: '토커티브', weakness: 'Water', range_band: 'far', core_diameter_px: null,
-      stated: { 거리: '원거리' } },
+      part_destruction_times: [], stated: { 거리: '원거리' } },
   ],
 }
 
@@ -214,7 +214,18 @@ const soloRotation: RaidRotation = {
   raid: 'solo',
   title: '솔로 레이드 39시즌',
   bosses: [{ name: '아일랜드 이터', weakness: 'Iron', range_band: null,
-             core_diameter_px: null, stated: {} }],
+             core_diameter_px: null, part_destruction_times: [], stated: {} }],
+}
+
+/** 파괴 시각이 관측된 보스. 솔로 40시즌의 「사치스러운 거미」 모양이다. */
+const timedRotation: RaidRotation = {
+  ...rotation,
+  id: 'solo-40',
+  raid: 'solo',
+  title: '솔로 레이드 40시즌',
+  bosses: [{ name: '사치스러운 거미', weakness: 'Fire', range_band: 'mid',
+             core_diameter_px: null, part_destruction_times: [1, 61, 126],
+             stated: {} }],
 }
 
 describe('BossProfileField 회차 보스 피커', () => {
@@ -263,6 +274,44 @@ describe('BossProfileField 회차 보스 피커', () => {
       boss_name: '토커티브',
       effective_range_band: 'far',
     })
+  })
+
+  it('관측된 파괴 시각이 있는 보스를 고르면 시각과 부위파괴가 함께 들어간다', async () => {
+    // 코어 지름이 core_hittable을 같이 켜는 것과 같은 규칙이다. 시각만 채우고
+    // 체크박스를 끄면, 불리언만 보는 소비자(아크레인저의 브래킷 · 디젤의 Mute)와
+    // 시각을 보는 소비자가 서로 다른 보스를 가정하게 된다.
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={onChange}
+        rotation={timedRotation}
+      />,
+    )
+    await user.click(screen.getByRole('radio', { name: '작열사치스러운 거미' }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        part_destruction_times: '1, 61, 126',
+        part_destructible: true,
+      }),
+    )
+  })
+
+  it('파괴 시각이 관측되지 않은 보스는 부위파괴를 켜지 않는다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), part_destructible: true }}
+        onChange={onChange}
+        rotation={soloRotation}
+      />,
+    )
+    await user.click(screen.getByRole('radio', { name: '철갑아일랜드 이터' }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ part_destruction_times: '', part_destructible: false }),
+    )
   })
 
   it('유니온 보스를 고르면 공지가 적은 적정거리가 들어간다', async () => {
@@ -398,6 +447,66 @@ describe('BossProfileField 보스 이름', () => {
     await user.click(screen.getByRole('radio', { name: '약점 없음' }))
 
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ boss_name: null }))
+  })
+})
+
+describe('BossProfileField 파괴 시각', () => {
+  it('부위파괴가 꺼져 있으면 칸이 없다', () => {
+    // 코어 지름과 같은 규칙이다 - 파괴가 없는 보스에 파괴 시각을 적는 칸은
+    // 켤 수는 있는데 아무 일도 안 일어나는 칸이다.
+    render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />)
+
+    expect(screen.queryByRole('textbox', { name: /파괴 시각/ })).not.toBeInTheDocument()
+  })
+
+  it('부위파괴를 켜면 칸이 나온다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), part_destructible: true }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('textbox', { name: /파괴 시각/ })).toBeInTheDocument()
+  })
+
+  it('접힌 요약이 파괴 시각까지 적는다 — 펼치지 않아도 무엇으로 계산되는지 보인다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft('31784'), part_destructible: true,
+                 part_destruction_times: '1, 61, 126' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/기타 설정 — 방어력 31,784 · 180초 · 파괴 1, 61, 126/))
+      .toBeInTheDocument()
+  })
+
+  it('파괴 시각이 비어 있으면 요약에 안 적는다', () => {
+    // 부위파괴만 켜고 시각을 안 적은 상태는 「모른다」다 - 요약에 「파괴 —」를
+    // 적으면 값이 있는데 못 읽은 것처럼 보인다.
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft('31784'), part_destructible: true }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/기타 설정 — 방어력 31,784 · 180초$/)).toBeInTheDocument()
+  })
+
+  it('파괴 시각 오류는 접힌 상자를 강제로 펼친다', () => {
+    const { container } = render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), part_destructible: true,
+                 part_destruction_times: '1, 나중에' }}
+        errors={{ part_destruction_times: '초를 쉼표로 구분해 적으세요' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(container.querySelector('details.boss-profile__folded')).toHaveAttribute('open')
   })
 })
 

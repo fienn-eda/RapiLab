@@ -21,6 +21,10 @@ export interface RotationBoss {
    *  아니라 실측에서 오는 유일한 필드다. 안 잰 보스는 null이고, 그때
    *  코어히트율은 모델링되지 않는다. */
   core_diameter_px: number | null
+  /** 그 보스와 싸우며 관측한 파츠 파괴 시각들(초). 코어 지름과 같은 계열이라
+   *  공지에서 오지 않는다. 빈 목록이면 파괴에 반응하는 스킬은 부위파괴 불리언만
+   *  보던 근사로 돈다. */
+  part_destruction_times: number[]
   /** 공지 원문 기록. 항목은 솔로/유니온이 다르므로 자유 형식이다. */
   stated: Record<string, string | string[]>
 }

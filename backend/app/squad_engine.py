@@ -31,6 +31,7 @@ class SquadContext:
         base_charge_time: dict[str, float] | None = None,
         boss_element: str | None = None,
         part_destructible: bool = False,
+        part_destruction_times: tuple[float, ...] = (),
         core_hittable: bool = False,
         target_grants: list[dict] | None = None,
         adjacency: dict[str, list[str]] | None = None,
@@ -67,6 +68,12 @@ class SquadContext:
         # Ranger Black's battery-driven Transformation) can read it via the
         # boss_part_destructible condition. False when unset.
         self.part_destructible: bool = part_destructible
+        # 이 인카운터에서 파츠가 실제로 깨지는 시각들(초). 공지가 아니라 그 보스를
+        # 관측해서 나오는 값이라 `core_diameter_px`와 같은 계열이고, 비어 있으면
+        # (기본값) 파괴에 반응하는 스킬은 `part_destructible` 불리언만 보던 옛
+        # 근사 그대로 돈다. 시각이 있으면 그 근사 대신 시각마다 스킬 자신의
+        # 지속시간만큼 창이 열린다 - `boss_part_destruction_untimed`가 둘을 가른다.
+        self.part_destruction_times: tuple[float, ...] = tuple(part_destruction_times)
         # whether the boss's core is exploitable this sim (raid_simulator's
         # core_hittable flag), so a rule gated on core existence (e.g.
         # Cinderella: Crystal Wave's MG-mode core-strike nuke) can read it.
@@ -563,6 +570,20 @@ def boss_part_indestructible() -> Callable[[SquadContext, str], bool]:
 
     def check(context: SquadContext, caster_slug: str) -> bool:
         return not context.part_destructible
+
+    return check
+
+
+def boss_part_destruction_untimed() -> Callable[[SquadContext, str], bool]:
+    """파괴 가능한 파츠는 있는데 파괴 **시각**은 선언되지 않은 인카운터.
+
+    파괴에 반응하는 버프는 시각을 모르면 「전투 내내 걸려 있다」는 ceiling으로
+    근사할 수밖에 없다. 그 근사를 이 조건에 매달아 두면, 시각이 선언된 순간
+    자동으로 꺼지고 `part_destroyed` 트리거가 그 자리를 대신한다 - 둘 다 켜지면
+    같은 버프가 두 번 걸린다."""
+
+    def check(context: SquadContext, caster_slug: str) -> bool:
+        return context.part_destructible and not context.part_destruction_times
 
     return check
 

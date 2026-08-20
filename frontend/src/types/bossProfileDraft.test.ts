@@ -17,6 +17,7 @@ describe('validateBossProfileDraft', () => {
       enemy_def: 0,
       fight_duration: 180,
       part_destructible: false,
+      part_destruction_times: [],
       core_diameter_px: null,
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -32,6 +33,7 @@ describe('validateBossProfileDraft', () => {
       enemy_def: '15000',
       fight_duration: '90',
       part_destructible: true,
+      part_destruction_times: '',
       core_diameter_px: '',
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -43,6 +45,7 @@ describe('validateBossProfileDraft', () => {
       enemy_def: 15000,
       fight_duration: 90,
       part_destructible: true,
+      part_destruction_times: [],
       core_diameter_px: null,
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -88,6 +91,7 @@ describe('bossProfileToDraft', () => {
       enemy_def: '15000',
       fight_duration: '90',
       part_destructible: true,
+      part_destruction_times: '',
       core_diameter_px: '33.33',
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -172,5 +176,60 @@ describe('core diameter', () => {
     delete (old as { core_diameter_px?: unknown }).core_diameter_px
 
     expect(bossProfileToDraft(old).core_diameter_px).toBe('')
+  })
+})
+
+describe('파츠 파괴 시각', () => {
+  it('쉼표로 구분된 초를 목록으로 읽는다', () => {
+    const draft: BossProfileDraft = {
+      ...makeDefaultBossProfileDraft(),
+      part_destructible: true,
+      part_destruction_times: '1, 61, 126',
+    }
+    expect(validateBossProfileDraft(draft).value!.part_destruction_times)
+      .toEqual([1, 61, 126])
+  })
+
+  it('빈 칸은 「관측 안 함」이라 빈 목록이다', () => {
+    const { value } = validateBossProfileDraft(makeDefaultBossProfileDraft())
+    expect(value!.part_destruction_times).toEqual([])
+  })
+
+  it('숫자가 아닌 시각은 거부한다', () => {
+    const draft = {
+      ...makeDefaultBossProfileDraft(),
+      part_destruction_times: '1, 나중에',
+    }
+    const { errors, value } = validateBossProfileDraft(draft)
+
+    expect(errors.part_destruction_times).toBeTruthy()
+    expect(value).toBeUndefined()
+  })
+
+  it('음수 시각은 거부한다', () => {
+    const draft = { ...makeDefaultBossProfileDraft(), part_destruction_times: '-1' }
+    expect(validateBossProfileDraft(draft).errors.part_destruction_times).toBeTruthy()
+  })
+
+  it('폼으로 왕복해도 시각이 살아남는다', () => {
+    const draft: BossProfileDraft = {
+      ...makeDefaultBossProfileDraft(),
+      part_destructible: true,
+      part_destruction_times: '1, 61, 126',
+    }
+    const { value: boss } = validateBossProfileDraft(draft)
+    const restored = validateBossProfileDraft(bossProfileToDraft(boss!))
+
+    // 값을 따로 단언하는 것은 코어 지름과 같은 이유다 - toEqual만 두면 양쪽 다
+    // 필드가 없을 때도 통과한다.
+    expect(restored.value!.part_destruction_times).toEqual([1, 61, 126])
+    expect(restored.value).toEqual(boss)
+  })
+
+  it('이 필드가 없던 시절 저장된 프로필도 복원된다', () => {
+    const old = { ...validateBossProfileDraft(makeDefaultBossProfileDraft()).value! }
+    delete (old as { part_destruction_times?: unknown }).part_destruction_times
+
+    expect(bossProfileToDraft(old).part_destruction_times).toBe('')
   })
 })
