@@ -380,12 +380,12 @@ def test_a_unit_without_a_tap_interval_falls_back_to_its_pause():
         assert gap == pytest.approx(MILK_MOTION_DELAY)
 
 
-def test_full_charges_per_magazine_reads_the_timeline():
+def test_full_charges_per_mixed_magazine_reads_the_timeline():
     """화면이 「풀차지 N회 + 톡톡이」라고 말할 때의 N - 손으로 세지 않고
     엔진이 만든 기록에서 읽는다."""
-    from app.raid_simulator import full_charges_per_magazine
+    from app.raid_simulator import full_charges_per_mixed_magazine
     shots = generate_segmented_shots(_milk_weapon(), (), 30.0)
-    assert full_charges_per_magazine(shots) == 1
+    assert full_charges_per_mixed_magazine(shots) == 1
 
 
 def test_a_wholly_full_charge_shot_record_reports_zero():
@@ -393,28 +393,26 @@ def test_a_wholly_full_charge_shot_record_reports_zero():
     매거진은 최빈값 후보에서 빠진다(F3) - 전 구간이 다 그렇다면 남는 후보가
     없으므로 0이다.
 
-    (2026-08-20) 이전에는 이 상황에서 `MILK_CAPACITY`를 기대했다. 그 계약은
-    `full_charges_per_magazine`이 매거진마다 「풀차지 발수」만 세던 시절의 것이고,
-    이제는 「톡톡이와 섞은 매거진의 풀차지 발수」를 센다 - 통째-풀차지 매거진을
-    최빈값에 끼우면 최빈값이 `capacity`가 되어 「풀차지 6회 + 톡톡이」라는 모순된
-    문구가 나온다(F3 finding). 실전에서는 이 값이 화면에 안 나온다 - 호출부
+    통째-풀차지 매거진을 최빈값에 끼우면 최빈값이 `capacity`가 되어 화면이
+    「풀차지 6회 + 톡톡이」라는 모순된 문구를 낸다 - 6발 매거진을 6번 풀차지했다면
+    그 매거진의 톡톡이는 0발이다. 실전에서는 이 0이 화면에 안 나온다 - 호출부
     (`raid_simulator._simulate_raid_once`)가 `weapon.get("tap_fire") and any(톡톡이
     샷 존재)`로 먼저 게이팅하므로, 톡톡이 샷이 정말 하나도 없으면 이 함수 자체가
     안 불린다."""
-    from app.raid_simulator import full_charges_per_magazine
+    from app.raid_simulator import full_charges_per_mixed_magazine
     weapon = _milk_weapon()
     weapon["tap_fire"] = False
     shots = generate_segmented_shots(weapon, (), 30.0)
-    assert full_charges_per_magazine(shots) == 0
+    assert full_charges_per_mixed_magazine(shots) == 0
 
 
 def test_an_all_tap_magazine_reports_zero():
     """앨리스처럼 창이 없어 매거진을 통째로 톡톡이로 쏘면 0 - 화면은 그때
     기존의 「항상 톡톡이」 문구를 골라야 한다."""
-    from app.raid_simulator import full_charges_per_magazine
+    from app.raid_simulator import full_charges_per_mixed_magazine
     shots = generate_segmented_shots(
         _milk_weapon(full_charge_window=None, reload_time=0.0), (), 30.0)
-    assert full_charges_per_magazine(shots) == 0
+    assert full_charges_per_mixed_magazine(shots) == 0
 
 
 def test_a_wholly_full_charge_magazine_does_not_win_the_mode_over_mixed_ones():
@@ -427,7 +425,7 @@ def test_a_wholly_full_charge_magazine_does_not_win_the_mode_over_mixed_ones():
     재현: 차속 +80.15%(앨리스 버스트 실측과 같은 크기)를 20초 전투의 첫 10초에
     건다. 앞쪽 매거진은 차지가 거의 공짜라 통째로 풀차지되고, 버프가 빠진 뒤의
     매거진은 평소처럼 첫 탄만 풀차지+톡톡이 섞임으로 돌아온다."""
-    from app.raid_simulator import full_charges_per_magazine
+    from app.raid_simulator import full_charges_per_mixed_magazine
 
     def charge_speed_percent_at(t):
         return 0.8015 if t < 10.0 else 0.0
@@ -436,7 +434,7 @@ def test_a_wholly_full_charge_magazine_does_not_win_the_mode_over_mixed_ones():
         _milk_weapon(), (), 20.0, charge_speed_percent_at=charge_speed_percent_at)
     # 재현 조건 확인 - 통째-풀차지 매거진과 톡톡이 섞인 매거진이 실제로 공존한다.
     assert any(s.extra_charge_bonus == 0.0 for s in shots), "이 판에 톡톡이가 있어야 한다"
-    mode = full_charges_per_magazine(shots)
+    mode = full_charges_per_mixed_magazine(shots)
     assert mode != MILK_CAPACITY, (
         "최빈값이 매거진 크기와 같으면 화면이 「풀차지 6회 + 톡톡이」라는 "
         "모순된 문구를 낸다")

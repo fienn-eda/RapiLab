@@ -943,8 +943,9 @@ def _stage_seconds(stage_table, conditional_full_burst_deltas):
     return seconds
 
 
-def full_charges_per_magazine(shot_records):
-    """매거진 하나에 든 풀차지 발수 - 화면이 「풀차지 N회 + 톡톡이」라고 말할 때의 N.
+def full_charges_per_mixed_magazine(shot_records):
+    """톡톡이가 섞인 매거진 하나에 든 풀차지 발수 - 화면이 「풀차지 N회 + 톡톡이」
+    라고 말할 때의 N.
 
     매거진마다 다를 수 있으므로(차속 창이 열린 구간은 다른 k가 나온다) **최빈값**을
     쓴다. 평균은 정수가 아니고, 첫 매거진 하나는 전투 시작 구간이라 대표성이 없다.
@@ -1737,7 +1738,7 @@ def _simulate_raid_once(
         if weapon.get("tap_fire") and any(
                 r.extra_charge_bonus == 0.0 for r in shot_records):
             tap_fire_used.add(slug)
-            tap_fire_full_rounds[slug] = full_charges_per_magazine(shot_records)
+            tap_fire_full_rounds[slug] = full_charges_per_mixed_magazine(shot_records)
         # What each shot ACCOUNTS for toward squad ammo-expended counters. A
         # pouch skill fires one bullet and books hundreds of rounds, and which
         # pouch skill is doing the spending depends on the Full Burst window.
