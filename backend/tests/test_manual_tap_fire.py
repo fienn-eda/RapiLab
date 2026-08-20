@@ -438,3 +438,23 @@ def test_a_wholly_full_charge_magazine_does_not_win_the_mode_over_mixed_ones():
     assert mode != MILK_CAPACITY, (
         "최빈값이 매거진 크기와 같으면 화면이 「풀차지 6회 + 톡톡이」라는 "
         "모순된 문구를 낸다")
+
+
+def test_tap_shots_carry_an_explicit_flag():
+    """톡톡이 판별을 값이 아니라 플래그로 한다.
+
+    `extra_charge_bonus`로 판별하던 자리가 셋 있었고, 톡톡이 배율이 100%가 아니게
+    되는 순간 전부 조용히 뒤집힌다 - 집계는 톡톡이를 풀차지로 세고, 화면 안내는
+    톡톡이를 못 찾는다. 플래그는 그 결합을 끊는다.
+    """
+    shots = generate_segmented_shots(_milk_weapon(), (), 6.0)
+    magazine = shots[:MILK_CAPACITY]
+    assert [s.is_tap_fire for s in magazine] == [False, True, True, True, True, True]
+
+
+def test_a_full_charge_only_magazine_flags_nothing():
+    """톡톡이를 안 쓰는 유닛의 샷에는 플래그가 안 붙는다."""
+    weapon = _milk_weapon()
+    weapon["tap_fire"] = False
+    shots = generate_segmented_shots(weapon, (), 6.0)
+    assert not any(s.is_tap_fire for s in shots[:MILK_CAPACITY])

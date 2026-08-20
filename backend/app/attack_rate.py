@@ -1383,6 +1383,10 @@ class ShotRecord:
     # never reloads, and its `weapon` label is a hand-written archetype rather
     # than a measured circle, so it takes the converged diameter.
     magazine_index: int | None = None
+    # 톡톡이(차지를 안 채우고 곧바로 놓은) 샷인가. 배율과 차지 대미지 적용이 이것으로
+    # 갈린다. 값(`extra_charge_bonus`)으로 추론하지 않고 명시적으로 드는 이유는, 그
+    # 값이 톡톡이의 배율이기도 해서 배율이 바뀌면 판별이 함께 뒤집히기 때문이다.
+    is_tap_fire: bool = False
 
 
 def _base_shot_records(base, window_start, window_end,
@@ -1464,7 +1468,7 @@ def _base_shot_records(base, window_start, window_end,
                     shot_time, weapon, base["damage_percent"],
                     full_bonus if is_full else 0.0,
                     is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1),
-                    magazine_index=i))
+                    magazine_index=i, is_tap_fire=not is_full))
                 last_shot_time = shot_time
             actual_reload = reload_time_with_speed(base["reload_time"], reload_speed_percent_at(last_shot_time))
             magazine_start = last_shot_time + actual_reload

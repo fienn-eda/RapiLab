@@ -973,7 +973,7 @@ def full_charges_per_mixed_magazine(shot_records):
             current_has_tap = False
         if current_full is None:
             continue
-        if record.extra_charge_bonus > 0:
+        if not record.is_tap_fire:
             current_full += 1
         else:
             current_has_tap = True
@@ -1761,12 +1761,10 @@ def _simulate_raid_once(
             heating_speed_percent_at=heating_speed_percent_at,
         )
         shot_times = [r.time for r in shot_records]
-        # 톡톡이를 저울질하는 유닛이 실제로 그 모드를 고른 매거진이 있었는지. 화면은
         # 「이 덱에서 어떻게 계산했는지」를 말해야 하는데, 그 답이 이제 유닛의 속성이
-        # 아니라 **덱의 재장전 속도와 차속 창**에 달렸다. 톡톡이 샷은 차지 보너스가
-        # 0이고 풀차지 샷은 0보다 크므로 기록에서 그대로 읽힌다.
-        if weapon.get("tap_fire") and any(
-                r.extra_charge_bonus == 0.0 for r in shot_records):
+        # 아니라 **덱의 재장전 속도와 차속 창**에 달렸다. 어느 샷이 톡톡이인지는
+        # 기록의 `is_tap_fire`가 답한다.
+        if weapon.get("tap_fire") and any(r.is_tap_fire for r in shot_records):
             tap_fire_used.add(slug)
             tap_fire_full_rounds[slug] = full_charges_per_mixed_magazine(shot_records)
         # What each shot ACCOUNTS for toward squad ammo-expended counters. A
