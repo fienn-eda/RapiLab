@@ -1236,6 +1236,7 @@ def _simulate_raid_once(
     def _damage_instance(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,
         hits_core=False, on_charge_weapon=None, is_normal_attack=False, core_hit_share=1.0,
+        is_tap_fire=False,
         weapon=None,
     ):
         bundle = _stat_bundle(slug, time)
@@ -1301,11 +1302,18 @@ def _simulate_raid_once(
             # separate damage instance and collects none of it, however
             # charged the shot that triggered it was.
             #
+            # 그래서 **톡톡이 샷은 이 버프를 안 받는다** - 차지를 안 채운 샷이므로
+            # fully-charged가 아니다. 브래디 실측(2026-08-20)이 그것을 보였다: 차지
+            # 대미지를 7.59%에서 11.11%로 올려도 같은 게이지의 대미지가 +0.06%밖에
+            # 안 달라진다(직접 곱해진다면 +3.27%). 남는 것은 그 샷 자신의 게이지분
+            # (`extra_charge_bonus` = 103%)뿐이다.
+            #
             # Only the normal-attack path passes on_charge_weapon, and it
             # answers per shot because a weapon transform can flip mid-fight
             # (Nayuta's burst turns her SMG into a charge attack for 10 sec).
             charge_damage_bonus=(
-                bundle["charge_damage_bonus"] + extra_charge_bonus
+                (extra_charge_bonus if is_tap_fire
+                 else bundle["charge_damage_bonus"] + extra_charge_bonus)
                 if on_charge_weapon
                 else 0.0
             ),
@@ -1358,6 +1366,7 @@ def _simulate_raid_once(
         on_charge_weapon=None, core_eligible_override=None, always_core_hit=False,
         spread_diameter=None,
         magazine_index=None,
+        is_tap_fire=False,
         weapon=None,
         damage_type_gate=None,
     ):
@@ -1389,6 +1398,7 @@ def _simulate_raid_once(
             # circle tightens as the magazine empties. None = not a magazine
             # round, so the converged diameter applies.
             "magazine_index": magazine_index,
+            "is_tap_fire": is_tap_fire,
         })
 
     def _resolve_percent(ev):
@@ -1971,6 +1981,7 @@ def _simulate_raid_once(
                    always_core_hit=rec.always_core_hit,
                    spread_diameter=rec.spread_diameter,
                    magazine_index=rec.magazine_index,
+                   is_tap_fire=rec.is_tap_fire,
                    weapon=rec.weapon,
                    damage_type_gate=rec.damage_type_gate)
         shot_times_by_slug[slug] = shot_times
@@ -2417,6 +2428,7 @@ def _simulate_raid_once(
                     core_hit_share=share,
                     on_charge_weapon=ev["on_charge_weapon"],
                     is_normal_attack=is_normal_attack,
+                    is_tap_fire=ev["is_tap_fire"],
                     weapon=ev["weapon"],
                 ) * weight,
                 "source": ev["source"],

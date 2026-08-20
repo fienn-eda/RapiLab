@@ -40,6 +40,10 @@ SMG = {"weapon": "SMG", "damage_percent": 10.0, "max_ammo": 300,
        "reload_time": 2.0, "charge_time": 0.0, "charge_damage_percent": 100.0}
 SR = {"weapon": "SR", "damage_percent": 10.0, "max_ammo": 6,
       "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 100.0}
+# 재장전이 0이면 톡톡이가 언제나 이기므로 이 무기는 매거진을 통째로 톡톡이로 쏜다 -
+# 그래야 아래 테스트가 톡톡이 샷만 보고 있다는 것이 보장된다.
+TAP_SR = {**SR, "reload_time": 0.0, "tap_fire": True,
+          "tap_fire_interval": 15 / 60, "charge_motion_delay": 22 / 60}
 
 
 def _normal_damage(weapon_stats, charge_bonus, schedules=None):
@@ -117,3 +121,30 @@ def test_a_skill_nuke_collects_no_charge_damage_even_from_a_charge_bearer():
     shot = next(e["damage"] for e in result["damage_log"]
                 if e["source"] == "normal_attack")
     assert round(shot, 4) == round(10000 * 0.10 * 3.5, 4)
+
+
+def test_the_tap_fire_fixture_actually_taps():
+    """아래 테스트가 무언가를 검증하려면 이 무기가 **실제로** 톡톡이를 써야 한다.
+
+    안 그러면 「차지 대미지가 톡톡이에 안 붙는다」가 톡톡이 샷이 하나도 없어서
+    참인 항진명제가 된다.
+    """
+    from app.attack_rate import generate_segmented_shots
+    shots = generate_segmented_shots(TAP_SR, (), 10.0)
+    assert shots, "이 무기가 한 발도 안 쏜다"
+    assert all(s.is_tap_fire for s in shots)
+
+
+def test_a_charge_damage_buff_does_not_reach_a_tap_fired_shot():
+    """톡톡이 샷은 차지를 안 채웠으므로 fully-charged가 아니다 - 이 파일의 첫
+    문단이 말하는 그 조건을 만족하지 않는다.
+
+    브래디 실측(2026-08-20)이 그것을 보였다: 차지 대미지를 7.59%에서 11.11%로
+    올려도 같은 게이지의 대미지가 +0.06%밖에 안 달라진다. 직접 곱해진다면
+    +3.27%여야 한다. docs/measurements/bready-charge-damage.md
+
+    바로 위 `test_a_charge_damage_buff_still_reaches_a_charge_weapon`이 같은 SR을
+    풀차지로 쏠 때는 버프가 통한다는 것을 지키고 있으므로, 이 둘이 함께
+    「풀차지에는 붙고 톡톡이에는 안 붙는다」를 못박는다.
+    """
+    assert _normal_damage(TAP_SR, 1.008) == _normal_damage(TAP_SR, 0.0)
