@@ -22,6 +22,23 @@ import type { BossRangeBand } from '../types/recommend'
  * 새 배열을 넘기면 guideFor가 매번 다른 참조를 내기 때문이다. */
 const NO_EVENTS: GuideEvent[] = []
 
+/** 회차 데이터가 실어 온 가이드를 편집 가능한 이벤트로. **이 값이 릴리즈 빌드에
+ * 가이드를 싣는 유일한 길이다** - localStorage는 기기에 붙지 번들에 안 들어간다.
+ *
+ * id를 자리 번호로 짓는 이유: 번들 값에는 id가 없고(그건 편집 화면의 사정이지
+ * 데이터가 알 바가 아니다), 매 렌더 새로 만들면 React 키가 바뀌어 입력 칸이
+ * 통째로 다시 마운트된다. */
+const bundledEvents = (rotation: RaidRotation | null, bossName: string | null): GuideEvent[] => {
+  if (rotation === null || bossName === null) return NO_EVENTS
+  const boss = rotation.bosses.find((b) => b.name === bossName)
+  if (boss?.guide === undefined || boss.guide.length === 0) return NO_EVENTS
+  return boss.guide.map((entry, index) => ({
+    id: `bundled-${index}`,
+    at: entry.at,
+    text: entry.text,
+  }))
+}
+
 const RANGE_BAND_LABEL: Record<Exclude<BossRangeBand, null>, string> = {
   near: '근거리',
   mid: '중거리',
@@ -45,7 +62,7 @@ interface SeasonGuideCardProps {
 }
 
 export function SeasonGuideCard({ rotation, boss }: SeasonGuideCardProps) {
-  const { guideFor, setGuide } = useBossGuides()
+  const { guideFor, setGuide, hasOverride, clearGuide } = useBossGuides()
 
   // 저장할 칸의 이름. 회차 보스를 안 골랐으면 없다 - 그 상태에서 입력을 받으면
   // 쓴 글이 어디에도 안 남는다.
@@ -66,6 +83,9 @@ export function SeasonGuideCard({ rotation, boss }: SeasonGuideCardProps) {
   // 없는 값이 계산에 쓰이는 것처럼 보이지 않는다.
   const times = boss.part_destructible ? parseTimes(boss.part_destruction_times) : []
 
+  // 회차 데이터가 실어 온 기본 가이드. 앱에서 고친 것이 있으면 그쪽이 이긴다.
+  const bundled = bundledEvents(rotation, boss.boss_name)
+
   const title = guideTitle(rotation)
 
   return (
@@ -83,12 +103,26 @@ export function SeasonGuideCard({ rotation, boss }: SeasonGuideCardProps) {
       {key === null ? (
         <p className="guide-card__empty">위에서 이번 회차 보스를 고르세요.</p>
       ) : (
-        <FightTimeline
-          fightDuration={Number(boss.fight_duration)}
-          destructionTimes={times}
-          events={guideFor(key, NO_EVENTS)}
-          onChange={(events) => setGuide(key, events)}
-        />
+        <>
+          <FightTimeline
+            fightDuration={Number(boss.fight_duration)}
+            destructionTimes={times}
+            events={guideFor(key, bundled)}
+            onChange={(events) => setGuide(key, events)}
+          />
+          {/* 번들 값이 있고 그걸 고쳤을 때만. 번들 값이 없으면 되돌릴 곳이
+              없고, 그때 버튼을 그리면 「빈 목록으로 만들기」가 되어 이름과
+              다른 일을 한다. */}
+          {bundled.length > 0 && hasOverride(key) && (
+            <button
+              type="button"
+              className="guide-card__revert"
+              onClick={() => clearGuide(key)}
+            >
+              기본값으로 되돌리기
+            </button>
+          )}
+        </>
       )}
     </section>
   )

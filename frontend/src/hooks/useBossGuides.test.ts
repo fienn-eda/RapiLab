@@ -66,6 +66,37 @@ describe('useBossGuides', () => {
     expect(loaded[0].id).toBeTruthy()
   })
 
+  // 번들 값(회차 데이터의 guide)이 fallback으로 오고, 앱에서 고치면 그쪽이
+  // 이긴다. 되돌리려면 덮어쓴 것이 있는지부터 알아야 한다.
+  it('덮어쓴 것이 있는지 말해 준다', () => {
+    const { result } = renderHook(() => useBossGuides())
+    expect(result.current.hasOverride(KEY)).toBe(false)
+
+    act(() => result.current.setGuide(KEY, [event()]))
+    expect(result.current.hasOverride(KEY)).toBe(true)
+  })
+
+  it('되돌리면 번들 값이 다시 보인다', () => {
+    const bundled = [event({ id: 'bundled-0', text: '번들 값' })]
+    const { result } = renderHook(() => useBossGuides())
+
+    act(() => result.current.setGuide(KEY, [event({ text: '내가 쓴 것' })]))
+    expect(result.current.guideFor(KEY, bundled)[0].text).toBe('내가 쓴 것')
+
+    act(() => result.current.clearGuide(KEY))
+    expect(result.current.hasOverride(KEY)).toBe(false)
+    expect(result.current.guideFor(KEY, bundled)[0].text).toBe('번들 값')
+  })
+
+  it('되돌린 것은 localStorage에서도 사라진다', () => {
+    const { result } = renderHook(() => useBossGuides())
+    act(() => result.current.setGuide(KEY, [event()]))
+    act(() => result.current.clearGuide(KEY))
+
+    const reread = renderHook(() => useBossGuides())
+    expect(reread.result.current.hasOverride(KEY)).toBe(false)
+  })
+
   it('읽기가 막혀 있어도 던지지 않는다', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked')

@@ -125,6 +125,66 @@ def test_a_boss_with_no_part_destruction_times_key_is_allowed():
     assert validate_rotations(a_doc(a_rotation(bosses=boss)))
 
 
+def test_a_declared_guide_is_allowed():
+    # 가이드는 공지가 아니라 Fienn이 직접 싸워 보고 적는 값이다 - 코어 지름·
+    # 파괴 시각과 같은 계열이라 키 자체가 없을 수 있다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "guide": [{"at": 12, "text": "탄막 - 엄폐"},
+                       {"at": None, "text": "잡몹이 계속 나온다"}],
+             "stated": {}}]
+    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_boss_with_no_guide_key_is_allowed():
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None, "stated": {}}]
+    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_an_empty_guide_is_allowed():
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "guide": [], "stated": {}}]
+    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_negative_guide_time_is_rejected():
+    # 파괴 시각과 같은 규칙이다 - 전투가 시작하기 전에 일어나는 패턴은 없다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "guide": [{"at": -5, "text": "탄막"}], "stated": {}}]
+    with pytest.raises(ValueError, match="보스"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_boolean_guide_time_is_rejected():
+    # bool은 int의 하위형이라 따로 막는다: True가 시각 1로 통과하면 판독이
+    # 「일어난다」를 시각 자리에 적은 것이 조용히 살아남는다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "guide": [{"at": True, "text": "탄막"}], "stated": {}}]
+    with pytest.raises(ValueError, match="보스"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_guide_entry_without_text_is_rejected():
+    # 시각만 있고 할 말이 없는 항목은 화면에서 빈 줄이 된다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "guide": [{"at": 12}], "stated": {}}]
+    with pytest.raises(ValueError, match="보스"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_non_string_guide_text_is_rejected():
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "guide": [{"at": 12, "text": 3}], "stated": {}}]
+    with pytest.raises(ValueError, match="보스"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_guide_that_is_not_a_list_is_rejected():
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "guide": "탄막은 엄폐로", "stated": {}}]
+    with pytest.raises(ValueError, match="보스"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
 def test_a_boss_that_spawns_adds_is_allowed():
     boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
              "spawns_adds": True, "stated": {}}]

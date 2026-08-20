@@ -19,6 +19,23 @@ const solo40: RaidRotation = {
   bosses: [],
 }
 
+/** 회차 데이터가 가이드를 실어 온 모양. 이 값이 릴리즈 빌드에 담기는 쪽이다. */
+const withBundledGuide = (guide: { at: number | null; text: string }[]): RaidRotation => ({
+  ...solo40,
+  bosses: [
+    {
+      name: '사치스러운 거미',
+      weakness: 'Fire',
+      range_band: 'mid',
+      core_diameter_px: null,
+      part_destruction_times: [1, 61, 126],
+      spawns_adds: true,
+      guide,
+      stated: {},
+    },
+  ],
+})
+
 /** 40시즌 「사치스러운 거미」를 고른 상태. 공지의 약점이 Fire라 보스 본인
  *  속성은 Wind다(bossElementFor). */
 const picked = (over: Partial<BossProfileDraft> = {}): BossProfileDraft => ({
@@ -104,6 +121,57 @@ describe('SeasonGuideCard', () => {
 
     rerender(<SeasonGuideCard rotation={solo40} boss={picked()} />)
     expect(screen.getByDisplayValue('알 먼저')).toBeInTheDocument()
+  })
+
+  it('회차 데이터의 가이드가 기본으로 깔린다 - 이게 릴리즈에 실리는 쪽이다', () => {
+    render(
+      <SeasonGuideCard
+        rotation={withBundledGuide([{ at: 12, text: '탄막 — 엄폐' }])}
+        boss={picked()}
+      />,
+    )
+    expect(screen.getByDisplayValue('탄막 — 엄폐')).toBeInTheDocument()
+  })
+
+  it('앱에서 고치면 번들 값을 덮는다', async () => {
+    const user = userEvent.setup()
+    const rotation = withBundledGuide([{ at: 12, text: '탄막 — 엄폐' }])
+    render(<SeasonGuideCard rotation={rotation} boss={picked()} />)
+
+    await user.type(screen.getByDisplayValue('탄막 — 엄폐'), '로 넘긴다')
+    expect(screen.getByDisplayValue('탄막 — 엄폐로 넘긴다')).toBeInTheDocument()
+  })
+
+  it('고친 적이 없으면 되돌리기가 없다', () => {
+    render(
+      <SeasonGuideCard
+        rotation={withBundledGuide([{ at: 12, text: '탄막 — 엄폐' }])}
+        boss={picked()}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: '기본값으로 되돌리기' })).not.toBeInTheDocument()
+  })
+
+  it('되돌리면 번들 값이 다시 보인다', async () => {
+    const user = userEvent.setup()
+    const rotation = withBundledGuide([{ at: 12, text: '탄막 — 엄폐' }])
+    render(<SeasonGuideCard rotation={rotation} boss={picked()} />)
+
+    await user.type(screen.getByDisplayValue('탄막 — 엄폐'), '!')
+    await user.click(screen.getByRole('button', { name: '기본값으로 되돌리기' }))
+
+    expect(screen.getByDisplayValue('탄막 — 엄폐')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '기본값으로 되돌리기' })).not.toBeInTheDocument()
+  })
+
+  // 번들 값이 없는 보스에서는 되돌릴 곳이 없다 - 버튼을 그리면 「빈 목록으로
+  // 만들기」가 되어 이름과 다른 일을 한다.
+  it('번들 가이드가 없으면 되돌리기가 안 나온다', async () => {
+    const user = userEvent.setup()
+    render(<SeasonGuideCard rotation={solo40} boss={picked()} />)
+
+    await user.click(screen.getByRole('button', { name: '이벤트 추가' }))
+    expect(screen.queryByRole('button', { name: '기본값으로 되돌리기' })).not.toBeInTheDocument()
   })
 
   it('부위파괴가 꺼져 있으면 파괴 행이 없다', () => {

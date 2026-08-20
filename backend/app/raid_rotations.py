@@ -96,6 +96,36 @@ def validate_rotations(doc):
             if adds is not None and not isinstance(adds, bool):
                 raise ValueError(
                     f"{rid}/{boss['name']}: 잡몹 생성은 예/아니오여야 한다 {adds!r}")
+            # 가이드도 코어 지름과 같은 계열이라 .get이다 - 공지가 아니라 그 보스와
+            # 싸워 본 사람이 적는 값이라 없을 수 있다. 엔진은 이 값을 읽지 않고
+            # 화면에만 뜨지만, 깨진 채로 번들에 실리면 가이드 칸이 통째로 빈다.
+            guide = boss.get("guide")
+            if guide is not None:
+                if not isinstance(guide, list):
+                    raise ValueError(
+                        f"{rid}/{boss['name']}: 가이드는 목록이어야 한다 {guide!r}")
+                for entry in guide:
+                    if not isinstance(entry, dict):
+                        raise ValueError(
+                            f"{rid}/{boss['name']}: 가이드 항목은 객체여야 한다 "
+                            f"{entry!r}")
+                    at = entry.get("at")
+                    # None은 시각에 매이지 않는 「상시」 항목이다. bool을 따로 막는
+                    # 것은 파괴 시각과 같은 이유다 - True가 시각 1로 통과하면
+                    # 「일어난다」를 시각 자리에 적은 것이 조용히 살아남는다.
+                    if at is not None and (
+                        isinstance(at, bool)
+                        or not isinstance(at, (int, float))
+                        or at < 0
+                    ):
+                        raise ValueError(
+                            f"{rid}/{boss['name']}: 가이드 시각은 0 이상의 수이거나 "
+                            f"비어 있어야 한다 {at!r}")
+                    text = entry.get("text")
+                    if not isinstance(text, str):
+                        raise ValueError(
+                            f"{rid}/{boss['name']}: 가이드 항목에 설명이 없다 "
+                            f"{entry!r}")
     return doc
 
 

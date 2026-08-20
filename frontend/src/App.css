@@ -1350,6 +1350,24 @@
   color: var(--text-muted);
 }
 
+/* 번들 값을 고쳤을 때만 나온다. 되돌리는 일은 자주 하는 것이 아니라 링크처럼
+   조용히 둔다 - 버튼으로 세우면 「이벤트 추가」와 같은 급으로 읽힌다. */
+.guide-card__revert {
+  align-self: start;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.guide-card__revert:hover {
+  color: var(--text);
+}
+
 /* Fight timeline ---------------------------------------------------------- */
 
 /* 전투 한 판을 세로 한 줄로. 남은 시간이 위에서 아래로 3:00 → 0:00으로 줄어들고

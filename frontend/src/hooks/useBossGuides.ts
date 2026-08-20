@@ -54,9 +54,14 @@ const readGuides = (): Record<string, GuideEvent[]> => {
 }
 
 export interface BossGuides {
-  /** 저장된 이벤트들. 없으면 fallback. */
+  /** 저장된 이벤트들. 없으면 fallback(회차 데이터가 실어 온 번들 값). */
   guideFor: (key: string, fallback: GuideEvent[]) => GuideEvent[]
   setGuide: (key: string, events: GuideEvent[]) => void
+  /** 이 보스의 가이드를 앱에서 고친 적이 있는가. 「기본값으로 되돌리기」를
+   *  보일지 정하는 값이다 - 고친 적이 없으면 되돌릴 것도 없다. */
+  hasOverride: (key: string) => boolean
+  /** 덮어쓴 것을 지운다. 지우면 번들 값이 다시 보인다. */
+  clearGuide: (key: string) => void
 }
 
 export const useBossGuides = (): BossGuides => {
@@ -74,10 +79,26 @@ export const useBossGuides = (): BossGuides => {
     })
   }, [])
 
+  const clearGuide = useCallback((key: string) => {
+    setGuides((current) => {
+      if (!(key in current)) return current
+      const next = { ...current }
+      delete next[key]
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ guides: next }))
+      } catch {
+        // 쓰기가 막혀도 이번 세션 동안은 되돌린 상태로 보여야 한다.
+      }
+      return next
+    })
+  }, [])
+
   const guideFor = useCallback(
     (key: string, fallback: GuideEvent[]) => guides[key] ?? fallback,
     [guides],
   )
 
-  return { guideFor, setGuide }
+  const hasOverride = useCallback((key: string) => key in guides, [guides])
+
+  return { guideFor, setGuide, hasOverride, clearGuide }
 }

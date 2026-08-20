@@ -28,8 +28,23 @@ export interface RotationBoss {
   /** 잡몹이 주기적으로 생성되는가. 공지가 「소환」을 적더라도 그것만으로 켜지지
    *  않는다 — 나오는 잡몹을 실제로 쳐야 하는지는 그 보스와 싸워 봐야 안다. */
   spawns_adds: boolean
+  /** 이 보스를 상대하는 요령. 공지가 아니라 그 보스와 싸워 본 사람이 적는
+   *  값이라 없을 수 있다 — 코어 지름·파괴 시각과 같은 계열이다.
+   *
+   *  엔진은 이 값을 읽지 않는다. 화면(시즌 가이드 카드)이 기본 내용으로 깔고,
+   *  사용자가 앱에서 고치면 그쪽이 이긴다. **이 필드가 릴리즈 빌드에 가이드를
+   *  싣는 유일한 길이다** — localStorage는 기기에 붙지 번들에 안 들어간다.
+   *
+   *  `at`은 전투 시작으로부터 경과 초로, `part_destruction_times`와 같은
+   *  단위다. null이면 시각에 매이지 않는 「상시」 항목이다. */
+  guide?: RotationGuideEntry[]
   /** 공지 원문 기록. 항목은 솔로/유니온이 다르므로 자유 형식이다. */
   stated: Record<string, string | string[]>
+}
+
+export interface RotationGuideEntry {
+  at: number | null
+  text: string
 }
 
 export interface RaidRotation {
