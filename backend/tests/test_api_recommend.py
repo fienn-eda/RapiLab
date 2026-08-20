@@ -19,6 +19,11 @@ def _nikke(slug, burst_tier_hint_atk=60_000.0):
 
 BOSS = {"element": "Water", "core_hittable": False, "enemy_def": 0,
         "fight_duration": 180, "part_destructible": False}
+# 프런트는 이제 모든 요청에 part_destruction_times를 싣는다. JSON 배열이 모델의
+# tuple[float, ...]로 강제되지 않으면 그 순간부터 모든 요청이 422가 되므로,
+# 배선이 아니라 **와이어 형식**을 못박는 픽스처를 따로 둔다.
+TIMED_BOSS = {**BOSS, "part_destructible": True,
+              "part_destruction_times": [1, 61, 126]}
 
 # Five loadable slugs covering burst tiers 1/2/3 (after Task 6's first
 # backfill batch): tier 1: little-mermaid, tier 2: arcana/grave, tier 3:
@@ -42,6 +47,15 @@ def test_a_seated_buff_reports_its_allies_and_the_seats_it_may_take():
     assert len(seating["rouge"]["allies"]) == 2
     assert set(seating["rouge"]["allies"]) <= set(SEATED) - {"rouge"}
     assert seating["rouge"]["seats"] == [2, 4]  # 뒷열, 1-indexed
+
+
+def test_declared_part_destruction_times_survive_the_wire_as_json_numbers():
+    roster = [_nikke(slug) for slug in FEASIBLE]
+    response = client.post(
+        "/api/recommend", json={"roster": roster, "boss": TIMED_BOSS, "top_n": 1})
+
+    assert response.status_code == 200
+    assert response.json()["decks"]
 
 
 def test_a_deck_with_no_seated_buff_reports_no_seating():

@@ -58,8 +58,9 @@ def test_the_pierce_flag_a_caller_sends_is_the_flag_the_engine_gets():
 
 
 def test_declared_part_destruction_times_reach_the_engine():
-    # 튜플로 도착해야 한다 - BossProfile은 해시 가능한 값을 기대하는 자리(캐시 키)에
-    # 실릴 수 있고, 무엇보다 리스트면 호출자가 나중에 고칠 수 있다.
+    # 튜플로 도착해야 한다. boss_profile()은 필드를 나열하지 않고 model_dump()를
+    # 그대로 펼치므로(그 함수의 독스트링), 여기서 리스트가 나오면 BossProfile이
+    # 선언한 tuple[float, ...]가 거짓말이 되고 아무도 안 잡는다.
     profile = boss_profile(BossProfileIn(
         part_destructible=True, part_destruction_times=[1.0, 61.0, 126.0]))
     assert profile.part_destruction_times == (1.0, 61.0, 126.0)
