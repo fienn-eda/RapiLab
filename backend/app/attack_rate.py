@@ -835,6 +835,20 @@ def shot_interval_with_speed(charge_time, charge_speed_percent, flat_reduction_s
     return max(reduced, floor)
 
 
+# 톡톡이 샷의 차지 보너스 - HUD 게이지 103%.
+#
+# 게이지 100%는 **차지하지 않은 판정**이라 발사가 되지 않고, 103%가 발사에 필요한
+# 관측된 최소값이다(Fienn, 2026-08-20). 브래디를 차지 대미지 두 세팅으로 잰 판독에서
+# 두 세팅 모두 최소 게이지가 103%였다 - 차지 대미지는 발사 문턱을 옮기지 않는다.
+#
+# 유닛별 표가 아니라 상수인 이유: 브래디와 앨리스 두 유닛에서 같은 하한이 나왔고,
+# 엔진은 케이던스도 이상적 수동 플레이로 모델링한다(앨리스 멈춤 15프레임은 자동사격
+# 26.1프레임이 아니라 수동 기준이다). 유닛별로 가르면 없는 정밀도를 주장하게 된다.
+#
+# docs/measurements/bready-charge-damage.md
+TAP_FIRE_CHARGE_BONUS = 0.03
+
+
 def tap_fire_wins(charge_seconds, motion_delay, charge_damage_percent,
                   capacity, reload_seconds):
     """톡톡이(차지 시작 즉시 발사)가 풀차지보다 이 매거진에서 더 많은 딜을 내는가.
@@ -855,7 +869,7 @@ def tap_fire_wins(charge_seconds, motion_delay, charge_damage_percent,
         return capacity * multiplier / (capacity * (hold_seconds + motion_delay)
                                         + reload_seconds)
 
-    return (per_magazine(0.0, 1.0)
+    return (per_magazine(0.0, 1 + TAP_FIRE_CHARGE_BONUS)
             > per_magazine(charge_seconds, charge_damage_percent / 100))
 
 
@@ -893,9 +907,10 @@ def optimal_full_charges(capacity, reload_seconds, charge_seconds, full_delay,
     """이 매거진에서 풀차지로 쏠 발수 k(0..capacity).
 
     한 발은 풀차지면 `charge_seconds + full_delay`, 톡톡이면 `tap_interval`이
-    걸리고 배율은 각각 `full_charge_percent/100`과 1.0이다. 그러면
+    걸리고 배율은 각각 `full_charge_percent/100`과 `1 + TAP_FIRE_CHARGE_BONUS`다.
+    그러면
 
-        효율(k) = (C + k(M-1)) / (C*tap + R + k(charge + delay - tap))
+        효율(k) = (C·tap + k(M−tap)) / (C*tap + R + k(charge + delay - tap))
 
     가 되어 `(p+ak)/(q+bk)` 꼴이므로 **k에 대해 단조**다 - 도함수 부호가 k와
     무관하다. 그래서 답은 언제나 허용 구간의 **양 끝** 중 하나이지 중간의 어떤
@@ -938,7 +953,8 @@ def optimal_full_charges(capacity, reload_seconds, charge_seconds, full_delay,
             worst_gap = (full_cost + (block - 1) * tap_interval + reload_seconds)
             if worst_gap > window:
                 continue
-        damage = capacity + k * (multiplier - 1)
+        tap_multiplier = 1 + TAP_FIRE_CHARGE_BONUS
+        damage = capacity * tap_multiplier + k * (multiplier - tap_multiplier)
         duration = (capacity * tap_interval + reload_seconds
                     + k * (full_cost - tap_interval))
         rate = damage / duration
@@ -1466,7 +1482,7 @@ def _base_shot_records(base, window_start, window_end,
                 is_full = full_positions is None or (i % capacity) in full_positions
                 records.append(ShotRecord(
                     shot_time, weapon, base["damage_percent"],
-                    full_bonus if is_full else 0.0,
+                    full_bonus if is_full else TAP_FIRE_CHARGE_BONUS,
                     is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1),
                     magazine_index=i, is_tap_fire=not is_full))
                 last_shot_time = shot_time

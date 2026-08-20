@@ -18,9 +18,10 @@ Fienn 사격장 실측(2026-08-19, 앨리스 1인 편성, docs/measurements/alic
 """
 import pytest
 
-from app.attack_rate import (FRAME_SECONDS, full_charge_positions,
-                             generate_segmented_shots, optimal_full_charges,
-                             shot_interval_with_speed, tap_fire_wins)
+from app.attack_rate import (FRAME_SECONDS, TAP_FIRE_CHARGE_BONUS,
+                             full_charge_positions, generate_segmented_shots,
+                             optimal_full_charges, shot_interval_with_speed,
+                             tap_fire_wins)
 from app.skill_rules.registry import (TAP_FIRE_CANDIDATES,
                                       get_charge_motion_delay,
                                       get_full_charge_window,
@@ -143,7 +144,7 @@ def _alice_base(**over):
 
 
 def test_the_timeline_switches_modes_at_her_burst_window():
-    """엔진이 매거진마다 고른다 - 창 밖은 톡톡이(배율 0 보너스), 창 안은 풀차지.
+    """엔진이 매거진마다 고른다 - 창 밖은 톡톡이(게이지 103%), 창 안은 풀차지.
 
     재장전이 사라진 덱이라 창 밖에서 톡톡이가 이긴다. 이 전환이 런의 선택 하나로는
     표현되지 않는 부분이고(단일 모드 최선 대비 +27.6%), 판정이 닫힌 형태라 탐색은
@@ -162,8 +163,8 @@ def test_the_timeline_switches_modes_at_her_burst_window():
     # 창 안: 풀차지 배율이 실려 있다
     assert all(r.extra_charge_bonus == pytest.approx(ALICE_FULL_CHARGE_PERCENT / 100 - 1)
                for r in inside)
-    # 창 밖: 톡톡이라 차지 보너스가 없다
-    assert all(r.extra_charge_bonus == 0.0 for r in outside)
+    # 창 밖: 톡톡이라 게이지 103%의 배율이 실려 있다
+    assert all(r.extra_charge_bonus == pytest.approx(TAP_FIRE_CHARGE_BONUS) for r in outside)
 
 
 def test_a_unit_that_is_not_a_candidate_never_taps():
@@ -340,10 +341,13 @@ def _milk_weapon(**overrides):
 
 
 def test_milks_magazine_mixes_one_full_charge_with_five_taps():
-    """매거진 여섯 발 가운데 첫 탄만 차지 보너스를 갖는다."""
+    """매거진 여섯 발 가운데 첫 탄만 풀차지 배율(250%)을, 나머지 다섯 발은 톡톡이
+    배율(게이지 103%)을 갖는다."""
     shots = generate_segmented_shots(_milk_weapon(), (), 6.0)
     magazine = shots[:MILK_CAPACITY]
-    assert [s.extra_charge_bonus > 0 for s in magazine] == [True, False, False, False, False, False]
+    full_bonus = MILK_FULL_CHARGE_PERCENT / 100 - 1
+    assert [s.extra_charge_bonus for s in magazine] == pytest.approx(
+        [full_bonus] + [TAP_FIRE_CHARGE_BONUS] * (MILK_CAPACITY - 1))
 
 
 def test_the_taps_are_spaced_by_the_tap_interval_not_the_pause():
@@ -433,7 +437,7 @@ def test_a_wholly_full_charge_magazine_does_not_win_the_mode_over_mixed_ones():
     shots = generate_segmented_shots(
         _milk_weapon(), (), 20.0, charge_speed_percent_at=charge_speed_percent_at)
     # 재현 조건 확인 - 통째-풀차지 매거진과 톡톡이 섞인 매거진이 실제로 공존한다.
-    assert any(s.extra_charge_bonus == 0.0 for s in shots), "이 판에 톡톡이가 있어야 한다"
+    assert any(s.is_tap_fire for s in shots), "이 판에 톡톡이가 있어야 한다"
     mode = full_charges_per_mixed_magazine(shots)
     assert mode != MILK_CAPACITY, (
         "최빈값이 매거진 크기와 같으면 화면이 「풀차지 6회 + 톡톡이」라는 "
@@ -458,3 +462,47 @@ def test_a_full_charge_only_magazine_flags_nothing():
     weapon["tap_fire"] = False
     shots = generate_segmented_shots(weapon, (), 6.0)
     assert not any(s.is_tap_fire for s in shots[:MILK_CAPACITY])
+
+
+def test_a_tap_shot_is_gauge_103_not_100():
+    """게이지 100%는 「차지하지 않은 판정」이라 발사가 안 된다 - 발사에 필요한
+    관측된 최소값이 103%다(Fienn, 2026-08-20, docs/measurements/bready-charge-damage.md).
+
+    한동안 엔진은 0.0(게이지 100%)을 썼고, 그 근거였던 「톡톡이는 게이지를 전혀 안
+    채운다」는 「게이지가 오르는 첫 프레임과 발사 프레임이 같다」를 잘못 읽은 것이었다.
+    """
+    from app.attack_rate import TAP_FIRE_CHARGE_BONUS
+    assert TAP_FIRE_CHARGE_BONUS == pytest.approx(0.03)
+    shots = generate_segmented_shots(_milk_weapon(), (), 6.0)
+    taps = [s for s in shots[:MILK_CAPACITY] if s.is_tap_fire]
+    assert taps, "이 매거진에 톡톡이 샷이 있어야 이 테스트가 무언가를 검증한다"
+    for shot in taps:
+        assert shot.extra_charge_bonus == pytest.approx(0.03)
+
+
+def test_the_cadence_choice_weighs_taps_at_103():
+    """케이던스 선택이 타임라인과 **같은 배율**로 저울질해야 한다.
+
+    타임라인은 103%로 쏘는데 「어느 모드가 이기나」를 100%로 판단하면, 엔진이 자기가
+    쏘는 것과 다른 것을 놓고 고르게 된다. 톡톡이가 3% 유리해졌으므로 손익분기 탭
+    간격이 올라가고, 그 경계 바로 위에 있던 조합에서 답이 뒤집힌다.
+    """
+    from app.attack_rate import TAP_FIRE_CHARGE_BONUS, tap_fire_wins
+    # 톡톡이 배율 1.00으로는 지고 1.03으로는 이기는 지점을 이분법으로 찾는다.
+    lo, hi = 0.0, 1.0
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        if tap_fire_wins(1.0, mid, 250.0, 6, 2.0):
+            lo = mid
+        else:
+            hi = mid
+    breakeven = lo
+    # 이 경계는 함수가 **자기가 쓰는 배율로** 찾은 것이다. 함수가 1.03을 쓴다면
+    # 경계에서 톡톡이(1.03)와 풀차지가 정확히 비겨야 한다.
+    lifted = 6 * (1 + TAP_FIRE_CHARGE_BONUS) / (6 * breakeven + 2.0)
+    full = 6 * 2.5 / (6 * (1.0 + breakeven) + 2.0)
+    assert lifted == pytest.approx(full, rel=1e-6)
+    # 그리고 같은 지점에서 100% 가정이라면 톡톡이가 **졌어야** 한다 - 그것이 이
+    # 테스트가 잡으려는 회귀다(타임라인은 103%인데 저울질만 100%로 남는 것).
+    naive = 6 * 1.00 / (6 * breakeven + 2.0)
+    assert naive < full
