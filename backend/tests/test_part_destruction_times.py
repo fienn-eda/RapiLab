@@ -103,6 +103,41 @@ def test_diesel_ceiling_is_off_once_destruction_times_are_declared():
     assert registry.total_for("sustained_damage_up", DIESEL_TARGET, 0.0) == 0.0
 
 
+def _fire_all(slug, element, rules, trigger, times):
+    """같은 레지스트리에 여러 시각으로 트리거를 쏜다 - 창이 겹칠 때를 보려면
+    호출마다 레지스트리를 새로 만들면 안 된다."""
+    context = SquadContext(
+        [SquadMember(slug, 3, element)],
+        part_destructible=True,
+        part_destruction_times=times,
+    )
+    registry = EffectRegistry()
+    for time in times:
+        fire_trigger(trigger, {slug: rules}, context, registry, time)
+    return registry
+
+
+def test_raven_overlapping_destructions_refresh_rather_than_stack():
+    # 스킬 원문에 「Stacks up to N」이 없다. 그러면 중첩이 아니라 갱신이다 -
+    # 15초 안에 파츠가 두 번 깨지면 버프가 두 배가 되는 게 아니라 창이 늘어난다.
+    registry = _fire_all("raven", "Iron", build_raven_rules(RAVEN_VALUES),
+                         "part_destroyed", (1.0, 5.0))
+
+    assert registry.total_for("sustained_damage_up", RAVEN, 6.0) == pytest.approx(0.4732)
+    # 두 번째 파괴가 창을 5+15=20까지 민다.
+    assert registry.total_for("sustained_damage_up", RAVEN, 19.9) == pytest.approx(0.4732)
+    assert registry.total_for("sustained_damage_up", RAVEN, 20.1) == 0.0
+
+
+def test_diesel_overlapping_destructions_refresh_rather_than_stack():
+    registry = _fire_all(DIESEL, "Fire", build_diesel_intro_rules(DIESEL_VALUES),
+                         "part_destroyed", (1.0, 5.0))
+
+    assert registry.total_for("sustained_damage_up", DIESEL_TARGET, 6.0) \
+        == pytest.approx(0.6804)
+    assert registry.total_for("sustained_damage_up", DIESEL_TARGET, 20.1) == 0.0
+
+
 # --- 시뮬레이터가 그 시각에 실제로 트리거를 쏘는가 ------------------------
 
 def raven_spec():
@@ -141,6 +176,16 @@ def test_declared_times_open_more_windows_than_the_untimed_approximation():
     timed = _raven_deck_damage(True, (1.0, 61.0, 126.0))
 
     assert no_parts < untimed < timed
+
+
+def test_times_do_nothing_on_a_boss_with_no_destructible_parts():
+    # 파괴 가능한 파츠가 없다고 말해 놓고 파괴 시각을 적은 상태는 모순이고,
+    # 불리언이 이긴다 - 그게 「이 보스에 깨지는 파츠가 있는가」를 말하는 필드다.
+    # 안 그러면 floor로 재려는 사람이 아크레인저만 floor고 레이븐·디젤은 창을
+    # 받는 반쪽 인카운터를 얻는다.
+    floor = _raven_deck_damage(False)
+
+    assert _raven_deck_damage(False, (1.0, 61.0, 126.0)) == floor
 
 
 def test_times_past_the_fights_end_do_not_land():

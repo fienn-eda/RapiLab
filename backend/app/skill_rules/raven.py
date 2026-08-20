@@ -53,7 +53,7 @@ Not modeled / deferred:
   wiring it would be inert. It is also the precondition Single Point Attack is
   bracketed over, which is why the ceiling assumes it does its job.
 """
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import buff_rule, refreshing_buff_rule
 from app.squad_engine import boss_part_destruction_untimed
 
 # Shock Wave's stack cap and the counter's life, both from skills[0]'s text.
@@ -107,10 +107,12 @@ def build_raven_rules(values):
             condition=boss_part_destruction_untimed(),
         ),
         # "Activates when an ally or self destroys an enemy's part" 그대로 -
-        # 선언된 파괴 시각마다 15초.
-        buff_rule(
+        # 선언된 파괴 시각마다 15초. 원문에 「Stacks up to N」이 없으므로 15초 안에
+        # 두 번 깨져도 값이 두 배가 되는 게 아니라 창이 늘어난다.
+        refreshing_buff_rule(
             "part_destroyed",
             [("sustained_damage_up", single_point, "self", single_point_duration)],
+            refresh_group="raven_single_point_attack",
         ),
     ]
 

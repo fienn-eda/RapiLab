@@ -1594,9 +1594,15 @@ def _simulate_raid_once(
     # 전투 길이를 넘는 시각은 그 전투에서 일어나지 않으므로 버린다(같은 보스를
     # 더 짧은 전투로 재는 경우) - periodic_rules의 `while tick < fight_duration`과
     # 같은 규칙이다.
-    for destroyed_at in part_destruction_times:
-        if destroyed_at < fight_duration:
-            fire_trigger("part_destroyed", rules_by_slug, context, registry, destroyed_at)
+    #
+    # `part_destructible`이 이긴다. 「파괴 가능한 파츠가 없다」고 말해 놓고 시각을
+    # 적은 인카운터는 모순이고, 그때 시각을 그대로 쏘면 floor로 재려는 사람이
+    # 아크레인저만 floor이고 레이븐·디젤은 창을 받는 반쪽 보스를 얻는다.
+    if part_destructible:
+        for destroyed_at in part_destruction_times:
+            if destroyed_at < fight_duration:
+                fire_trigger("part_destroyed", rules_by_slug, context, registry,
+                             destroyed_at)
 
     events = simulate_burst_cycle(
         deck,

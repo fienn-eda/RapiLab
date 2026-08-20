@@ -70,6 +70,14 @@ def test_a_caller_that_sends_no_destruction_times_gets_the_untimed_default():
     assert boss_profile(BossProfileIn()).part_destruction_times == ()
 
 
+def test_a_negative_destruction_time_is_rejected_at_the_api_surface():
+    # 전투가 시작하기 전에 깨지는 파츠는 없다. 음수가 통과하면 -5초에 열린 창이
+    # 전투 시작 시점에 이미 살아 있어, 회차 로더가 막으려던 것과 같은 상태가
+    # 라우트로 들어온다(코어 지름을 gt=0으로 막는 것과 같은 이유다).
+    with pytest.raises(ValidationError):
+        BossProfileIn(part_destruction_times=[-5.0])
+
+
 def test_evaluate_deck_forwards_every_boss_field_the_simulator_accepts(monkeypatch):
     """The API's spread fixed one listing trap; this is the same trap one layer
     down. `evaluate_deck` hands simulate_raid its boss kwargs by NAME, so a new

@@ -51,8 +51,12 @@ const foldedSummary = (draft: BossProfileDraft): string => {
   if (draft.core_hittable) parts.push(`코어 ${core === '' ? '—' : core}`)
   // 부위파괴만 켜고 시각을 안 적은 상태는 「언제 깨지는지 모른다」이고 그때는
   // 옛 근사로 도는 것이 맞다 - 「파괴 —」를 적으면 값이 있는데 못 읽은 것처럼 보인다.
+  // 체크가 꺼져 있으면 엔진이 시각을 무시하므로 요약에서도 빠진다: 칸은 사라졌는데
+  // 요약에는 남으면 지울 수 없는 값이 계산에 쓰이는 것처럼 보인다.
   const destructionTimes = draft.part_destruction_times.trim()
-  if (destructionTimes !== '') parts.push(`파괴 ${destructionTimes}`)
+  if (draft.part_destructible && destructionTimes !== '') {
+    parts.push(`파괴 ${destructionTimes}`)
+  }
   return parts.join(' · ')
 }
 

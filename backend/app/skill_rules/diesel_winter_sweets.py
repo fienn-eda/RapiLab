@@ -129,10 +129,13 @@ def _shared_rules(values):
             [("sustained_damage_up", _f(values, "sing_now", 2) / 100, "self", None)],
             condition=boss_part_destruction_untimed(),
         ),
-        buff_rule(
+        # 원문에 「Stacks up to N」이 없으므로 15초 안에 두 번 깨져도 값이 두 배가
+        # 되는 게 아니라 창이 늘어난다.
+        refreshing_buff_rule(
             "part_destroyed",
             [("sustained_damage_up", _f(values, "sing_now", 2) / 100, "self",
               _f(values, "sing_now", 3))],
+            refresh_group="diesel_part_destruction_sustained",
         ),
     ]
 

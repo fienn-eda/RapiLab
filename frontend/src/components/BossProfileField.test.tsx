@@ -496,6 +496,20 @@ describe('BossProfileField 파괴 시각', () => {
     expect(screen.getByText(/기타 설정 — 방어력 31,784 · 180초$/)).toBeInTheDocument()
   })
 
+  it('부위파괴를 끄면 요약에서도 파괴 시각이 사라진다', () => {
+    // 체크를 끄면 칸이 사라지는데 요약에는 남아 있으면, 지울 수 없는 값이 계산에
+    // 쓰이는 것처럼 보인다. 코어 지름이 core_hittable에 매여 있는 것과 같은 규칙이다.
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft('31784'), part_destructible: false,
+                 part_destruction_times: '1, 61, 126' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/기타 설정 — 방어력 31,784 · 180초$/)).toBeInTheDocument()
+  })
+
   it('파괴 시각 오류는 접힌 상자를 강제로 펼친다', () => {
     const { container } = render(
       <BossProfileField

@@ -8,7 +8,7 @@ see docs/superpowers/specs/2026-07-17-five-deck-allocation-design.md.
 """
 import asyncio
 import logging
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,8 +60,13 @@ class BossProfileIn(BaseModel):
     # 이 인카운터에서 파츠가 실제로 깨지는 시각들(초). 파괴에 반응하는 스킬은
     # 이것이 비어 있으면 `part_destructible` 불리언만 보던 근사로 돌고, 시각이
     # 있으면 그 시각마다 자기 지속시간만큼 창을 연다 - squad_engine의
-    # boss_part_destruction_untimed가 둘을 가른다.
-    part_destruction_times: tuple[float, ...] = ()
+    # boss_part_destruction_untimed가 둘을 가른다. `part_destructible`이 거짓이면
+    # 무시된다.
+    #
+    # 음수를 막는 것은 코어 지름을 gt=0으로 막는 것과 같은 이유다: 전투가 시작하기
+    # 전에 깨지는 파츠는 없고, -5초에 열린 창은 전투 시작 시점에 이미 살아 있어
+    # 회차 로더가 막으려던 상태가 라우트로 그대로 들어온다.
+    part_destruction_times: tuple[Annotated[float, Field(ge=0)], ...] = ()
     # How far away this boss is fought. The band decides WHICH weapons are
     # inside their effective range and collect +0.30 on their normal attacks:
     # near pays SG/SMG, mid pays AR/MG, far pays SR, and a Rocket Launcher is
