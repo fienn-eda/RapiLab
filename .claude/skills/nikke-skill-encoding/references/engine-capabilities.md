@@ -1249,11 +1249,22 @@ that shot is (docs/measurements/alice-tap-fire.md):
   pause** — `registry.TAP_FIRE_INTERVAL`, joined onto the timeline as
   `tap_fire_interval`. For a while this slot held "the tap interval IS the
   pause", because Alice's two readings sit on the same 15-frame grid step
-  (tap 15.38f, pause 14.75f). **Milk: Blooming Bunny disproved that rule,
+  (tap 15.38f, pause 14.75f). **Milk: Blooming Bunny broke that rule,
   2026-08-19-20**: her pause is 21.889 frames (n=9) but her tap interval is
-  14.810 frames (n=21) — about 16σ apart. Applying Alice's coincidence to Milk
+  14.810 frames (n=21) — about 16σ apart. Applying Alice's reading to Milk
   would undercount her tap-fire shot rate by 32% (her true rate is 1.48x that
-  estimate). A slug absent from the table
+  estimate).
+  **Ein found the reason, 2026-08-20** (docs/measurements/ein-tap-fire.md): the
+  two tables measure two different INPUTS. `TIMED_CHARGE_MOTION_DELAY` holds
+  AUTO-fire pauses — deliberately, because the player works only one of five
+  seats by hand — while a tap interval is by definition a manual value. Ein
+  timed both on one account: **auto pause 22.524f, manual pause 14.143f, tap
+  interval 14.826f.** So Milk's 16σ is auto-vs-manual rather than a fact about
+  her, and Alice's agreement was not a coincidence — hers is the table's one
+  manual entry, correctly so, because she IS a tap-fire candidate. The two
+  tables still have to be kept apart; what changed is **what you must measure**
+  for a new candidate: her MANUAL pause, not her auto one.
+  A slug absent from the table
   still falls back to the pause (`get_tap_fire_interval` returns `None`,
   `_base_shot_records` substitutes `motion_delay`) — the old behaviour, not a
   new default, and it is only ever safe to READ, never to assume, that the two
@@ -1335,10 +1346,21 @@ declares them. Two things gate membership:
 - **A stand-in pause is not good enough** when the verdict is close, and the
   tap interval needs its OWN measurement rather than riding on the pause (see
   above). Milk: Blooming Bunny is in — pause 21.889f (n=9, measured 2026-08-15)
-  and tap interval 14.810f (n=21, measured 2026-08-19). Ein is the next obvious
-  candidate (same SR weapon) but carries only the 22-frame motion-delay
-  stand-in and no tap-interval reading at all, so she stays off until someone
-  times her.
+  and tap interval 14.810f (n=21, measured 2026-08-19). ⚠ **Her pause is an AUTO
+  reading and a candidate is played by hand**, so it is the wrong regime for the
+  full charges her mixed magazine still fires; her manual pause is unmeasured.
+  Substituting Ein's manual-equivalent 17.643f moves her steady-state DPS
+  160.56 → 163.04 and her tap-fire gain 10.76% → 7.74% (the cadence choice does
+  not move — her Pierce window forces one full charge per magazine).
+- **Measuring her is not the same as admitting her.** Ein was the obvious next
+  candidate (same SR weapon) and was fully timed on 2026-08-20 — and she stays
+  OFF. Her Feather Shot grants herself Charge Damage on every Full Charge, so
+  **her full charges renew their own buff and a single tap breaks the chain**
+  (measured: full → tap → full reads gauge 343% → 274%). Full charge wins by
+  4.1% with the chain up and 44.8% inside her burst; the unbuffed state where
+  taps win exists only on the fight's first shot. Her verdict is also violently
+  capacity-sensitive — the flip point runs 30.19f at 6 rounds, 21.14f at 8,
+  15.70f at 10 — so it would differ between accounts.
 
 **Do not read a mode flip as instability.** The engine returns the max of two
 options, so the damage is continuous even where the reported mode is not — for

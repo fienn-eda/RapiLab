@@ -166,7 +166,17 @@ def build_ein_rules(values):
 
 def build_ein_per_shot_rules(values):
     """Feather Shot: Charge Damage +80% for the next 1 round, on every Full
-    Charge. SR shots are all full charges, so this fires every shot."""
+    Charge. SR shots are all full charges, so this fires every shot.
+
+    That last sentence is what keeps this ungated, and it holds only while she
+    is NOT a `registry.TAP_FIRE_CANDIDATES` member: a tap shot is not a full
+    charge and does NOT arm this. Fienn measured it (2026-08-20) - firing full
+    charge, tap, full charge reads gauge 343% -> 274%, so the tap neither
+    collects the buff nor re-grants it. **Making her a tap-fire candidate
+    therefore has to gate this trigger on the shot being a full charge in the
+    same change**, or the chain would keep renewing itself off shots that never
+    triggered it. She is deliberately not one - the chain is exactly why full
+    charge wins for her. docs/measurements/ein-tap-fire.md."""
     shot = values["feather_shot"]
     charge_damage = float(shot["description_value_03"]) / 100
     rounds = int(float(shot["description_value_04"]))
