@@ -5,6 +5,73 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 받아서 푼 번들의 차단 표시는 앱이 스스로 지운다 — 인스톨러가 아니라 자가 치유
+
+- Date: 2026-08-20
+- Context: v0.1.2 zip을 받아서 압축을 풀고 실행한 `RapiLab.exe`가 즉시
+  `RuntimeError: Failed to resolve Python.Runtime.Loader.Initialize from
+  ...\_internal\pythonnet\runtime\Python.Runtime.dll`로 죽었다(clr_loader
+  netfx 경로). 근본 원인: 브라우저로 받은 zip에는 Zone.Identifier(대체 데이터
+  스트림, "인터넷에서 다운로드함" 표시)가 붙고, **Windows 탐색기의 압축
+  풀기가 그 표시를 안의 파일 전부에 전파한다** — 실측 364개 중 363개가
+  표시된 채였다. .NET Framework의 어셈블리 로더는 그렇게 표시된 DLL을
+  거부하므로 pythonnet의 `Python.Runtime.dll`을 못 읽고, pywebview가 창을
+  띄우기도 전에 죽는다. 배제한 것(전부 증거로): 빌드 산출물 차이(로컬 빌드와
+  배포본의 `Python.Runtime.dll`이 sha256 동일, 648E6B41…), 의존성 버전
+  드리프트(같은 이유 — `requirements-app.txt`는 핀이 없지만 결과물이
+  같았다), .NET 런타임 부재(.NET Framework 4.8 Release 533320 정상 설치).
+- Decision: 앱이 `main()` 맨 앞(.NET을 건드리기 전)에서 스스로
+  `desktop.unblock_bundle()`을 불러 `bundle_root()` 아래 모든 파일의
+  Zone.Identifier 스트림을 지운다. 얼렸을 때·Windows에서만 돌고(`sys.frozen`이
+  아니면 즉시 반환 — 개발 트리·남의 소스 디렉터리는 안 건드린다), 한 파일을
+  못 지워도 멈추지 않고 나머지를 계속 지운다(하나 때문에 못 뜨면 사용자
+  입장에서는 고치기 전과 같다). 파이썬 자신은 이 시점에 이미 돌고 있다 —
+  죽는 것은 .NET 적재다.
+- Alternatives considered: (a) 릴리즈 노트에 "우클릭 → 속성 → 차단 해제"
+  안내만 남긴다 — 기각, 안 읽으면 그대로 트레이스백을 만난다(기본값이
+  나쁘면 안내는 안전망이 아니다). (b) 설치 프로그램(installer) 도입 — 기각,
+  새 도구와 배포 워크플로 변경이 따르는데, "zip을 풀면 켜진다"는 지금 요구를
+  푸는 데는 그보다 훨씬 크다.
+- Why: 받아서 더블클릭하는 경로에서 크래시가 나면 그것으로 끝이다 — 안내문을
+  읽게 만드는 것도 설치 과정을 새로 배우게 하는 것도 사용자에게 단계를
+  더한다. 원인이 이미 알려진 파일 상태이고 코드로 되돌릴 수 있으므로, 앱이
+  스스로 고치는 것이 가장 작은 변경이다.
+- Consequences: `backend/app/desktop.py::unblock_bundle`/`_clear_zone_marks`
+  신설, `main()`에서 `--selftest` 분기보다도 먼저 호출. 검증: 빌드본 사본에
+  740개 전부 표시를 붙이고 exe만 풀어 Fienn이 겪은 상태를 그대로 재현 →
+  창이 정상으로 떴고(제목 `RapiLab`) 실행 뒤 표시가 0개가 됐다. 표시를 붙인
+  채 `--selftest`도 `gui backend: ok`로 통과(아래 결정 참고). 같은 커밋
+  `e7e66291`. 백엔드 2615 passed / 3 skipped(MOTW 테스트 5개 추가).
+
+## selftest는 창을 열지 않고 GUI 백엔드의 .NET 적재만 확인한다 — 다섯 번째 확인 항목
+
+- Date: 2026-08-20
+- Context: 위 Mark-of-the-Web 사고가 드러낸 두 번째 문제: `--selftest`는
+  서버·번들 데이터·앱 셸·프로세스 풀 넷만 확인했고, 창을 띄우는 경로
+  (pywebview의 winforms 백엔드가 pythonnet으로 .NET을 적재하는 지점)는
+  아무도 보지 않았다. 그래서 v0.1.2는 CI도 로컬 selftest도 전부 초록인 채로
+  위 문제를 실은 채 나갔다 — 넷 다 통과해도 받아서 실행하면 트레이스백이 떴다.
+- Decision: selftest에 ⑤를 더한다 — `import clr`(pythonnet)로 .NET 적재가
+  되는지만 확인하고, 성공하면 `gui backend: ok`를 찍는다. **창은 열지 않는다**
+  — 보려는 것은 "적재가 되는가"이지 "창이 예쁘게 뜨는가"가 아니다.
+- Alternatives considered: 실제로 `webview.create_window()` + `.start()`를
+  불러 창을 띄워 본다 — 기각. 사람의 화면 포커스를 가로채는 데다, CI 러너에는
+  데스크톱 세션 자체가 없어 애초에 못 돈다. `import clr`만으로 같은 실패
+  지점(.NET 적재)을 창 없이 확인할 수 있으므로 비용이 큰 쪽을 택할 이유가
+  없다.
+- Why: 스모크 테스트가 이 사고를 못 잡은 이유는 "무엇을 보는가"가 아니라
+  "무엇을 안 보는가"였다. 창을 여는 비용 없이 같은 실패 지점을 확인할 수
+  있다면 창을 열 이유가 없다.
+- Consequences: `backend/app/desktop.py::selftest`, docstring의 "여기서 보는
+  넷"을 "다섯"으로 정정. 부수 효과: 셸이 `clr`을 직접 import하게 되어 가드
+  테스트(`test_the_desktop_shell_is_covered_by_the_app_requirements`)가
+  그것을 선언되지 않은 의존으로 잡았다 — `pythonnet`을
+  `backend/requirements-app.txt`에 직접 선언하고 `test_requirements.py`의
+  `IMPORT_TO_PACKAGE`에 `"clr": "pythonnet"`을 추가했다. 전이 의존이던 것이
+  직접 의존이 됐으니 선언하는 게 맞다 — 이 파일의 존재 이유가 "내 PC에서는
+  되던데"이므로. 커밋 `e7e66291`. 엔진 능력은 안 건드렸다
+  (`engine-capabilities.md` 변경 없음 — 확인만).
+
 ## 보스 이미지는 미루고 `guide`만 릴리즈에 먼저 싣는다 — 2단계를 가른다
 
 - Date: 2026-08-20

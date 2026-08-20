@@ -846,6 +846,66 @@ exit 0라고 두 번 보고했는데, 그건 `tail`의 종료 코드였다. 실�
 `elementFromPoint`가 대상을 정확히 짚는다). 네이티브 드래그 루프가 아예 안 도는
 덕에 마우스 이벤트가 가려지지도 않는다.
 
+## 받아서 푼 zip은 탐색기가 인터넷 표시를 파일 전부에 전파한다 — .NET 어셈블리 로더가 그 표시를 거부한다
+
+- 확립: 2026-08-20 (v0.1.2 배포 사고, `worktree-solo-raid-setup-layout`,
+  커밋 `e7e66291`).
+- 증상: 받아서 압축을 푼 `RapiLab.exe`가 실행 즉시
+  `RuntimeError: Failed to resolve Python.Runtime.Loader.Initialize`로 죽었다
+  (clr_loader netfx 경로 — pythonnet의 `Python.Runtime.dll`을 못 읽음).
+- 원인: 브라우저로 받은 zip에는 Zone.Identifier(대체 데이터 스트림, "인터넷에서
+  다운로드함" 표시)가 붙는다. **Windows 탐색기의 압축 풀기는 그 표시를 압축
+  안의 파일 전부에 전파한다** — 실측: v0.1.2 배포본 364개 중 363개가 표시된
+  채였다. .NET Framework의 어셈블리 로더는 그렇게 표시된 DLL을 거부하므로
+  pythonnet의 `Python.Runtime.dll`을 못 읽고, pywebview가 창을 띄우기도 전에
+  죽는다. 파이썬 자신은 이미 돌고 있다 — 죽는 것은 .NET 적재다.
+- 오진하기 쉬운 이유: 빌드 산출물이 먼저 의심받기 쉽지만 아니었다 — 로컬
+  빌드와 배포본의 `Python.Runtime.dll`이 sha256 동일(648E6B41…)했고, 의존성
+  버전 드리프트도 같은 증거로 배제됐다(`requirements-app.txt`는 핀이 없지만
+  결과물이 같았다). .NET 런타임 부재도 아니었다(.NET Framework 4.8 Release
+  533320 정상 설치).
+- **How to apply:** "빌드는 같은데 받은 것만 안 된다"는 증상을 보면 먼저
+  산출물 sha256을 비교할 것. 같으면 **파일 상태**(Alternate Data Stream)를
+  의심할 것 — PowerShell `Get-Item -Stream Zone.Identifier <파일>`로 확인할
+  수 있다. 이 저장소는 이제 `desktop.unblock_bundle()`이 `main()` 맨 앞에서
+  스스로 지운다(`docs/decisions.md`).
+
+## 스모크 테스트가 안 보는 경로가 곧 사고 지점이다 — selftest 넷이 초록인데 앱이 안 켜졌다
+
+- 확립: 2026-08-20, 같은 사고. `--selftest`는 서버·번들 데이터·앱 셸·프로세스
+  풀 넷만 확인했다 — 창을 실제로 띄우는 경로(pywebview의 winforms가
+  pythonnet으로 .NET을 적재하는 지점)는 아무도 보지 않았다. 그래서 CI도
+  로컬 selftest도 전부 초록인 채로 위 Mark-of-the-Web 문제를 실은 빌드가
+  나갔다.
+- 창을 열지 않고도 그 경로의 **적재**는 확인할 수 있다 — `import clr`
+  (pythonnet)이 실패하면 창을 띄우기 전에 이미 실패가 확정된 것이다. 실제로
+  `webview.create_window()` + `.start()`를 불러 창을 띄워 보는 것은 기각했다:
+  사람의 화면 포커스를 가로채고, CI 러너에는 데스크톱 세션 자체가 없다.
+- **How to apply:** 스모크 테스트를 새로 짜거나 리뷰할 때 "무엇을 보고
+  있는가"가 아니라 "무엇을 **안** 보고 있는가"를 주기적으로 물을 것 — 넷이
+  전부 초록이라는 사실은 다섯 번째 실패 지점이 없다는 증거가 아니다.
+  `backend/app/desktop.py::selftest` ⑤(`gui backend: ok`)가 이 자리를 닫는다.
+
+## 태그는 커밋을 가리키지 브랜치 상태를 가리키지 않는다 — 착륙 전에 찍으면 릴리즈가 조용히 낡은 채 나간다
+
+- 확립: 2026-08-20. `v0.1.2` 태그가 `6e858b38`(옆 세션 톡톡이 커밋, 이 브랜치
+  착륙 **전**)를 가리키고 있었다. 트렁크 착륙 자체는 정상이었는데(커밋
+  `1d8b2be5`) **태그만 그보다 앞선 커밋에 찍혀 있었다** — 그래서 배포된
+  앱이 내보내는 값이 옛 `part_destruction_times: [1, 61, 126]`이고 `guide`
+  키가 아예 없었다.
+- 테스트·CI는 이 실패를 잡을 수 없다 — 태그가 가리키는 커밋 안에서는 전부
+  초록이고, 실패는 "그 커밋이 원하는 작업을 담고 있는가"라는 테스트 바깥의
+  질문이다. 이번엔 배포 후 **배포본에서 실제로 값을 확인**하는 단계
+  (`dist/RapiLab/_internal/data/raid-rotations.json`을 열어 `guide`와 새
+  파괴 시각이 들어 있는지 보는 것, `docs/roadmap.md`)가 유일하게 이 문제를
+  잡은 자리였다.
+- 확인법: `git merge-base --is-ancestor <브랜치의 마지막 커밋> <태그>` — 참이면
+  태그가 그 작업을 포함한다.
+- **How to apply:** 태그는 착륙이 끝난 뒤, 트렁크(`origin/wip/scaffolding`)의
+  최신 커밋에 찍을 것. 릴리즈 직후에는 실제로 받아서 실행해 값까지 확인하는
+  단계를 건너뛰지 말 것 — 이번에 사고 둘(Mark-of-the-Web 크래시·낡은 태그)을
+  잡은 유일한 자리가 그 단계였다.
+
 ## 미란다 오버로드 임계값은 naive 격차 나누기의 2.5~3배다 - 경계가 「매 사이클」이라서
 
 - 확립: 2026-08-08 (미란다 계산기, Task 7). 어떤 유닛이 웨이크업!3(최종공격력
