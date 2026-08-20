@@ -55,10 +55,24 @@ jobs:
             throw "selftest failed (exit $($app.ExitCode)) - 위 로그를 볼 것"
           }
 
+      # 같은 zip을 두 이름으로 올린다. 버전이 붙은 쪽은 어느 릴리스의 것인지
+      # 파일 이름만 보고 알기 위해서고, 버전이 없는 쪽은 **영구 링크**를 위해서다:
+      #   https://github.com/fienn-eda/RapiLab/releases/latest/download/RapiLab.zip
+      # 이 주소는 언제나 최신 릴리스를 준다. 커뮤니티 글에 적을 주소가 릴리스마다
+      # 바뀌면 안 되는데, GitHub의 latest/download는 **자산 이름이 그대로일 때만**
+      # 동작하기 때문이다.
+      #
+      # 자산이 둘이어도 자동 업데이트는 안전하다: `updater.download_asset`은
+      # `.zip`으로 끝나는 첫 자산을 집고 둘의 내용이 같으며, 교체 전에
+      # `stage_update`가 exe가 있는지 확인한다.
       - name: Package
-        run: Compress-Archive -Path dist/RapiLab -DestinationPath RapiLab-${{ github.ref_name }}.zip
+        run: |
+          Compress-Archive -Path dist/RapiLab -DestinationPath RapiLab-${{ github.ref_name }}.zip
+          Copy-Item RapiLab-${{ github.ref_name }}.zip RapiLab.zip
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: RapiLab-${{ github.ref_name }}.zip
+          files: |
+            RapiLab-${{ github.ref_name }}.zip
+            RapiLab.zip
           generate_release_notes: true
