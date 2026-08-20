@@ -5,6 +5,101 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 솔로 탭만 보스 설정을 기본 접은 채로 띄운다 — 유니온 탭은 펼친 채로 남긴다
+
+- Date: 2026-08-20
+- Context: 솔로 레이드 탭의 설정 영역은 좌(보스 설정, 세로로 길다) 우(모드, 짧다)
+  2컬럼이라 오른쪽 아래가 늘 비었다. 보스 설정은 시즌마다 한 번 채우고 나면 거의
+  안 건드리는데도 화면에서 제일 큰 자리를 늘 차지했다. 그 자리를 새 시즌 가이드
+  카드가 받으려면 보스 설정을 접어야 했다(Fienn 요청, 2026-08-20).
+- Alternatives considered: (a) 모든 탭(솔로+유니온)에서 기본 접힘. (b) **솔로
+  탭에서만 `defaultCollapsed=true`**(새 prop, 기본값 `false`), 유니온은 그대로
+  펼침. (c) 접힘 폭을 좁혀 회차 카드는 남기고 세부설정 필드만 접기.
+- Decision: **(b).** `BossProfileField`에 `defaultCollapsed` prop을 추가하고
+  솔로 탭(`RecommendPanel`)에서만 `true`로 넘긴다. 회차 카드까지 통째로
+  접는다(Fienn 지정, 2026-08-20).
+- Why: 유니온 탭은 전투 수만큼 보스 카드가 서고 매 전투마다 다른 보스를
+  고른다 — 접으면 실행할 때마다 다섯 번 펼쳐야 해서, 솔로에서 이득인 것이
+  유니온에서는 손해가 된다. 오류가 있으면 강제로 펼치는 기존 `hasErrors` 규칙은
+  그대로 두었다 — 기본이 접힘이 되면 이 규칙이 없을 때 「이유 없이 계산이 안
+  되는 화면」이 되기 쉬우므로 오히려 더 중요해진다.
+- Consequences: 「회차 카드를 고르면 나머지 필드가 기본값으로 초기화된다」
+  (2026-08-07 결정)는 방어를 플레이어가 눈으로 확인할 기회가 줄어든다 — 그
+  결과(바뀐 필드)가 접힘 뒤에 숨는다. 새 가이드 카드의 뱃지 줄이 그 자리를
+  메운다: 뱃지가 실제 계산 입력에서 파생되므로 접힌 상태에서도 값이 어긋날
+  수 없다. `RecommendPanel.test.tsx`의 11곳이 이 변경으로 깨져 「먼저 펼치기」
+  헬퍼로 정정했다(`docs/insights.md`).
+
+## 토글 칩은 흰색 채움 = 누르는 것, 뱃지는 테두리만 = 읽는 것
+
+- Date: 2026-08-20
+- Context: 보스 기믹 체크박스 5개·모드 라디오 4개를 버튼처럼 보이는 토글 칩으로
+  바꾸며(`ToggleChip`), 선택 상태를 어떻게 표시할지와, 같은 화면에 새로 놓이는
+  읽기 전용 키워드 뱃지(가이드 카드의 약점·거리·기믹 요약)를 어떻게 표시할지를
+  함께 정해야 했다.
+- Alternatives considered: (a) 선택된 칩을 `--accent`(빨강) 테두리로 표시.
+  (b) 뱃지를 흰 바탕으로 채운다(Fienn 최초 요청). (c) **선택된 칩은
+  `--primary`(흰색) 채움 + `--primary-contrast` 글자, 뱃지는 `--text` 테두리 +
+  투명 바탕.**
+- Decision: **(c).**
+- Why: (a)는 기믹이 다중 선택이라 켜진 것이 셋이면 빨강 테두리가 셋 뜬다 —
+  `index.css`가 못박은 「빨강은 드물어야 의미가 있다」 규칙을 깬다
+  (`.element-picker`가 `--accent`를 써도 괜찮은 이유는 약점 선택이 언제나 정확히
+  하나이기 때문이다). (b)는 같은 팔레트가 흰 채움을 「누르는 것」으로 이미
+  정의해 뒀는데 뱃지는 누르는 것이 아니다 — 바로 옆에 진짜 버튼형 칩이 서므로
+  흰 바탕 뱃지는 눌러보게 된다. Fienn이 (b)에서 (c)로 승인 정정(2026-08-20).
+- Consequences: 규칙이 두 축으로 갈린다 — **채움 = 조작(칩), 테두리 = 정보
+  (뱃지)**. 약점 칩(`.element-picker`)은 그대로 둔다 — 그쪽은 *색*으로 「무엇인가」를
+  말하고 새 칩은 *채움*으로 「켜졌나」를 말해 다른 축이라 충돌이 아니다. 새 색
+  토큰은 0개 — `--primary`·`--text`·`--rule`·`--surface`만 재사용.
+
+## 시즌 가이드 텍스트는 1단계에서 localStorage에만 산다 — 릴리즈 빌드에는 안 실린다
+
+- Date: 2026-08-20
+- Context: 새 시즌 가이드 카드에 Fienn이 직접 쓰는 공략 문장을 저장해야 했다.
+  회차 데이터(`data/raid-rotations.json`)에 필드를 추가해 정식으로 담을지,
+  가벼운 클라이언트 저장소로 시작할지 갈렸다.
+- Alternatives considered: (a) `data/raid-rotations.json`에 `guide` 필드를
+  새로 추가하고 백엔드 모델·로더·`/update-raid-bosses` 스킬·테스트를 함께
+  확장. (b) **localStorage에만 저장**(`useBossGuides`, 키 `nikke-boss-guides`),
+  회차 데이터 스키마는 안 건드림.
+- Decision: **(b), 1단계 한정.** 2단계에서 (a)를 보스 이미지 필드와 같은
+  배치로 얹는다(Fienn 판단, 2026-08-20).
+- Why: localStorage는 빌드 산출물이 아니라 기기에 붙는다 — 개발 브라우저
+  (Vite `:5173`)에 쓴 글이 설치본 `RapiLab.exe`에서 안 보이고 릴리즈 zip에도
+  안 실린다. 반면 `data/raid-rotations.json`은 `packaging/rapilab.spec`의
+  `datas`를 타고 번들에 들어가지만(`paths.data_dir()`가 얼린 뒤
+  `sys._MEIPASS/data`를 읽는다) 회차마다 스키마·로더·스킬·테스트를 같이
+  건드리는 더 큰 작업이다. 지금 필요했던 것은 Fienn 본인이 바로 쓸 수 있는
+  자리였다.
+- Consequences: 최종 형태는 둘 다다 — 회차 데이터의 `guide`가 기본값(릴리즈
+  동봉), localStorage가 그 위를 덮어쓰기(로컬 수정 우선). 그 절반(덮어쓰기
+  계층)을 1단계에서 만들었고, 훅 시그니처를 `guideFor(key, fallback)`로 미리
+  잡아 뒀다 — 지금은 fallback이 항상 `''`이지만 2단계에서 회차 데이터의
+  `guide`가 그 자리에 들어오면 호출부를 다시 훑을 필요가 없다. 2단계가 보스
+  이미지와 같은 배치인 이유: 둘 다 같은 파일·모델·로더·스킬·테스트를 지나므로
+  스키마를 두 번 건드리지 않는다. `docs/roadmap.md`의 To-Do에 2단계를
+  백로그로 남긴다.
+
+## 전투 타임라인(SVG 눈금)을 보스 설정 접힘의 짝으로 둔다 — 잠정
+
+- Date: 2026-08-20
+- Context: 보스 설정을 기본으로 접으면서 `fight_duration`·
+  `part_destruction_times`(엔진이 실제로 읽는 두 값)를 볼 곳이 화면에서
+  사라졌다.
+- Alternatives considered: (a) 접힌 머리에 요약 텍스트로 값을 나열. (b)
+  **가이드 카드 안에 SVG 눈금 한 줄**(`FightTimeline`) — 폭이 `fight_duration`,
+  눈금이 각 파괴 시각.
+- Decision: **(b), 잠정.** Fienn: 「일단 넣고 앱에 띄워 본 뒤 남길지
+  정한다」(2026-08-20).
+- Why: 장식이 아니라 엔진이 실제로 읽는 두 값을 그대로 그린 것이다 — 값이
+  틀리면 그 자리에서 이상함이 보인다(`CoreHitRateReadout`이 코어 지름 옆에서
+  하는 일과 같은 계열). `part_destructible`이 꺼져 있거나 시각이 비어 있으면
+  띠 자체를 안 그린다 — 빈 눈금을 그리면 「관측 안 함」이 「0개」로 잘못 읽힌다.
+- Consequences: **잠정 결정이므로 다음 세션이 임의로 없애거나 굳히지 말 것** —
+  Fienn의 확인을 기다리는 상태다. `docs/roadmap.md`의 To-Do에 확정 여부 확인을
+  남긴다.
+
 ## 톡톡이 샷은 게이지 103%다 — 100%가 아니고, 차지 대미지 버프도 안 받는다
 
 - Date: 2026-08-20

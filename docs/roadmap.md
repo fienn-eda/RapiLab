@@ -1021,6 +1021,55 @@
       `scripts/audit_charge_motion_delay.py` **exit 0**
       (16 timed · 1 manual stand-in · 15 stand-in accepted · 0 UNVERIFIED) ·
       `audit_milk_tap_fire.py` 창 초과 **9개 조합 전부 0건**.
+### 솔로 레이드 설정 영역 재배치 (2026-08-20, Fienn 요청, `worktree-solo-raid-setup-layout`, 프론트엔드 전용)
+
+- [x] **배치 — 좌 컨트롤(보스 설정 + 모드) / 우 시즌 가이드 카드.**
+      `RecommendPanel.tsx`·`App.css`(`.recommend-form__setup`). 예전엔 좌(보스
+      설정, 길다)·우(모드, 짧다)라 오른쪽 아래가 늘 비었다 — 그 자리를 새 가이드
+      카드가 받는다.
+- [x] **솔로 탭만 보스 설정 기본 접힘** — `BossProfileField`에 `defaultCollapsed`
+      prop(기본 `false`), `RecommendPanel`에서만 `true`. 회차 카드까지 통째로
+      접는다. 유니온 탭은 펼친 채로 남긴다(전투마다 다른 보스를 고르므로 접으면
+      실행마다 다섯 번 펼쳐야 해서 손해). 상세: `docs/decisions.md`.
+- [x] **토글 칩** — `components/fields/ToggleChip.tsx`(진짜 `<input>` + `<label>`,
+      help는 라벨 밖이라 설명 클릭이 컨트롤을 안 건드림). 보스 기믹 체크박스
+      5개·모드 라디오 4개를 칩으로 전환, 선택 상태 = `--primary` 채움. 죽는
+      `.checkbox`/`.checkbox-row`/`.radio` 클래스를 `App.css`에서 함께 삭제.
+      상세: `docs/decisions.md`.
+- [x] **키워드 뱃지 공유** — `lib/bossBadges.ts`가 `BossSummary.tsx`의 기믹 목록
+      로직을 순수 함수로 뽑아 결과 화면과 가이드 카드가 공유. 뱃지는 `--text`
+      테두리 + 투명 바탕(칩의 흰 채움과 시각적으로 구분 — 채움=조작, 테두리=정보).
+- [x] **시즌 가이드 카드** — `components/SeasonGuideCard.tsx` +
+      `hooks/useBossGuides.ts`(localStorage 키 `nikke-boss-guides`, 항목 키는
+      `${rotation.id}::${boss_name}`). 뱃지 줄(약점·거리·기믹) + Fienn이 직접
+      쓰는 공략 문장(테두리 없는 textarea). **1단계는 localStorage 전용 —
+      릴리즈 빌드에 안 실린다**(아래 2단계 백로그). 상세: `docs/decisions.md`.
+- [x] **전투 타임라인** — `components/FightTimeline.tsx`, `fight_duration`·
+      `part_destruction_times`를 SVG 눈금 한 줄로. **잠정**(Fienn: 일단 넣고
+      앱에 띄워 본 뒤 남길지 정한다). `part_destructible`이 꺼져 있거나 시각이
+      없으면 안 그린다.
+- [x] 검증: 새 파일마다 테스트 한 벌 + `RecommendPanel.test.tsx` 11곳을 「먼저
+      펼치기」 헬퍼(`expandBossProfile`)로 정정, `App.test.tsx`도 솔로 탭 진입
+      시 보스 설정을 펼치도록 보강. 백엔드 파일은 **한 개도 안 건드렸다**(스키마
+      무변경) — `engine-capabilities.md`도 변경 없음(확인 완료). 최종 확인
+      (2026-08-20): 프론트 **1006 passed / 79 files**, 타입에러 0, lint 에러 0
+      (경고만, 전부 이 브랜치 밖의 기존 항목) · 백엔드 **2597 passed / 3
+      skipped**(이 브랜치는 건드리지 않았고 손 안 댄 채로 재확인만 했다).
+- [x] `docs/decisions.md`·`docs/insights.md` 갱신.
+
+  설계: `docs/superpowers/specs/2026-08-20-solo-raid-setup-layout-design.md`,
+  계획: `docs/superpowers/plans/2026-08-20-solo-raid-setup-layout.md`.
+
+- [ ] **2단계 백로그 — 회차 데이터에 `guide` + 보스 이미지 필드를 추가해 가이드가
+      릴리즈 앱에 실리게 한다**(Fienn 판단, 2단계로 미룸, 2026-08-20).
+      `data/raid-rotations.json` 스키마 확장 + 백엔드 모델·로더 +
+      `/update-raid-bosses` 스킬 + 테스트가 필요하다. localStorage는 그 위를
+      덮어쓰는 계층으로 남고, `guideFor(key, fallback)`의 fallback 자리에 회차
+      데이터의 `guide`를 흘려 넣는 것으로 마무리한다(호출부 재작업 불필요 —
+      시그니처를 1단계에서 이미 그렇게 잡아 뒀다). 보스 이미지를 같은 배치로
+      넣는 이유: 둘 다 같은 파일·모델·로더·스킬·테스트를 지나 스키마를 두 번 안
+      건드린다. 공지 이미지 URL은 서명 URL이라 약 10시간 만료되므로(2026-08-07
+      결정) 링크가 아니라 받아서 커밋하는 방식이어야 한다.
 
 ### 톡톡이 배율 정정 — 103% + 차지대미지 게이팅 (2026-08-20, Fienn 실측)
 
