@@ -1,0 +1,62 @@
+{
+  "name": "Naga",
+  "url": "naga",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SG",
+  "element": "Electric",
+  "burst": "2",
+  "manufacturer": "Missilis",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Guardian of Friendship",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 8.61% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 50.33% for 10 sec.",
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 9.27% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 54.2% for 10 sec.",
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 9.93% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 58.07% for 10 sec.",
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 10.6% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 61.94% for 10 sec.",
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 11.26% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 65.82% for 10 sec.",
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 11.92% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 69.69% for 10 sec.",
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 12.59% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 73.56% for 10 sec.",
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 13.25% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 77.43% for 10 sec.",
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 13.91% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 81.3% for 10 sec.",
+        "■ Activates after 12 normal attacks. Affects all allies.\nRestores 14.57% of cover HP.\n■ Activates when a shield is placed in front of this unit. Affects all allies.\nDamage dealt when attacking core ▲ 85.17% for 10 sec."
+      ]
+    },
+    {
+      "name": "Support of Friendship",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 26.37% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 5.58% of the skill user's final Max HP as HP.",
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 27.89% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 6.03% of the skill user's final Max HP as HP.",
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 29.42% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 6.47% of the skill user's final Max HP as HP.",
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 30.94% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 6.92% of the skill user's final Max HP as HP.",
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 32.46% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 7.36% of the skill user's final Max HP as HP.",
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 33.98% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 7.8% of the skill user's final Max HP as HP.",
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 35.5% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 8.25% of the skill user's final Max HP as HP.",
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 37.02% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 8.69% of the skill user's final Max HP as HP.",
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 38.55% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 9.14% of the skill user's final Max HP as HP.",
+        "■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the highest ATK.\nDamage dealt when attacking core ▲ 40.07% for 5 sec.\n■ Activates after 5 normal attack(s). Affects 2 ally unit(s) with the lowest HP percentage.\nRecovers 9.58% of the skill user's final Max HP as HP."
+      ]
+    },
+    {
+      "name": "As Long As We're With Friends",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 9.56% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 17.16% of the skill user's ATK for 10 sec.",
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 10.29% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 18.7% of the skill user's ATK for 10 sec.",
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 11.03% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 20.24% of the skill user's ATK for 10 sec.",
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 11.76% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 21.78% of the skill user's ATK for 10 sec.",
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 12.5% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 23.32% of the skill user's ATK for 10 sec.",
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 13.24% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 24.86% of the skill user's ATK for 10 sec.",
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 13.97% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 26.4% of the skill user's ATK for 10 sec.",
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 14.71% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 27.94% of the skill user's ATK for 10 sec.",
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 15.44% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 29.48% of the skill user's ATK for 10 sec.",
+        "■ Affects self.\nGains Pierce for 10 sec.\n■ Affects all allies.\nATK ▲ 16.18% of the skill user's ATK for 10 sec.\n■ Activates if a shield is placed in front of this unit. Affects all allies.\nATK ▲ 31.02% of the skill user's ATK for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

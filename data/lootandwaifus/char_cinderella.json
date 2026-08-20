@@ -1,0 +1,62 @@
+{
+  "name": "Cinderella",
+  "url": "cinderella",
+  "source": "lootandwaifus",
+  "class": "Defender",
+  "weapon": "RL",
+  "element": "Electric",
+  "burst": "3",
+  "manufacturer": "Pilgrim",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Flawless Glass",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 1.7% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 80.72% of final ATK as additional damage.",
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 1.8% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 86.94% of final ATK as additional damage.",
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 1.92% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 93.13% of final ATK as additional damage.",
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 2.02% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 99.35% of final ATK as additional damage.",
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 2.13% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 105.55% of final ATK as additional damage.",
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 2.26% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 111.76% of final ATK as additional damage.",
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 2.36% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 117.98% of final ATK as additional damage.",
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 2.49% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 124.19% of final ATK as additional damage.",
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 2.58% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 130.39% of final ATK as additional damage.",
+        "■ Activates when entering Burst Stage 3. Affects self.\nATK ▲ 2.71% of the skill user's final Max HP for 10 sec.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Speed ▲ 100%. Removed upon reloading to max ammunition.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 136.6% of final ATK as additional damage."
+      ]
+    },
+    {
+      "name": "Dirt-Resistant Mirror",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 52.8% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 52.8% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 0.98% continuously, stacks up to 12 times.",
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 57.6% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 57.6% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 1.07% continuously, stacks up to 12 times.",
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 62.4% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 62.4% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 1.13% continuously, stacks up to 12 times.",
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 67.2% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 67.2% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 1.2% continuously, stacks up to 12 times.",
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 72% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 72% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 1.28% continuously, stacks up to 12 times.",
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 76.8% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 76.8% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 1.33% continuously, stacks up to 12 times.",
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 81.6% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 81.6% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 1.38% continuously, stacks up to 12 times.",
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 86.4% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 86.4% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 1.46% continuously, stacks up to 12 times.",
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 91.2% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 91.2% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 1.54% continuously, stacks up to 12 times.",
+        "■ Activates at the start of battle. Affects self.\nDecoy: Creates an avatar with 96% of the skill user's final Max HP. This effect is continuous.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nDecoy: Creates an avatar with 96% of the skill user's final Max HP. This effect is continuous.\n■ Activates every 3 sec when a decoy is present. Affects self.\nBeautiful: Max HP ▲ 1.6% continuously, stacks up to 12 times."
+      ]
+    },
+    {
+      "name": "Glass Slippers, Full Contact.",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects random enemies.\nDeals 853.7% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 18.07% of final ATK as additional damage.Mirrors the stack count of Beautiful.",
+        "■ Affects random enemies.\nDeals 910.62% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 19.28% of final ATK as additional damage.Mirrors the stack count of Beautiful.",
+        "■ Affects random enemies.\nDeals 967.5% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 20.49% of final ATK as additional damage.Mirrors the stack count of Beautiful.",
+        "■ Affects random enemies.\nDeals 1024.46% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 21.68% of final ATK as additional damage.Mirrors the stack count of Beautiful.",
+        "■ Affects random enemies.\nDeals 1081.38% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 22.88% of final ATK as additional damage.Mirrors the stack count of Beautiful.",
+        "■ Affects random enemies.\nDeals 1138.26% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 24.09% of final ATK as additional damage.Mirrors the stack count of Beautiful.",
+        "■ Affects random enemies.\nDeals 1195.16% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 25.3% of final ATK as additional damage.Mirrors the stack count of Beautiful.",
+        "■ Affects random enemies.\nDeals 1252.08% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 26.5% of final ATK as additional damage.Mirrors the stack count of Beautiful.",
+        "■ Affects random enemies.\nDeals 1309% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 27.69% of final ATK as additional damage.Mirrors the stack count of Beautiful.",
+        "■ Affects random enemies.\nDeals 1365.92% of final ATK as damage. Attacks sequentially for 10 time(s).\n■ Affects the same target(s) when in Beautiful status.\nDeals 28.9% of final ATK as additional damage.Mirrors the stack count of Beautiful."
+      ]
+    }
+  ],
+  "dollskills": null
+}

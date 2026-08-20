@@ -1,0 +1,111 @@
+{
+  "name": "Privaty",
+  "url": "privaty",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "AR",
+  "element": "Water",
+  "burst": "3",
+  "manufacturer": "Elysion",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "EX Magazine",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 18.77% for 10 sec.\nReload Speed ▲ 22.88% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 19.3% for 10 sec.\nReload Speed ▲ 26.02% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 19.84% for 10 sec.\nReload Speed ▲ 29.16% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 20.38% for 10 sec.\nReload Speed ▲ 32.3% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 20.92% for 10 sec.\nReload Speed ▲ 35.45% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 21.46% for 10 sec.\nReload Speed ▲ 38.59% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 22% for 10 sec.\nReload Speed ▲ 41.73% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 22.54% for 10 sec.\nReload Speed ▲ 44.88% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 23.08% for 10 sec.\nReload Speed ▲ 48.02% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 23.61% for 10 sec.\nReload Speed ▲ 51.16% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec."
+      ]
+    },
+    {
+      "name": "LD Assault",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 50.7% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 643.5% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 54.6% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 693% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 58.5% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 742.5% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 62.4% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 792% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 66.3% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 841.5% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 70.2% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 891% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 74.09% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 940.5% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 77.99% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 990% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 81.9% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 1039.5% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 85.79% of final ATK as additional damage.\n■ Affects the enemy hit by the last round of ammunition if they are Stunned.\nDeals 1089% of final ATK as additional damage."
+      ]
+    },
+    {
+      "name": "AK Missile",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all enemies.\nDeals 270.56% of final ATK as Burst Skill damage.\nStuns for 3 sec.",
+        "■ Affects all enemies.\nDeals 291.37% of final ATK as Burst Skill damage.\nStuns for 3 sec.",
+        "■ Affects all enemies.\nDeals 312.18% of final ATK as Burst Skill damage.\nStuns for 3 sec.",
+        "■ Affects all enemies.\nDeals 333% of final ATK as Burst Skill damage.\nStuns for 3 sec.",
+        "■ Affects all enemies.\nDeals 353.81% of final ATK as Burst Skill damage.\nStuns for 3 sec.",
+        "■ Affects all enemies.\nDeals 374.62% of final ATK as Burst Skill damage.\nStuns for 3 sec.",
+        "■ Affects all enemies.\nDeals 395.43% of final ATK as Burst Skill damage.\nStuns for 3 sec.",
+        "■ Affects all enemies.\nDeals 416.25% of final ATK as Burst Skill damage.\nStuns for 3 sec.",
+        "■ Affects all enemies.\nDeals 437.06% of final ATK as Burst Skill damage.\nStuns for 3 sec.",
+        "■ Affects all enemies.\nDeals 457.87% of final ATK as Burst Skill damage.\nStuns for 3 sec."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "EX Magazine",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 18.77% for 10 sec.\nReload Speed ▲ 22.88% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 11.91% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 19.3% for 10 sec.\nReload Speed ▲ 26.02% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 12.82% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 19.84% for 10 sec.\nReload Speed ▲ 29.16% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 13.74% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 20.38% for 10 sec.\nReload Speed ▲ 32.3% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 14.66% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 20.92% for 10 sec.\nReload Speed ▲ 35.45% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 15.57% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 21.46% for 10 sec.\nReload Speed ▲ 38.59% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 16.49% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 22% for 10 sec.\nReload Speed ▲ 41.73% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 17.41% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 22.54% for 10 sec.\nReload Speed ▲ 44.88% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 18.32% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 23.08% for 10 sec.\nReload Speed ▲ 48.02% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 19.24% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 23.61% for 10 sec.\nReload Speed ▲ 51.16% for 10 sec.\nMax Ammunition Capacity ▼ 50.66% for 10 sec.\nAttack Damage ▲ 20.16% for 10 sec."
+      ]
+    },
+    {
+      "name": "LD Assault",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 5.92% for 10 sec.\nDeals 151.37% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 996.86% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 6.37% for 10 sec.\nDeals 163.02% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 1073.55% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 6.83% for 10 sec.\nDeals 174.66% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 1150.23% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 7.28% for 10 sec.\nDeals 186.3% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 1226.91% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 7.74% for 10 sec.\nDeals 197.95% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 1303.59% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 8.2% for 10 sec.\nDeals 209.59% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 1380.27% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 8.65% for 10 sec.\nDeals 221.24% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 1456.96% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 9.11% for 10 sec.\nDeals 232.88% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 1533.64% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 9.56% for 10 sec.\nDeals 244.53% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 1610.32% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDamage Taken ▲ 10.01% for 10 sec.\nDeals 256.17% of final ATK as additional damage.\n■ Activates when the last bullet hits a target in Designated Target status. Affects the target.\nDeals 1687% of final ATK as additional damage."
+      ]
+    },
+    {
+      "name": "AK Missile",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 76.82% for 10 sec.\n■ Affects all enemies.\nDeals 831.79% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 2.96% for 10 sec.",
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 82.73% for 10 sec.\n■ Affects all enemies.\nDeals 895.77% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 3.19% for 10 sec.",
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 88.64% for 10 sec.\n■ Affects all enemies.\nDeals 959.76% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 3.42% for 10 sec.",
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 94.55% for 10 sec.\n■ Affects all enemies.\nDeals 1023.74% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 3.65% for 10 sec.",
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 100.46% for 10 sec.\n■ Affects all enemies.\nDeals 1087.72% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 3.88% for 10 sec.",
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 106.37% for 10 sec.\n■ Affects all enemies.\nDeals 1151.71% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 4.11% for 10 sec.",
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 112.28% for 10 sec.\n■ Affects all enemies.\nDeals 1215.69% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 4.33% for 10 sec.",
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 118.19% for 10 sec.\n■ Affects all enemies.\nDeals 1279.68% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 4.56% for 10 sec.",
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 124.1% for 10 sec.\n■ Affects all enemies.\nDeals 1343.66% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 4.79% for 10 sec.",
+        "■ Affects self.\nElemental Advantage Attack Damage ▲ 130% for 10 sec.\n■ Affects all enemies.\nDeals 1407.64% of final ATK as Burst Skill damage.\nStuns for 3 sec.\nDesignated Target: ATK ▼ 5.02% for 10 sec."
+      ]
+    }
+  ]
+}

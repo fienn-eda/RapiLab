@@ -1,0 +1,11 @@
+{
+ "name": "Cinderella: Crystal Wave",
+ "url": "cinderella-crystal-wave",
+ "source": "manual",
+ "weapon": "MG",
+ "chargeTime": 0,
+ "chargeDamage": "100%",
+ "maxAmmo": 300,
+ "damage": "5.57%",
+ "reloadTime": 2.5
+}

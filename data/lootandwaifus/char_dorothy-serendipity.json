@@ -1,0 +1,62 @@
+{
+  "name": "Dorothy: Serendipity",
+  "url": "dorothy-serendipity",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SG",
+  "element": "Water",
+  "burst": "3",
+  "manufacturer": "Pilgrim",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Flash",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 78.54% for 3 round(s).\nAttack damage ▲ 43.2% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s).",
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 80.72% for 3 round(s).\nAttack damage ▲ 46.4% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s).",
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 82.9% for 3 round(s).\nAttack damage ▲ 49.6% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s).",
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 85.09% for 3 round(s).\nAttack damage ▲ 52.8% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s).",
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 87.27% for 3 round(s).\nAttack damage ▲ 56% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s).",
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 89.45% for 3 round(s).\nAttack damage ▲ 59.2% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s).",
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 91.63% for 3 round(s).\nAttack damage ▲ 62.4% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s).",
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 93.81% for 3 round(s).\nAttack damage ▲ 65.6% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s).",
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 96% for 3 round(s).\nAttack damage ▲ 68.8% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s).",
+        "■ Activates when hitting the target with 80 pellets. Affects self.\nGains Pierce for 3 round(s).\nHit Rate ▲ 98.18% for 3 round(s).\nAttack damage ▲ 72% for 3 round(s).\nPellet count is fixed at 1 for 3 round(s).\n■ Activates when hitting the target with 160 pellets. Affects self.\nExpands Pierce range by 200% for 3 round(s)."
+      ]
+    },
+    {
+      "name": "Radiant Wings",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 31.68% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 45% continuously.\nHit Rate ▲ 23.4% continuously.",
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 34.28% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 48.36% continuously.\nHit Rate ▲ 25.32% continuously.",
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 36.88% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 51.72% continuously.\nHit Rate ▲ 27.24% continuously.",
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 39.48% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 55.08% continuously.\nHit Rate ▲ 29.16% continuously.",
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 42.08% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 58.44% continuously.\nHit Rate ▲ 31.08% continuously.",
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 44.68% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 61.8% continuously.\nHit Rate ▲ 33% continuously.",
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 47.28% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 65.16% continuously.\nHit Rate ▲ 34.92% continuously.",
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 49.88% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 68.52% continuously.\nHit Rate ▲ 36.84% continuously.",
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 52.48% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 71.88% continuously.\nHit Rate ▲ 38.76% continuously.",
+        "■ Activates at the start of battle. Affects self.\nPierce damage ▲ 55.08% continuously.\n■ Activates only during Full Burst. Affects self.\nATK ▲ 75.24% continuously.\nHit Rate ▲ 40.68% continuously."
+      ]
+    },
+    {
+      "name": "False Salvation",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nAttack speed ▲ 36.72% for 15 sec.\nATK ▲ 51.08% for 15 sec.\nNumber of pellets ▲ 3 for 15 sec.",
+        "■ Affects self.\nAttack speed ▲ 39.86% for 15 sec.\nATK ▲ 55.19% for 15 sec.\nNumber of pellets ▲ 3 for 15 sec.",
+        "■ Affects self.\nAttack speed ▲ 43% for 15 sec.\nATK ▲ 59.31% for 15 sec.\nNumber of pellets ▲ 3 for 15 sec.",
+        "■ Affects self.\nAttack speed ▲ 46.14% for 15 sec.\nATK ▲ 63.42% for 15 sec.\nNumber of pellets ▲ 4 for 15 sec.",
+        "■ Affects self.\nAttack speed ▲ 49.29% for 15 sec.\nATK ▲ 67.54% for 15 sec.\nNumber of pellets ▲ 4 for 15 sec.",
+        "■ Affects self.\nAttack speed ▲ 52.43% for 15 sec.\nATK ▲ 71.65% for 15 sec.\nNumber of pellets ▲ 4 for 15 sec.",
+        "■ Affects self.\nAttack speed ▲ 55.57% for 15 sec.\nATK ▲ 75.77% for 15 sec.\nNumber of pellets ▲ 5 for 15 sec.",
+        "■ Affects self.\nAttack speed ▲ 58.71% for 15 sec.\nATK ▲ 79.89% for 15 sec.\nNumber of pellets ▲ 5 for 15 sec.",
+        "■ Affects self.\nAttack speed ▲ 61.86% for 15 sec.\nATK ▲ 84% for 15 sec.\nNumber of pellets ▲ 5 for 15 sec.",
+        "■ Affects self.\nAttack speed ▲ 65% for 15 sec.\nATK ▲ 88.12% for 15 sec.\nNumber of pellets ▲ 5 for 15 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

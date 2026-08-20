@@ -1,0 +1,62 @@
+{
+  "name": "Rosanna: Chic Ocean",
+  "url": "rosanna-chic-ocean",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "AR",
+  "element": "Wind",
+  "burst": "2",
+  "manufacturer": "Tetra",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Ferita",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 14.33% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 1.77% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec.",
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 15.44% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 1.91% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec.",
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 16.54% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 2.04% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec.",
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 17.64% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 2.18% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec.",
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 18.74% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 2.32% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec.",
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 19.85% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 2.45% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec.",
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 20.95% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 2.59% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec.",
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 22.05% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 2.73% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec.",
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 23.16% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 2.86% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec.",
+        "■ Activates at the start of battle. Affects all allies.\nDamage to Parts ▲ 24.26% for 15 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all allies.\nATK ▲ 3% of the skill user's ATK, stacks up to 5 time(s) and lasts for 30 sec."
+      ]
+    },
+    {
+      "name": "Spina di Rosa",
+      "cooldown": 30.0,
+      "levels": [
+        "■ Affects all allies.\nDamage to Parts ▲ 14.33% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 41.6% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects all allies.\nDamage to Parts ▲ 15.44% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 44.8% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects all allies.\nDamage to Parts ▲ 16.54% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 48% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects all allies.\nDamage to Parts ▲ 17.64% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 51.2% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects all allies.\nDamage to Parts ▲ 18.74% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 54.4% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects all allies.\nDamage to Parts ▲ 19.85% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 57.6% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects all allies.\nDamage to Parts ▲ 20.95% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 60.8% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects all allies.\nDamage to Parts ▲ 22.05% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 64% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects all allies.\nDamage to Parts ▲ 23.16% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 67.2% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects all allies.\nDamage to Parts ▲ 24.26% for 15 sec.\n■ Affects the enemy nearest to the crosshair.\nDeals 70.4% of final ATK as sustained damage every 1 sec for 15 sec."
+      ]
+    },
+    {
+      "name": "Onda Grande",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects all allies.\nSustained Damage ▲ 12.01% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 19.04% for 10 sec.",
+        "■ Affects all allies.\nSustained Damage ▲ 12.93% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 20.51% for 10 sec.",
+        "■ Affects all allies.\nSustained Damage ▲ 13.86% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 21.97% for 10 sec.",
+        "■ Affects all allies.\nSustained Damage ▲ 14.78% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 23.44% for 10 sec.",
+        "■ Affects all allies.\nSustained Damage ▲ 15.7% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 24.9% for 10 sec.",
+        "■ Affects all allies.\nSustained Damage ▲ 16.63% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 26.37% for 10 sec.",
+        "■ Affects all allies.\nSustained Damage ▲ 17.55% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 27.83% for 10 sec.",
+        "■ Affects all allies.\nSustained Damage ▲ 18.48% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 29.3% for 10 sec.",
+        "■ Affects all allies.\nSustained Damage ▲ 19.4% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 30.76% for 10 sec.",
+        "■ Affects all allies.\nSustained Damage ▲ 20.32% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 32.23% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

@@ -1,0 +1,111 @@
+{
+  "name": "Laplace",
+  "url": "laplace-nikke",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "RL",
+  "element": "Iron",
+  "burst": "3",
+  "manufacturer": "Missilis",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Hero Vision",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.11%, stacks up to 5 time(s) and lasts for 5 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.27%, stacks up to 5 time(s) and lasts for 5 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.43%, stacks up to 5 time(s) and lasts for 5 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.6%, stacks up to 5 time(s) and lasts for 5 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.76%, stacks up to 5 time(s) and lasts for 5 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.92%, stacks up to 5 time(s) and lasts for 5 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 3.08%, stacks up to 5 time(s) and lasts for 5 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 3.25%, stacks up to 5 time(s) and lasts for 5 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 3.41%, stacks up to 5 time(s) and lasts for 5 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 3.57%, stacks up to 5 time(s) and lasts for 5 sec."
+      ]
+    },
+    {
+      "name": "Hero Bomber",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 48.25% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 8.73% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 51.96% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 9.4% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 55.68% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 10.08% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 59.39% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 10.75% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 63.1% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 11.42% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 66.81% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 12.09% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 70.52% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 12.76% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 74.24% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 13.44% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 77.95% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 14.11% of final ATK as additional damage.",
+        "■ Activates when the last bullet hits the target. Affects the target.\nDeals 81.66% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target.\nDeals 14.78% of final ATK as additional damage."
+      ]
+    },
+    {
+      "name": "Laplace Buster",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 530.4% of final ATK\nNormal Damage: 8.58% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 7.03% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 571.2% of final ATK\nNormal Damage: 9.24% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 7.57% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 612% of final ATK\nNormal Damage: 9.9% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 8.11% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 652.8% of final ATK\nNormal Damage: 10.56% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 8.65% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 693.6% of final ATK\nNormal Damage: 11.22% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 9.19% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 734.4% of final ATK\nNormal Damage: 11.88% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 9.73% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 775.2% of final ATK\nNormal Damage: 12.54% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 10.27% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 816% of final ATK\nNormal Damage: 13.2% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 10.81% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 856.8% of final ATK\nNormal Damage: 13.86% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 11.36% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 897.6% of final ATK\nNormal Damage: 14.52% of final ATK\nDuration: 5 sec\nAdditional Effect: Gains Pierce.\nNote: Unable to take cover while using Burst Skill.\n■ Activates when Hero Vision is at max stacks. Affects the same enemy unit(s).\nDeals 11.9% of final ATK as true damage."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "Hero Vision",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.11%, stacks up to 5 time(s) and lasts for 15 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.27%, stacks up to 5 time(s) and lasts for 15 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.43%, stacks up to 5 time(s) and lasts for 15 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.6%, stacks up to 5 time(s) and lasts for 15 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.76%, stacks up to 5 time(s) and lasts for 15 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 2.92%, stacks up to 5 time(s) and lasts for 15 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 3.08%, stacks up to 5 time(s) and lasts for 15 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 3.25%, stacks up to 5 time(s) and lasts for 15 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 3.41%, stacks up to 5 time(s) and lasts for 15 sec.",
+        "■ Activates when attacking with Full Charge. Affects self.\nHero Vision: Explosion Radius ▲ 3.57%, stacks up to 5 time(s) and lasts for 15 sec."
+      ]
+    },
+    {
+      "name": "Hero Bomber",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 78.26% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 8.73% of final ATK as additional damage.",
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 84.28% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 9.4% of final ATK as additional damage.",
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 90.3% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 10.08% of final ATK as additional damage.",
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 96.32% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 10.75% of final ATK as additional damage.",
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 102.34% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 11.42% of final ATK as additional damage.",
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 108.36% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 12.09% of final ATK as additional damage.",
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 114.38% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 12.76% of final ATK as additional damage.",
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 120.41% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 13.44% of final ATK as additional damage.",
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 126.43% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 14.11% of final ATK as additional damage.",
+        "■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 132.45% of final ATK as additional damage.\n■ Activates when hitting the target's Parts. Affects the target's body.\nDeals 14.78% of final ATK as additional damage."
+      ]
+    },
+    {
+      "name": "Laplace Buster",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 860.2% of final ATK\nNormal Damage: 13.11% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 7.03% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 926.37% of final ATK\nNormal Damage: 14.12% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 7.57% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 992.54% of final ATK\nNormal Damage: 15.13% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 8.11% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 1058.71% of final ATK\nNormal Damage: 16.14% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 8.65% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 1124.88% of final ATK\nNormal Damage: 17.15% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 9.19% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 1191.04% of final ATK\nNormal Damage: 18.16% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 9.73% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 1257.21% of final ATK\nNormal Damage: 19.17% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 10.27% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 1323.38% of final ATK\nNormal Damage: 20.18% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 10.81% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 1389.55% of final ATK\nNormal Damage: 21.19% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 11.36% of final ATK as true damage.",
+        "■ Affects self.\nChanges the weapon in use:\nFirst Damage: 1455.72% of final ATK\nNormal Damage: 22.2% of final ATK\nDuration: 10 sec\nAdditional Effect 1: Gains Pierce.\nAdditional Effect 2: Normal damage is applied as true damage when Hero Vision is at max stacks.\nNote: Unable to take cover while using Burst Skill.\n■ Affects the same enemy unit(s) when Hero Vision is at max stacks.\nDeals 11.9% of final ATK as true damage."
+      ]
+    }
+  ]
+}

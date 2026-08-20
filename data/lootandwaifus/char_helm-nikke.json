@@ -1,0 +1,111 @@
+{
+  "name": "Helm",
+  "url": "helm-nikke",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SR",
+  "element": "Water",
+  "burst": "3",
+  "manufacturer": "Elysion",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Frontline Command",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 8.65% for 5 sec.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 9.31% for 5 sec.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 9.98% for 5 sec.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 10.64% for 5 sec.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 11.31% for 5 sec.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 11.98% for 5 sec.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 12.64% for 5 sec.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 13.31% for 5 sec.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 13.97% for 5 sec.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attack ▲ 14.64% for 5 sec."
+      ]
+    },
+    {
+      "name": "Fire Away",
+      "cooldown": null,
+      "levels": [
+        "■ Affects all allies.\nDamage to Interruption Parts ▲1.82% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲7% for 10 sec.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲1.96% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲7.54% for 10 sec.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲2.1% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲8.08% for 10 sec.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲2.24% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲8.62% for 10 sec.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲2.38% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲9.15% for 10 sec.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲2.52% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲9.69% for 10 sec.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲2.66% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲10.23% for 10 sec.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲2.8% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲10.77% for 10 sec.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲2.94% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲11.31% for 10 sec.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲3.08% permanently.\n■ Activates when entering Full Burst. Affects all allies.\nAttack damage ▲11.85% for 10 sec."
+      ]
+    },
+    {
+      "name": "Aegis Cannon",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects the enemy with the highest final ATK.\nDeals 731.25% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 32.17% of attack damage as HP over 10 sec.",
+        "■ Affects the enemy with the highest final ATK.\nDeals 787.5% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 34.65% of attack damage as HP over 10 sec.",
+        "■ Affects the enemy with the highest final ATK.\nDeals 843.75% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 37.12% of attack damage as HP over 10 sec.",
+        "■ Affects the enemy with the highest final ATK.\nDeals 900% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 39.6% of attack damage as HP over 10 sec.",
+        "■ Affects the enemy with the highest final ATK.\nDeals 956.25% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 42.07% of attack damage as HP over 10 sec.",
+        "■ Affects the enemy with the highest final ATK.\nDeals 1012.5% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 44.55% of attack damage as HP over 10 sec.",
+        "■ Affects the enemy with the highest final ATK.\nDeals 1068.75% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 47.02% of attack damage as HP over 10 sec.",
+        "■ Affects the enemy with the highest final ATK.\nDeals 1125% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 49.5% of attack damage as HP over 10 sec.",
+        "■ Affects the enemy with the highest final ATK.\nDeals 1181.25% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 51.97% of attack damage as HP over 10 sec.",
+        "■ Affects the enemy with the highest final ATK.\nDeals 1237.5% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 54.45% of attack damage as HP over 10 sec."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "Frontline Command",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 8.65% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.34% of the skill user's final Max HP.\nFills Burst Gauge by 8.46%.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 9.31% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.37% of the skill user's final Max HP.\nFills Burst Gauge by 9.11%.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 9.98% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.4% of the skill user's final Max HP.\nFills Burst Gauge by 9.76%.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 10.64% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.42% of the skill user's final Max HP.\nFills Burst Gauge by 10.41%.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 11.31% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.45% of the skill user's final Max HP.\nFills Burst Gauge by 11.06%.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 11.98% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.48% of the skill user's final Max HP.\nFills Burst Gauge by 11.71%.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 12.64% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.51% of the skill user's final Max HP.\nFills Burst Gauge by 12.36%.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 13.31% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.53% of the skill user's final Max HP.\nFills Burst Gauge by 13.01%.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 13.97% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.56% of the skill user's final Max HP.\nFills Burst Gauge by 13.66%.",
+        "■ Activates when the last bullet hits the target. Affects all allies.\nCritical Rate of normal attacks ▲ 14.64% for 5 sec.\n■ Activates when attacking with Full Charge. Affects all allies.\nRecovers 0.59% of the skill user's final Max HP.\nFills Burst Gauge by 14.31%."
+      ]
+    },
+    {
+      "name": "Fire Away",
+      "cooldown": null,
+      "levels": [
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 1.82% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 16.47% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 105.76% of final ATK as additional damage.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 1.96% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 17.74% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 113.89% of final ATK as additional damage.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 2.1% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 19% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 122.03% of final ATK as additional damage.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 2.24% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 20.27% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 130.16% of final ATK as additional damage.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 2.38% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 21.54% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 138.3% of final ATK as additional damage.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 2.52% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 22.8% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 146.44% of final ATK as additional damage.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 2.66% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 24.07% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 154.57% of final ATK as additional damage.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 2.8% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 25.34% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 162.71% of final ATK as additional damage.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 2.94% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 26.61% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 170.84% of final ATK as additional damage.",
+        "■ Affects all allies.\nDamage to Interruption Parts ▲ 3.08% continuously.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 27.87% for 10 sec.\n■ Activates when hitting a target with Full Charge. Affects the target.\nDeals 178.98% of final ATK as additional damage."
+      ]
+    },
+    {
+      "name": "Aegis Cannon",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects the enemy with the highest final ATK.\nDeals 4867.2% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 32.17% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 93.6% for 10 round(s).",
+        "■ Affects the enemy with the highest final ATK.\nDeals 5241.6% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 34.65% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 100.8% for 10 round(s).",
+        "■ Affects the enemy with the highest final ATK.\nDeals 5616% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 37.12% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 108% for 10 round(s).",
+        "■ Affects the enemy with the highest final ATK.\nDeals 5990.4% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 39.6% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 115.2% for 10 round(s).",
+        "■ Affects the enemy with the highest final ATK.\nDeals 6364.8% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 42.07% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 122.4% for 10 round(s).",
+        "■ Affects the enemy with the highest final ATK.\nDeals 6739.2% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 44.55% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 129.6% for 10 round(s).",
+        "■ Affects the enemy with the highest final ATK.\nDeals 7113.6% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 47.02% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 136.8% for 10 round(s).",
+        "■ Affects the enemy with the highest final ATK.\nDeals 7488% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 49.5% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 144% for 10 round(s).",
+        "■ Affects the enemy with the highest final ATK.\nDeals 7862.4% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 51.97% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 151.2% for 10 round(s).",
+        "■ Affects the enemy with the highest final ATK.\nDeals 8236.8% of final ATK as Burst Skill damage.\n■ Affects all allies.\nRecovers 54.45% of attack damage as HP for 10 sec.\n■ Affects self.\nCharge Damage Multiplier ▲ 158.4% for 10 round(s)."
+      ]
+    }
+  ]
+}

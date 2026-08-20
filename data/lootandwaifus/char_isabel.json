@@ -1,0 +1,62 @@
+{
+  "name": "Isabel",
+  "url": "isabel",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SG",
+  "element": "Electric",
+  "burst": "3",
+  "manufacturer": "Pilgrim",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Marked Target",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 3.91% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 11.27% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 10.8% for 45 sec.",
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 4.17% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 12.02% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 11.52% for 45 sec.",
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 4.43% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 12.77% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 12.24% for 45 sec.",
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 4.69% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 13.52% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 12.96% for 45 sec.",
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 4.95% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 14.27% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 13.68% for 45 sec.",
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 5.22% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 15.03% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 14.4% for 45 sec.",
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 5.48% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 15.78% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 15.12% for 45 sec.",
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 5.74% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 16.53% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 15.84% for 45 sec.",
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 6% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 17.28% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 16.56% for 45 sec.",
+        "■ Activates when using Burst Skill. Affects self.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Marked Target 1 - Critical Rate ▲ 6.26% for 45 sec.\nTwice: Marked Target 2 - Critical Damage ▲ 18.03% for 45 sec.\nThree times: Marked Target 3 - ATK ▲ 17.28% for 45 sec."
+      ]
+    },
+    {
+      "name": "Pointed Feather",
+      "cooldown": 15.0,
+      "levels": [
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 106.61% of final ATK as damage.",
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 113.72% of final ATK as damage.",
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 120.83% of final ATK as damage.",
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 127.93% of final ATK as damage.",
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 135.04% of final ATK as damage.",
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 142.15% of final ATK as damage.",
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 149.26% of final ATK as damage.",
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 156.36% of final ATK as damage.",
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 163.47% of final ATK as damage.",
+        "■ Affects 5 enemy unit(s) with the highest final DEF.\nDeals 170.58% of final ATK as damage."
+      ]
+    },
+    {
+      "name": "Sonic Chaser",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all enemies.\nDeals 93.65% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 24.97% for 5 sec.\nMarked Target 2: Deals 187.31% of final ATK as additional damage.\nMarked Target 3: Deals 218.53% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec.",
+        "■ Affects all enemies.\nDeals 99.9% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 26.64% for 5 sec.\nMarked Target 2: Deals 199.8% of final ATK as additional damage.\nMarked Target 3: Deals 233.1% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec.",
+        "■ Affects all enemies.\nDeals 106.14% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 28.3% for 5 sec.\nMarked Target 2: Deals 212.28% of final ATK as additional damage.\nMarked Target 3: Deals 247.66% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec.",
+        "■ Affects all enemies.\nDeals 112.38% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 29.97% for 5 sec.\nMarked Target 2: Deals 224.77% of final ATK as additional damage.\nMarked Target 3: Deals 262.23% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec.",
+        "■ Affects all enemies.\nDeals 118.63% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 31.63% for 5 sec.\nMarked Target 2: Deals 237.26% of final ATK as additional damage.\nMarked Target 3: Deals 276.8% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec.",
+        "■ Affects all enemies.\nDeals 124.87% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 33.3% for 5 sec.\nMarked Target 2: Deals 249.75% of final ATK as additional damage.\nMarked Target 3: Deals 291.37% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec.",
+        "■ Affects all enemies.\nDeals 131.11% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 34.96% for 5 sec.\nMarked Target 2: Deals 262.23% of final ATK as additional damage.\nMarked Target 3: Deals 305.94% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec.",
+        "■ Affects all enemies.\nDeals 137.36% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 36.63% for 5 sec.\nMarked Target 2: Deals 274.72% of final ATK as additional damage.\nMarked Target 3: Deals 320.51% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec.",
+        "■ Affects all enemies.\nDeals 143.6% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 38.29% for 5 sec.\nMarked Target 2: Deals 287.21% of final ATK as additional damage.\nMarked Target 3: Deals 335.08% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec.",
+        "■ Affects all enemies.\nDeals 149.85% of final ATK as Burst Skill damage.\nEffects vary for each stage of Marked Target. Each subsequent effect triggers all effects before it:\nMarked Target 1: Damage Taken ▲ 39.96% for 5 sec.\nMarked Target 2: Deals 299.7% of final ATK as additional damage.\nMarked Target 3: Deals 349.65% of final ATK as additional damage.\n■ Affects all allies.\nFull Burst Duration ▼ 5 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

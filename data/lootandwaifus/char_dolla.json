@@ -1,0 +1,62 @@
+{
+  "name": "Dolla",
+  "url": "dolla",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SR",
+  "element": "Wind",
+  "burst": "2",
+  "manufacturer": "Tetra",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Entrepreneurship",
+      "cooldown": 10.0,
+      "levels": [
+        "■ Affects all allies.\nATK ▲ 8.88% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 9.69% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 10.5% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 11.31% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 12.12% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 12.93% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 13.73% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 14.54% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 15.35% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 16.16% for 5 sec."
+      ]
+    },
+    {
+      "name": "Risk Sharing",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 1.18% for 5 sec.\nTwice: Critical Rate ▲ 1.05% for 5 sec.\nThree times: Critical Damage ▲ 3.85% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 1.91% for 5 sec.\nTwice: Critical Rate ▲ 1.4% for 5 sec.\nThree times: Critical Damage ▲ 4.89% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 2.64% for 5 sec.\nTwice: Critical Rate ▲ 1.75% for 5 sec.\nThree times: Critical Damage ▲ 5.93% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 3.36% for 5 sec.\nTwice: Critical Rate ▲ 2.1% for 5 sec.\nThree times: Critical Damage ▲ 6.98% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 4.09% for 5 sec.\nTwice: Critical Rate ▲ 2.45% for 5 sec.\nThree times: Critical Damage ▲ 8.02% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 4.81% for 5 sec.\nTwice: Critical Rate ▲ 2.8% for 5 sec.\nThree times: Critical Damage ▲ 9.06% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 5.54% for 5 sec.\nTwice: Critical Rate ▲ 3.15% for 5 sec.\nThree times: Critical Damage ▲ 10.1% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 6.27% for 5 sec.\nTwice: Critical Rate ▲ 3.5% for 5 sec.\nThree times: Critical Damage ▲ 11.14% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 6.99% for 5 sec.\nTwice: Critical Rate ▲ 3.85% for 5 sec.\nThree times: Critical Damage ▲ 12.18% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 1.82 sec.\nTwice: Cooldown of Burst Skill ▼ 2.2 sec.\nThree times: Cooldown of Burst Skill ▼ 2.6 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: ATK ▲ 7.72% for 5 sec.\nTwice: Critical Rate ▲ 4.21% for 5 sec.\nThree times: Critical Damage ▲ 13.22% for 5 sec."
+      ]
+    },
+    {
+      "name": "R&D Shot",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 404.08% of final ATK as Burst Skill damage.",
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 440.81% of final ATK as Burst Skill damage.",
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 477.55% of final ATK as Burst Skill damage.",
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 514.28% of final ATK as Burst Skill damage.",
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 551.02% of final ATK as Burst Skill damage.",
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 587.75% of final ATK as Burst Skill damage.",
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 624.48% of final ATK as Burst Skill damage.",
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 661.22% of final ATK as Burst Skill damage.",
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 697.95% of final ATK as Burst Skill damage.",
+        "■ Affects 1 enemy unit(s) with the highest final DEF.\nDeals 734.69% of final ATK as Burst Skill damage."
+      ]
+    }
+  ],
+  "dollskills": null
+}

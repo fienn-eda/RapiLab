@@ -1,0 +1,62 @@
+{
+  "name": "Arcana",
+  "url": "arcana",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "RL",
+  "element": "Electric",
+  "burst": "2",
+  "manufacturer": "Elysion",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Awakened Destiny",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 106.36% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 2.95% of the skill user's ATK for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 114.54% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 3.18% of the skill user's ATK for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 122.73% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 3.41% of the skill user's ATK for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 130.91% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 3.64% of the skill user's ATK for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 139.09% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 3.86% of the skill user's ATK for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 147.27% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 4.09% of the skill user's ATK for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 155.45% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 4.32% of the skill user's ATK for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 163.64% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 4.55% of the skill user's ATK for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 171.82% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 4.77% of the skill user's ATK for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nThe Magician: Cooldown of Skill 2 ▼ 75% for 15 sec.\nAttack damage ▲ 180% for 15 sec.\n■ Activates when Full Burst ends. Affects all allies.\nATK ▲ 5% of the skill user's ATK for 10 sec."
+      ]
+    },
+    {
+      "name": "Cycle of Destiny",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 106.36% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 3 sec.\nATK ▲ 29.54% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 4.43% for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 114.54% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 3.33 sec.\nATK ▲ 31.81% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 4.77% for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 122.73% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 3.66 sec.\nATK ▲ 34.09% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 5.11% for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 130.91% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 3.99 sec.\nATK ▲ 36.36% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 5.45% for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 139.09% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 4.32 sec.\nATK ▲ 38.63% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 5.79% for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 147.27% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 4.65 sec.\nATK ▲ 40.91% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 6.13% for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 155.45% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 4.98 sec.\nATK ▲ 43.18% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 6.48% for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 163.64% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 5.31 sec.\nATK ▲ 45.45% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 6.82% for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 171.82% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 5.64 sec.\nATK ▲ 47.72% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 7.16% for 10 sec.",
+        "■ Activates when Full Burst ends. Affects all Burst 3 Electric Code allies who previously cast their Burst Skill if self is in Wheel of Fortune status.\nStrength: ATK ▲ 180% of the skill user's ATK for 15 sec.\n■ Activates when Full Burst ends. Affects all allies if self is in Wheel of Fortune status.\nDeath: Cooldown of Burst Skill ▼ 6 sec.\nATK ▲ 50% of the skill user's ATK for 5 sec.\n■ Activates when Full Burst ends. Affects all allies.\nAttack damage ▲ 7.5% for 10 sec."
+      ]
+    },
+    {
+      "name": "Shackles of Destiny",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 5.91% for 10 sec.\n■ Affects all enemies.\nDeals 150% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 5.91% for 10 sec.",
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 6.36% for 10 sec.\n■ Affects all enemies.\nDeals 166.67% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 6.36% for 10 sec.",
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 6.82% for 10 sec.\n■ Affects all enemies.\nDeals 183.34% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 6.82% for 10 sec.",
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 7.27% for 10 sec.\n■ Affects all enemies.\nDeals 200.01% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 7.27% for 10 sec.",
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 7.73% for 10 sec.\n■ Affects all enemies.\nDeals 216.68% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 7.73% for 10 sec.",
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 8.18% for 10 sec.\n■ Affects all enemies.\nDeals 233.35% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 8.18% for 10 sec.",
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 8.64% for 10 sec.\n■ Affects all enemies.\nDeals 250.02% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 8.64% for 10 sec.",
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 9.09% for 10 sec.\n■ Affects all enemies.\nDeals 266.69% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 9.09% for 10 sec.",
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 9.55% for 10 sec.\n■ Affects all enemies.\nDeals 283.36% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 9.55% for 10 sec.",
+        "■ Affects all Electric Code allies.\nWheel of Fortune: Attack damage ▲ 10% for 10 sec.\n■ Affects all enemies.\nDeals 300% of final ATK as Burst Skill damage.\nJudgement: Damage taken ▲ 10% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

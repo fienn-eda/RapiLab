@@ -9,12 +9,19 @@ node_modules/
 .env
 .claude/worktrees/
 .claude/skills/*-workspace/
-data/dotgg/
-data/lootandwaifus/
 data/nikke_formula_sections.txt
 data/FIENN.json
 data/blablalink-cdn/
-data/shiftypad/
+
+# 캐릭터 데이터: **파싱된 json은 커밋한다.** 앱이 런타임에 읽는 값이고,
+# 무시하면 CI가 클론해서 빌드한 릴리스에 유닛이 0개로 나간다 - v0.1.0~v0.1.3이
+# 실제로 그렇게 나갔다(`docs/decisions.md`).
+#
+# 원본 스크랩은 계속 무시한다: 런타임이 안 읽고(감사 스크립트와 수집기만 읽는다),
+# 다시 받을 수 있으며, 공개 저장소에 올릴 이유가 없다. 크기도 3.3MB 대 26.5MB로
+# 갈린다.
+data/lootandwaifus/*.html
+data/shiftypad/raw/
 
 # 데스크톱 앱 빌드 산출물. `python scripts/build_app.py`가 만든다.
 build/

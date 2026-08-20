@@ -1,0 +1,111 @@
+{
+  "name": "Tove",
+  "url": "tove-nikke",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "AR",
+  "element": "Water",
+  "burst": "1",
+  "manufacturer": "Missilis",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Emergency-Crafted Bullets",
+      "cooldown": null,
+      "levels": [
+        "■ There is a 2% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 3.13% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 2.96% for 5 sec.",
+        "■ There is a 2% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 3.37% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 3.21% for 5 sec.",
+        "■ There is a 3% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 3.62% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 3.47% for 5 sec.",
+        "■ There is a 3% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 3.86% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 3.72% for 5 sec.",
+        "■ There is a 3% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 4.1% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 3.97% for 5 sec.",
+        "■ There is a 4% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 4.34% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 4.23% for 5 sec.",
+        "■ There is a 4% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 4.58% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 4.48% for 5 sec.",
+        "■ There is a 4% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 4.82% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 4.73% for 5 sec.",
+        "■ There is a 5% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 5.06% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 4.99% for 5 sec.",
+        "■ There is a 5% chance of activating when attacking. Affects self.\nEmergency-Crafted Bullets: Reload 5.31% of the magazine(s).\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 5.24% for 5 sec."
+      ]
+    },
+    {
+      "name": "Modification Successful",
+      "cooldown": null,
+      "levels": [
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 1.96% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 24.96% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 2.11% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 26.88% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 2.26% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 28.8% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 2.41% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 30.72% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 2.57% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 32.64% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 2.72% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 34.56% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 2.87% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 36.48% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 3.02% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 38.4% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 3.17% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 40.32% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 3.32% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all allies with shotguns.\nAttack Speed ▲ 42.24% continuously."
+      ]
+    },
+    {
+      "name": "Miracle of Makeshifts",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.37% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 14.31% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.47% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 15.41% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.58% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 16.51% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.68% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 17.61% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.79% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 18.71% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.9% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 19.81% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 2% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 20.91% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 2.11% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 22.01% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 2.21% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 23.11% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 2.32% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec.\n■ Affects all allies with a Shotgun.\nMiracle of Makeshifts: ATK ▲ 24.21% of the skill user's ATK. Mirrors the stack count of Temporary Modification. This effect lasts for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "Emergency-Crafted Bullets",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Activates after 25 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 3.13% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 2.96% for 5 sec.",
+        "■ Activates after 25 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 3.37% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 3.21% for 5 sec.",
+        "■ Activates after 20 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 3.62% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 3.47% for 5 sec.",
+        "■ Activates after 20 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 3.86% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 3.72% for 5 sec.",
+        "■ Activates after 20 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 4.1% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 1, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 3.97% for 5 sec.",
+        "■ Activates after 15 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 4.34% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 4.23% for 5 sec.",
+        "■ Activates after 15 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 4.58% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 4.48% for 5 sec.",
+        "■ Activates after 15 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 4.82% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 4.73% for 5 sec.",
+        "■ Activates after 10 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 5.06% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 4.99% for 5 sec.",
+        "■ Activates after 10 normal attack(s). Affects self.\nEmergency-Crafted Bullets: Reload 5.31% of the magazine.\n■ Activates during Emergency-Crafted Bullets. Affects all allies.\nTemporary Modification: Max Ammunition Capacity ▲ 2, stacks up to 3 time(s) and lasts for 5 sec.\nCritical Damage ▲ 5.24% for 5 sec."
+      ]
+    },
+    {
+      "name": "Modification Successful",
+      "cooldown": null,
+      "levels": [
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 5.27% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 24.96% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 5.81% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 26.88% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 6.34% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 28.8% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 6.87% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 30.72% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 7.41% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 32.64% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 7.94% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 34.56% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 8.47% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 36.48% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 9.01% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 38.4% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 9.54% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 40.32% continuously.",
+        "■ Only activates when Temporary Modification is at max stacks. Affects all allies.\nCritical Rate ▲ 10.08% continuously.\n■ Only activates when Temporary Modification is at max stacks. Affects all shotgun-wielding allies.\nAttack Speed ▲ 42.24% continuously."
+      ]
+    },
+    {
+      "name": "Miracle of Makeshifts",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.37% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 14.31% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.47% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 15.41% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.58% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 16.51% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.68% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 17.61% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.79% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 18.71% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 1.9% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 19.81% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 2% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 20.91% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 2.11% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 22.01% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 2.21% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 23.11% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.",
+        "■ Affects all allies.\nMiracle of Makeshifts: ATK ▲ 2.32% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec.\n■ Affects all shotgun-wielding allies.\nMiracle of Makeshifts: ATK ▲ 24.21% of the skill user's ATK. Mirrors the stack count of Temporary Modification for 15 sec."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "name": "Brid: Silent Track",
+  "url": "brid-silent-track",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SG",
+  "element": "Fire",
+  "burst": "2",
+  "manufacturer": "Elysion",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Ignition Sequence",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 8.93% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 375.82% of final ATK as damage.",
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 9.62% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 404.73% of final ATK as damage.",
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 10.31% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 433.64% of final ATK as damage.",
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 11% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 462.54% of final ATK as damage.",
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 11.69% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 491.45% of final ATK as damage.",
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 12.37% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 520.36% of final ATK as damage.",
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 13.06% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 549.27% of final ATK as damage.",
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 13.75% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 578.18% of final ATK as damage.",
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 14.44% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 607.09% of final ATK as damage.",
+        "■ Activates when entering Full Burst. Affects all Wind Code enemies.\nDamage Taken ▲ 15.12% for 10 sec.\n■ Activates when entering Full Burst. Affects all enemies.\nDeals 636% of final ATK as damage."
+      ]
+    },
+    {
+      "name": "Journey Ahead",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 7.16% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 398.86% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 7.71% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 429.55% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 8.27% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 460.23% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 8.82% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 490.91% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 9.37% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 521.59% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 9.92% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 552.28% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 10.47% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 582.96% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 11.02% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 613.64% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 11.57% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 644.32% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 1 Wind Code enemy unit(s) with the lowest remaining HP.\nDamage Taken ▲ 12.12% for 10 sec.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 675% of final ATK as damage."
+      ]
+    },
+    {
+      "name": "Full Throttle",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects all allies (except self).\nATK ▲ 39.3% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies (except self).\nATK ▲ 42.33% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies (except self).\nATK ▲ 45.35% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies (except self).\nATK ▲ 48.37% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies (except self).\nATK ▲ 51.4% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies (except self).\nATK ▲ 54.42% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies (except self).\nATK ▲ 57.44% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies (except self).\nATK ▲ 60.47% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies (except self).\nATK ▲ 63.49% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies (except self).\nATK ▲ 66.52% of the skill user's ATK for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

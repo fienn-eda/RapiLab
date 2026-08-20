@@ -1,0 +1,62 @@
+{
+  "name": "Takina Inoue",
+  "url": "takina-inoue",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SR",
+  "element": "Iron",
+  "burst": "2",
+  "manufacturer": "Abnormal",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Combat Support",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 47.29% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 20.71% for 15 sec.",
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 50.93% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 22.3% for 15 sec.",
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 54.57% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 23.9% for 15 sec.",
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 58.21% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 25.49% for 15 sec.",
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 61.85% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 27.08% for 15 sec.",
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 65.49% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 28.68% for 15 sec.",
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 69.12% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 30.27% for 15 sec.",
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 72.76% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 31.86% for 15 sec.",
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 76.4% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 33.46% for 15 sec.",
+        "■ Activates at the start of battle and when Full Burst ends. Affects self.\nATK ▲ 80.04% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nTrue Damage ▲ 35.05% for 15 sec."
+      ]
+    },
+    {
+      "name": "Battlefield Control",
+      "cooldown": null,
+      "levels": [
+        "■ Affects all enemies.\nDamage Taken ▲ 5.96% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 83.01% for 10 sec.",
+        "■ Affects all enemies.\nDamage Taken ▲ 6.42% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 89.4% for 10 sec.",
+        "■ Affects all enemies.\nDamage Taken ▲ 6.88% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 95.79% for 10 sec.",
+        "■ Affects all enemies.\nDamage Taken ▲ 7.33% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 102.17% for 10 sec.",
+        "■ Affects all enemies.\nDamage Taken ▲ 7.79% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 108.56% for 10 sec.",
+        "■ Affects all enemies.\nDamage Taken ▲ 8.25% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 114.94% for 10 sec.",
+        "■ Affects all enemies.\nDamage Taken ▲ 8.71% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 121.33% for 10 sec.",
+        "■ Affects all enemies.\nDamage Taken ▲ 9.17% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 127.72% for 10 sec.",
+        "■ Affects all enemies.\nDamage Taken ▲ 9.63% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 134.1% for 10 sec.",
+        "■ Affects all enemies.\nDamage Taken ▲ 10.09% for 5 sec.\nStuns for 2 sec.\n■ Affects all allies.\nTrue Damage ▲ 140.49% for 10 sec."
+      ]
+    },
+    {
+      "name": "Suppression Initiated",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 118.56% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 3.56% for 5 sec.",
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 127.68% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 3.84% for 5 sec.",
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 136.8% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 4.11% for 5 sec.",
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 145.92% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 4.39% for 5 sec.",
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 155.04% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 4.66% for 5 sec.",
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 164.16% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 4.94% for 5 sec.",
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 173.28% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 5.21% for 5 sec.",
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 182.4% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 5.49% for 5 sec.",
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 191.52% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 5.76% for 5 sec.",
+        "■ Affects self.\nChanges the weapon in use.\nDamage: 200.64% of final ATK\nDuration: 10 sec\nAdditional Effects\nAffects self: Normal attacks deal true damage for 10 sec.\nAffects targets hit: Damage Taken ▲ 6.04% for 5 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

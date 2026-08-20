@@ -1,0 +1,111 @@
+{
+  "name": "Julia",
+  "url": "julia",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "AR",
+  "element": "Iron",
+  "burst": "3",
+  "manufacturer": "Missilis",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Decrescendo",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects self.\nCritical Rate▲ 15.38% for 10 sec.",
+        "■ Affects self.\nCritical Rate▲ 16.57% for 10 sec.",
+        "■ Affects self.\nCritical Rate▲ 17.75% for 10 sec.",
+        "■ Affects self.\nCritical Rate▲ 18.93% for 10 sec.",
+        "■ Affects self.\nCritical Rate▲ 20.12% for 10 sec.",
+        "■ Affects self.\nCritical Rate▲ 21.3% for 10 sec.",
+        "■ Affects self.\nCritical Rate▲ 22.48% for 10 sec.",
+        "■ Affects self.\nCritical Rate▲ 23.67% for 10 sec.",
+        "■ Affects self.\nCritical Rate▲ 24.85% for 10 sec.",
+        "■ Affects self.\nCritical Rate▲ 26.04% for 10 sec."
+      ]
+    },
+    {
+      "name": "Crescendo",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 14.65%, stacks up to 5 times and lasts for 15 sec.",
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 15.78%, stacks up to 5 times and lasts for 15 sec.",
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 16.9%, stacks up to 5 times and lasts for 15 sec.",
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 18.03%, stacks up to 5 times and lasts for 15 sec.",
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 19.16%, stacks up to 5 times and lasts for 15 sec.",
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 20.29%, stacks up to 5 times and lasts for 15 sec.",
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 21.41%, stacks up to 5 times and lasts for 15 sec.",
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 22.54%, stacks up to 5 times and lasts for 15 sec.",
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 23.67%, stacks up to 5 times and lasts for 15 sec.",
+        "■ Activates when the last bullet hits the target. Affects self.\nCrescendo: Critical Damage ▲ 24.79%, stacks up to 5 times and lasts for 15 sec."
+      ]
+    },
+    {
+      "name": "Climax",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 321.75% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 321.75% of final ATK as additional damage.",
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 346.5% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 346.5% of final ATK as additional damage.",
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 371.25% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 371.25% of final ATK as additional damage.",
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 396% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 396% of final ATK as additional damage.",
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 420.75% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 420.75% of final ATK as additional damage.",
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 445.5% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 445.5% of final ATK as additional damage.",
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 470.25% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 470.25% of final ATK as additional damage.",
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 495% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 495% of final ATK as additional damage.",
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 519.75% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 519.75% of final ATK as additional damage.",
+        "■ Affects the 5 enemy unit(s) with the highest final DEF.\nDeals 544.5% of final ATK as damage.\n■ Activates when Crescendo is at max stacks. Affects the same target(s).\nDeals 544.5% of final ATK as additional damage."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "Decrescendo",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects self.\nCritical Rate ▲ 15.38% for 10 sec.\nATK ▲ 11.81% for 10 sec.\nNormal Attack Critical Rate ▲ 21.36% for 10 sec.",
+        "■ Affects self.\nCritical Rate ▲ 16.57% for 10 sec.\nATK ▲ 12.72% for 10 sec.\nNormal Attack Critical Rate ▲ 23.01% for 10 sec.",
+        "■ Affects self.\nCritical Rate ▲ 17.75% for 10 sec.\nATK ▲ 13.63% for 10 sec.\nNormal Attack Critical Rate ▲ 24.65% for 10 sec.",
+        "■ Affects self.\nCritical Rate ▲ 18.93% for 10 sec.\nATK ▲ 14.54% for 10 sec.\nNormal Attack Critical Rate ▲ 26.29% for 10 sec.",
+        "■ Affects self.\nCritical Rate ▲ 20.12% for 10 sec.\nATK ▲ 15.45% for 10 sec.\nNormal Attack Critical Rate ▲ 27.94% for 10 sec.",
+        "■ Affects self.\nCritical Rate ▲ 21.3% for 10 sec.\nATK ▲ 16.36% for 10 sec.\nNormal Attack Critical Rate ▲ 29.58% for 10 sec.",
+        "■ Affects self.\nCritical Rate ▲ 22.48% for 10 sec.\nATK ▲ 17.27% for 10 sec.\nNormal Attack Critical Rate ▲ 31.23% for 10 sec.",
+        "■ Affects self.\nCritical Rate ▲ 23.67% for 10 sec.\nATK ▲ 18.18% for 10 sec.\nNormal Attack Critical Rate ▲ 32.87% for 10 sec.",
+        "■ Affects self.\nCritical Rate ▲ 24.85% for 10 sec.\nATK ▲ 19.09% for 10 sec.\nNormal Attack Critical Rate ▲ 34.51% for 10 sec.",
+        "■ Affects self.\nCritical Rate ▲ 26.04% for 10 sec.\nATK ▲ 20% for 10 sec.\nNormal Attack Critical Rate ▲ 36.16% for 10 sec."
+      ]
+    },
+    {
+      "name": "Crescendo",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 14.65%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 52% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 59.09% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1.",
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 15.78%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 56% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 63.63% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1.",
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 16.9%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 60% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 68.18% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1.",
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 18.03%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 64% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 72.72% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1.",
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 19.16%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 68% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 77.27% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1.",
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 20.29%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 72% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 81.81% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1.",
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 21.41%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 76% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 86.36% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1.",
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 22.54%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 80% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 90.91% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1.",
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 23.67%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 84% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 95.45% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1.",
+        "■ Activates after landing 6 critical hit(s) with normal attacks. Affects self.\nCrescendo: Critical Damage ▲ 24.79%, stacks up to 5 time(s) and lasts for 15 sec.\n■ Activates after landing 8 critical hit(s) with normal attacks. Affects the target(s).\nMarcato: Deals 88% of final ATK as additional damage.\n■ Activates if Marcato lands as a crit attack. Affects the same target.\nDeals 100% of final ATK as additional damage.\n■ Activates at the start of battle. Affects self.\nForcefully uses Skill 1."
+      ]
+    },
+    {
+      "name": "Climax",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects random enemies.\nDeals 321.75% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 321.75% of final ATK as additional damage.",
+        "■ Affects random enemies.\nDeals 346.5% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 346.5% of final ATK as additional damage.",
+        "■ Affects random enemies.\nDeals 371.25% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 371.25% of final ATK as additional damage.",
+        "■ Affects random enemies.\nDeals 396% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 396% of final ATK as additional damage.",
+        "■ Affects random enemies.\nDeals 420.75% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 420.75% of final ATK as additional damage.",
+        "■ Affects random enemies.\nDeals 445.5% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 445.5% of final ATK as additional damage.",
+        "■ Affects random enemies.\nDeals 470.25% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 470.25% of final ATK as additional damage.",
+        "■ Affects random enemies.\nDeals 495% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 495% of final ATK as additional damage.",
+        "■ Affects random enemies.\nDeals 519.75% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 519.75% of final ATK as additional damage.",
+        "■ Affects random enemies.\nDeals 544.5% of final ATK as damage. Attacks sequentially 5 times.\n■ Activates when Crescendo is at max stacks. Affects the same target.\nDeals 544.5% of final ATK as additional damage."
+      ]
+    }
+  ]
+}

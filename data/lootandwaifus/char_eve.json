@@ -1,0 +1,62 @@
+{
+  "name": "EVE",
+  "url": "eve",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "AR",
+  "element": "Iron",
+  "burst": "3",
+  "manufacturer": "Abnormal",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Impact-Type Exospine",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 35.45% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 141.82% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 5.91% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 38.18% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 152.72% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 6.36% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 40.91% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 163.63% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 6.82% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 43.63% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 174.54% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 7.27% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 46.36% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 185.45% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 7.73% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 49.09% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 196.36% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 8.18% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 51.82% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 207.27% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 8.64% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 54.54% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 218.18% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 9.09% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 57.27% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 229.09% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 9.55% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nImpact-Type Exospine: Critical Rate ▲ 60% continuously.\n■ Activates after landing 44 critical hit(s) with normal attacks. Affects random enemy units.\nUnstable Energy: Deals 240% of final ATK as damage. Attacks sequentially 3 time(s).\n■ Activates when Unstable Energy hits an Electric Code target. Affects the target.\nDamage Taken ▲ 10% for 10 sec."
+      ]
+    },
+    {
+      "name": "Eagle Eye-Type Exospine",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 29.55% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 14.77% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s).",
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 31.82% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 15.91% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s).",
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 34.09% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 17.04% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s).",
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 36.36% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 18.18% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s).",
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 38.64% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 19.32% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s).",
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 40.91% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 20.45% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s).",
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 43.18% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 21.59% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s).",
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 45.46% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 22.73% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s).",
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 47.73% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 23.86% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s).",
+        "■ Activates at the start of battle. Affects self.\nEagle Eye-Type Exospine.\nPrevious effects trigger repeatedly.\nATK ▲ 50% of the skill user's ATK continuously.\nMax Ammunition Capacity ▲ 25% continuously.\n■ Activates when landing 10 normal attack(s) on an Electric Code target. Affects self.\nReloads 3 round(s)."
+      ]
+    },
+    {
+      "name": "Counter Chain",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects random enemy units.\nDeals 270.13% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 3 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%.",
+        "■ Affects random enemy units.\nDeals 290.91% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 3 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%.",
+        "■ Affects random enemy units.\nDeals 311.69% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 3 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%.",
+        "■ Affects random enemy units.\nDeals 332.47% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 5 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%.",
+        "■ Affects random enemy units.\nDeals 353.25% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 5 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%.",
+        "■ Affects random enemy units.\nDeals 374.03% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 5 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%.",
+        "■ Affects random enemy units.\nDeals 394.8% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 7 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%.",
+        "■ Affects random enemy units.\nDeals 415.58% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 7 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%.",
+        "■ Affects random enemy units.\nDeals 436.36% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 7 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%.",
+        "■ Affects random enemy units.\nDeals 457.14% of final ATK as damage. Attacks sequentially for 6 time(s).\n■ Affects self.\nExospine Mk2\nFunction: Enhances Exospine.\nDuration: 10 sec\nTriggers Impact-Type Exospine Mk2.\nEffect: Damage multiplier of Unstable Energy sequential attacks is scaled by 100%.\nTriggers Eagle Eye-Type Exospine Mk2.\nEffect: Damage multiplier of Eagle Eye-Type Exospine is scaled by 100%."
+      ]
+    }
+  ],
+  "dollskills": null
+}

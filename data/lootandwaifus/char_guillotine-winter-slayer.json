@@ -1,0 +1,62 @@
+{
+  "name": "Guillotine: Winter Slayer",
+  "url": "guillotine-winter-slayer",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "AR",
+  "element": "Water",
+  "burst": "3",
+  "manufacturer": "Elysion",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Hero's Fate",
+      "cooldown": null,
+      "levels": [
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 6.06%.\nHero Level Up Reward: Recovers 1.44% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 0.68% * Hero Level continuously.\nATK ▲ 0.55% of the skill user's ATK * Hero Level continuously.",
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 6.53%.\nHero Level Up Reward: Recovers 1.55% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 0.74% * Hero Level continuously.\nATK ▲ 0.58% of the skill user's ATK * Hero Level continuously.",
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 7%.\nHero Level Up Reward: Recovers 1.66% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 0.79% * Hero Level continuously.\nATK ▲ 0.63% of the skill user's ATK * Hero Level continuously.",
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 7.46%.\nHero Level Up Reward: Recovers 1.77% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 0.84% * Hero Level continuously.\nATK ▲ 0.67% of the skill user's ATK * Hero Level continuously.",
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 7.93%.\nHero Level Up Reward: Recovers 1.88% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 0.89% * Hero Level continuously.\nATK ▲ 0.71% of the skill user's ATK * Hero Level continuously.",
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 8.4%.\nHero Level Up Reward: Recovers 2% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 0.94% * Hero Level continuously.\nATK ▲ 0.75% of the skill user's ATK * Hero Level continuously.",
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 8.86%.\nHero Level Up Reward: Recovers 2.11% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 1% * Hero Level continuously.\nATK ▲ 0.79% of the skill user's ATK * Hero Level continuously.",
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 9.33%.\nHero Level Up Reward: Recovers 2.22% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 1.06% * Hero Level continuously.\nATK ▲ 0.84% of the skill user's ATK * Hero Level continuously.",
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 9.8%.\nHero Level Up Reward: Recovers 2.33% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 1.1% * Hero Level continuously.\nATK ▲ 0.88% of the skill user's ATK * Hero Level continuously.",
+        "■ Activates every time EXP stacks 10. Affects self.\nHero Level Up: Reaches a maximum of Level 11.\nHero Level Up Reward: Reloads 10.26%.\nHero Level Up Reward: Recovers 2.44% of the skill user's final Max HP.\n■ Activates when Hero levels up. Affects all Water Code allies.\nElemental Advantage Attack Damage ▲ 1.16% * Hero Level continuously.\nATK ▲ 0.91% of the skill user's ATK * Hero Level continuously."
+      ]
+    },
+    {
+      "name": "Hero's Gift",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.07%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.07%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 4.37% continuously.",
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.15%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.15%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 4.76% continuously.",
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.24%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.24%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 5.07% continuously.",
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.32%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.32%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 5.4% continuously.",
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.4%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.4%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 5.72% continuously.",
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.48%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.48%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 6.05% continuously.",
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.57%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.57%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 6.42% continuously.",
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.65%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.65%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 6.81% continuously.",
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.73%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.73%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 7.07% continuously.",
+        "■ Activates after landing 6 normal attack(s) without hitting the core. Affects self.\nEXP: ATK ▲ 1.81%, stacks up to 100 time(s) continuously.\n■ Activates when hitting the Core for 3 time(s). Affects self.\nEXP: ATK ▲ 1.81%, stacks up to 100 time(s) continuously.\n■ Activates when Hero Level is 2 or above. Affects self.\nElemental Advantage Attack Damage ▲ 7.46% continuously."
+      ]
+    },
+    {
+      "name": "Extermination",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 5.99% for 10 sec.\nElemental Advantage Attack Damage ▲ 11.08% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 12.34% of the final ATK * Hero Level every sec for 10 sec.",
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 6.45% for 10 sec.\nElemental Advantage Attack Damage ▲ 11.93% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 13.28% of the final ATK * Hero Level every sec for 10 sec.",
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 6.91% for 10 sec.\nElemental Advantage Attack Damage ▲ 12.78% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 14.23% of the final ATK * Hero Level every sec for 10 sec.",
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 7.37% for 10 sec.\nElemental Advantage Attack Damage ▲ 13.64% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 15.17% of the final ATK * Hero Level every sec for 10 sec.",
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 7.83% for 10 sec.\nElemental Advantage Attack Damage ▲ 14.49% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 16.14% of the final ATK * Hero Level every sec for 10 sec.",
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 8.29% for 10 sec.\nElemental Advantage Attack Damage ▲ 15.34% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 17.08% of the final ATK * Hero Level every sec for 10 sec.",
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 8.76% for 10 sec.\nElemental Advantage Attack Damage ▲ 16.19% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 18.03% of the final ATK * Hero Level every sec for 10 sec.",
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 9.22% for 10 sec.\nElemental Advantage Attack Damage ▲ 17.05% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 18.99% of the final ATK * Hero Level every sec for 10 sec.",
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 9.68% for 10 sec.\nElemental Advantage Attack Damage ▲ 17.9% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 19.93% of the final ATK * Hero Level every sec for 10 sec.",
+        "■ Affects all Water Code allies.\nAttack Damage ▲ 10.14% for 10 sec.\nElemental Advantage Attack Damage ▲ 18.75% for 10 sec.\n■ Affects 1 enemy unit(s) with the highest final Max HP.\nDeals continuous damage equal to 20.87% of the final ATK * Hero Level every sec for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

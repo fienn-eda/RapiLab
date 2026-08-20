@@ -1,0 +1,62 @@
+{
+  "name": "Liter",
+  "url": "liter",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SMG",
+  "element": "Iron",
+  "burst": "1",
+  "manufacturer": "Missilis",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Liter Boost",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 7.05% for 5 sec.\nTwice: Critical Damage ▲ 3.36% for 5 sec.\nThree times: ATK ▲ 5.05% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 11.29% for 5 sec.\nTwice: Critical Damage ▲ 4.37% for 5 sec.\nThree times: ATK ▲ 6.09% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 15.52% for 5 sec.\nTwice: Critical Damage ▲ 5.38% for 5 sec.\nThree times: ATK ▲ 7.13% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 19.76% for 5 sec.\nTwice: Critical Damage ▲ 6.39% for 5 sec.\nThree times: ATK ▲ 8.17% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 23.99% for 5 sec.\nTwice: Critical Damage ▲ 7.4% for 5 sec.\nThree times: ATK ▲ 9.21% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 28.23% for 5 sec.\nTwice: Critical Damage ▲ 8.41% for 5 sec.\nThree times: ATK ▲ 10.25% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 32.46% for 5 sec.\nTwice: Critical Damage ▲ 9.42% for 5 sec.\nThree times: ATK ▲ 11.29% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 36.7% for 5 sec.\nTwice: Critical Damage ▲ 10.44% for 5 sec.\nThree times: ATK ▲ 12.33% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 40.93% for 5 sec.\nTwice: Critical Damage ▲ 11.45% for 5 sec.\nThree times: ATK ▲ 13.37% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Max Ammunition Capacity ▲ 45.17% for 5 sec.\nTwice: Critical Damage ▲ 12.46% for 5 sec.\nThree times: ATK ▲ 14.42% for 5 sec."
+      ]
+    },
+    {
+      "name": "Bolt Boost",
+      "cooldown": 15.0,
+      "levels": [
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 28.87% of Cover HP.",
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 31.5% of Cover HP.",
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 34.12% of Cover HP.",
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 36.75% of Cover HP.",
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 39.37% of Cover HP.",
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 42% of Cover HP.",
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 44.62% of Cover HP.",
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 47.25% of Cover HP.",
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 49.87% of Cover HP.",
+        "■ Affects 2 ally unit(s) with the lowest remaining cover HP.\nRestores 52.5% of Cover HP."
+      ]
+    },
+    {
+      "name": "Double Boost",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects all allies.\nATK ▲ 36.3% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 39.6% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 42.9% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 46.2% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 49.5% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 52.8% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 56.1% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 59.4% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 62.7% for 5 sec.",
+        "■ Affects all allies.\nATK ▲ 66% for 5 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

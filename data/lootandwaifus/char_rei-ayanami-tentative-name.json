@@ -1,0 +1,62 @@
+{
+  "name": "Rei Ayanami (Tentative Name)",
+  "url": "rei-ayanami-tentative-name",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "AR",
+  "element": "Wind",
+  "burst": "3",
+  "manufacturer": "Abnormal",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Annihilation Support",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 349.01% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 169.22% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 10.4% of the skill user's ATK for 9 sec.",
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 375.86% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 182.23% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 11.2% of the skill user's ATK for 9 sec.",
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 402.71% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 195.25% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 12% of the skill user's ATK for 9 sec.",
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 429.55% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 208.27% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 12.8% of the skill user's ATK for 9 sec.",
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 456.4% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 221.28% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 13.6% of the skill user's ATK for 9 sec.",
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 483.25% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 234.3% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 14.4% of the skill user's ATK for 9 sec.",
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 510.1% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 247.32% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 15.2% of the skill user's ATK for 9 sec.",
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 536.94% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 260.33% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 16% of the skill user's ATK for 9 sec.",
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 563.79% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 273.35% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 16.8% of the skill user's ATK for 9 sec.",
+        "■ Activates after landing 18 normal attack(s) against a target in Anti A.T. Field status. Affects the target.\nDeals 590.64% of final ATK as additional damage.\nAnti A.T. Field stacks ▲ 10.\n■ Activates after landing 7 normal attack(s) while in Attack State status. Affects the target.\nDeals 286.37% of final ATK as additional damage.\n■ Activates when entering Full Burst. Affects all allies in Annihilation State status.\nUnits affected by Annihilation State's additional effect ▲ 1 for 9 sec.\nAttack range of Annihilation State's additional effect ▲ 500% for 9 sec.\nATK ▲ 17.6% of the skill user's ATK for 9 sec."
+      ]
+    },
+    {
+      "name": "Maintenance and Resupply",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 6.86% of the skill user's ATK for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 7.39% of the skill user's ATK for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 7.92% of the skill user's ATK for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 8.44% of the skill user's ATK for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 8.97% of the skill user's ATK for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 9.5% of the skill user's ATK for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 10.03% of the skill user's ATK for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 10.56% of the skill user's ATK for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 11.08% of the skill user's ATK for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies with a Machine Gun who have used their Burst Skills.\nMG heating up speed ▲ 100% for 13 sec.\n■ Activates when entering Full Burst. Affects all allies.\nATK ▲ 11.61% of the skill user's ATK for 10 sec."
+      ]
+    },
+    {
+      "name": "Attack State",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 21.21% for 10 sec.\nATK ▲ 37.44% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 654.54% of final ATK as Burst Skill damage.",
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 22.84% for 10 sec.\nATK ▲ 40.32% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 691.84% of final ATK as Burst Skill damage.",
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 24.48% for 10 sec.\nATK ▲ 43.2% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 729.13% of final ATK as Burst Skill damage.",
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 26.11% for 10 sec.\nATK ▲ 46.08% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 766.43% of final ATK as Burst Skill damage.",
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 27.74% for 10 sec.\nATK ▲ 48.96% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 803.72% of final ATK as Burst Skill damage.",
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 29.37% for 10 sec.\nATK ▲ 51.84% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 841.02% of final ATK as Burst Skill damage.",
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 31% for 10 sec.\nATK ▲ 54.72% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 878.32% of final ATK as Burst Skill damage.",
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 32.64% for 10 sec.\nATK ▲ 57.6% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 915.61% of final ATK as Burst Skill damage.",
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 34.27% for 10 sec.\nATK ▲ 60.48% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 952.91% of final ATK as Burst Skill damage.",
+        "■ Affects self.\nAttack State:\nAttack Damage ▲ 35.9% for 10 sec.\nATK ▲ 63.36% of the skill user's ATK for 10 sec.\n■ Affects all enemies.\nDeals 990.2% of final ATK as Burst Skill damage."
+      ]
+    }
+  ],
+  "dollskills": null
+}

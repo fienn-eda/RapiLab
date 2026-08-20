@@ -1,0 +1,62 @@
+{
+  "name": "Alice",
+  "url": "alice",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SR",
+  "element": "Fire",
+  "burst": "3",
+  "manufacturer": "Tetra",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Energizing Carrot",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 6.89% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 4.13% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 7.42% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 4.45% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 7.95% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 4.77% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 8.48% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 5.09% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 9.02% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 5.41% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 9.55% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 5.73% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 10.08% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 6.04% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 10.61% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 6.36% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 11.14% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 6.68% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 ally unit(s) with the highest final ATK.\nCharge Speed ▲ 11.67% of the skill user's Charge Speed for 10 sec.\nCharge Damage ▲ 7% for 10 sec."
+      ]
+    },
+    {
+      "name": "Healthy Carrot",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 2.45% of attack damage. This effect is continuous.",
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 3.08% of attack damage. This effect is continuous.",
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 3.71% of attack damage. This effect is continuous.",
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 4.34% of attack damage. This effect is continuous.",
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 4.97% of attack damage. This effect is continuous.",
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 5.6% of attack damage. This effect is continuous.",
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 6.23% of attack damage. This effect is continuous.",
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 6.86% of attack damage. This effect is continuous.",
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 7.49% of attack damage. This effect is continuous.",
+        "■ Activates when this unit's HP is at 80% or above. Affects self.\nGains Pierce.\n■ Activates when this unit's HP is below 80%. Affects self.\nRestores HP equal to 8.12% of attack damage. This effect is continuous."
+      ]
+    },
+    {
+      "name": "Wonderland",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nCharge Speed ▲ 54.84% for 10 sec.\nATK ▲ 14.62% for 10 sec.",
+        "■ Affects self.\nCharge Speed ▲ 57.65% for 10 sec.\nATK ▲ 19.12% for 10 sec.",
+        "■ Affects self.\nCharge Speed ▲ 60.46% for 10 sec.\nATK ▲ 23.62% for 10 sec.",
+        "■ Affects self.\nCharge Speed ▲ 63.28% for 10 sec.\nATK ▲ 28.12% for 10 sec.",
+        "■ Affects self.\nCharge Speed ▲ 66.09% for 10 sec.\nATK ▲ 32.62% for 10 sec.",
+        "■ Affects self.\nCharge Speed ▲ 68.9% for 10 sec.\nATK ▲ 37.12% for 10 sec.",
+        "■ Affects self.\nCharge Speed ▲ 71.71% for 10 sec.\nATK ▲ 41.62% for 10 sec.",
+        "■ Affects self.\nCharge Speed ▲ 74.53% for 10 sec.\nATK ▲ 46.12% for 10 sec.",
+        "■ Affects self.\nCharge Speed ▲ 77.34% for 10 sec.\nATK ▲ 50.62% for 10 sec.",
+        "■ Affects self.\nCharge Speed ▲ 80.15% for 10 sec.\nATK ▲ 55.12% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

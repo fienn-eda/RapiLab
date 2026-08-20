@@ -1,0 +1,111 @@
+{
+  "name": "Centi",
+  "url": "centi",
+  "source": "lootandwaifus",
+  "class": "Defender",
+  "weapon": "RL",
+  "element": "Iron",
+  "burst": "2",
+  "manufacturer": "Missilis",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Maintain Fortification",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 4.58%.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 5.09%.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 5.6%.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 6.11%.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 6.62%.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 7.12%.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 7.63%.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 8.14%.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 8.65%.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 9.16%."
+      ]
+    },
+    {
+      "name": "Field Discussion",
+      "cooldown": 9.0,
+      "levels": [
+        "■ Affects self.\nCreates a shared shield with 3.19% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Affects self.\nCreates a shared shield with 3.54% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Affects self.\nCreates a shared shield with 3.89% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Affects self.\nCreates a shared shield with 4.25% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Affects self.\nCreates a shared shield with 4.6% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Affects self.\nCreates a shared shield with 4.96% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Affects self.\nCreates a shared shield with 5.31% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Affects self.\nCreates a shared shield with 5.67% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Affects self.\nCreates a shared shield with 6.02% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Affects self.\nCreates a shared shield with 6.38% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec."
+      ]
+    },
+    {
+      "name": "Start Construction",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 72.73% of final ATK as damage.\nDEF ▼ 7.27% for 10 sec.",
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 80.81% of final ATK as damage.\nDEF ▼ 8.08% for 10 sec.",
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 88.89% of final ATK as damage.\nDEF ▼ 8.88% for 10 sec.",
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 96.97% of final ATK as damage.\nDEF ▼ 9.69% for 10 sec.",
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 105.06% of final ATK as damage.\nDEF ▼ 10.5% for 10 sec.",
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 113.14% of final ATK as damage.\nDEF ▼ 11.31% for 10 sec.",
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 121.22% of final ATK as damage.\nDEF ▼ 12.12% for 10 sec.",
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 129.3% of final ATK as damage.\nDEF ▼ 12.93% for 10 sec.",
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 137.38% of final ATK as damage.\nDEF ▼ 13.73% for 10 sec.",
+        "■ Affects 5 enemy unit(s) with the lowest remaining HP.\nDeals 145.46% of final ATK as damage.\nDEF ▼ 14.54% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "Maintain Fortification",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 4.58%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 3.13%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 3.5% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 3.5% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 3.5% of the skill user's final max HP.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 5.09%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 3.41%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 3.88% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 3.88% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 3.88% of the skill user's final max HP.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 5.6%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 3.7%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 4.27% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 4.27% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 4.27% of the skill user's final max HP.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 6.11%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 3.98%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 4.66% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 4.66% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 4.66% of the skill user's final max HP.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 6.62%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 4.27%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 5.04% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 5.04% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 5.04% of the skill user's final max HP.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 7.12%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 4.56%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 5.44% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 5.44% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 5.44% of the skill user's final max HP.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 7.63%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 4.84%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 5.83% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 5.83% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 5.83% of the skill user's final max HP.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 8.14%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 5.12%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 6.22% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 6.22% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 6.22% of the skill user's final max HP.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 8.65%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 5.41%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 6.6% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 6.6% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 6.6% of the skill user's final max HP.",
+        "■ Activates when landing a Full Charge attack. Affects self.\nCooldown of Skill 2 ▼ 9.16%.\n■ Activates when Skill 2 activates. Affects all Iron Code allies.\nElemental Advantage Attack Damage ▲ 5.69%. Stacks up to 10 times and lasts for 10 sec.\n■ Activates at the start of battle. Affects all allies.\nStockpile: Stores excess incoming healing, up to 7% of the skill user's max HP. Lasts for 5 sec.\nRestores HP equal to 7% of the skill user's final max HP.\n■ Activates when an ally's HP (including this unit's) drops to 100% or below while this unit is in the Stockpile state. Affects all allies.\nRestores HP equal to 7% of the skill user's final max HP."
+      ]
+    },
+    {
+      "name": "Field Discussion",
+      "cooldown": 9.0,
+      "levels": [
+        "■ Affects self.\nCreates a shared shield with 3.5% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 2.53% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec.",
+        "■ Affects self.\nCreates a shared shield with 3.88% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 2.76% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec.",
+        "■ Affects self.\nCreates a shared shield with 4.27% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 2.99% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec.",
+        "■ Affects self.\nCreates a shared shield with 4.66% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 3.22% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec.",
+        "■ Affects self.\nCreates a shared shield with 5.04% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 3.45% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec.",
+        "■ Affects self.\nCreates a shared shield with 5.44% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 3.68% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec.",
+        "■ Affects self.\nCreates a shared shield with 5.83% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 3.92% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec.",
+        "■ Affects self.\nCreates a shared shield with 6.22% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 4.14% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec.",
+        "■ Affects self.\nCreates a shared shield with 6.6% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 4.37% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec.",
+        "■ Affects self.\nCreates a shared shield with 7% of the skill user's final max HP that protects all allies from damage. Lasts for 5 sec.\n■ Affects all allies.\nATK ▲ 4.6% of the skill user's ATK. Stacks up to 10 times and lasts for 8 sec."
+      ]
+    },
+    {
+      "name": "Start Construction",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 72.73% of final ATK as damage.\nDEF ▼ 7.27% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 17.84% of the skill user's final max HP.",
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 80.81% of final ATK as damage.\nDEF ▼ 8.08% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 19.21% of the skill user's final max HP.",
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 88.89% of final ATK as damage.\nDEF ▼ 8.88% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 20.59% of the skill user's final max HP.",
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 96.97% of final ATK as damage.\nDEF ▼ 9.69% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 21.96% of the skill user's final max HP.",
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 105.06% of final ATK as damage.\nDEF ▼ 10.5% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 23.33% of the skill user's final max HP.",
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 113.14% of final ATK as damage.\nDEF ▼ 11.31% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 24.71% of the skill user's final max HP.",
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 121.22% of final ATK as damage.\nDEF ▼ 12.12% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 26.08% of the skill user's final max HP.",
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 129.3% of final ATK as damage.\nDEF ▼ 12.93% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 27.45% of the skill user's final max HP.",
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 137.38% of final ATK as damage.\nDEF ▼ 13.73% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 28.82% of the skill user's final max HP.",
+        "■ Affects the 5 enemy unit(s) with the lowest remaining HP.\nDeals 145.46% of final ATK as damage.\nDEF ▼ 14.54% for 10 sec.\n■ Affects all allies.\nRestores HP equal to 30.2% of the skill user's final max HP."
+      ]
+    }
+  ]
+}

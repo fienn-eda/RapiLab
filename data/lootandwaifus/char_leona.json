@@ -1,0 +1,62 @@
+{
+  "name": "Leona",
+  "url": "leona",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SG",
+  "element": "Water",
+  "burst": "2",
+  "manufacturer": "Tetra",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Thunderous Roar",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 1.38%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec.",
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 1.52%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec.",
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 1.65%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec.",
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 1.79%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec.",
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 1.93%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec.",
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 2.07%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec.",
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 2.2%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec.",
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 2.34%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec.",
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 2.48%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec.",
+        "■ Activates after 5 normal attacks. Affects all allies.\nRoar: Critical Rate ▲ 2.62%, stacks up to 5 time(s) and lasts for 5 sec.\n■ Activates after 15 normal attacks. Affects all allies with shotguns.\nMaximum Effective Range ▲ 20% for 10 sec."
+      ]
+    },
+    {
+      "name": "Courageous Look",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 10.77% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 3 for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 11.83% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 3 for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 12.88% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 3 for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 13.94% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 4 for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 15% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 4 for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 16.05% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 4 for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 17.11% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 5 for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 18.16% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 5 for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 19.22% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 5 for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 20.28% for 10 sec.\n■ Activates when entering Full Burst. Affects the 2 ally unit(s) with shotguns who have the highest final ATK.\nNumber of pellets ▲ 5 for 10 sec."
+      ]
+    },
+    {
+      "name": "Lion's Heart",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects all allies.\nCritical Damage ▲ 20.46% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 12.6% for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 22.04% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 13.57% for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 23.61% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 14.54% for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 25.19% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 15.51% for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 26.76% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 16.48% for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 28.34% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 17.44% for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 29.91% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 18.41% for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 31.49% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 19.38% for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 33.06% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 20.35% for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 34.64% for 10 sec.\n■ Activates when Roar is at max stacks. Affects all allies with shotguns.\nCritical Rate ▲ 21.32% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

@@ -1,0 +1,62 @@
+{
+  "name": "Mast: Romantic Maid",
+  "url": "mast-romantic-maid",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "MG",
+  "element": "Water",
+  "burst": "2",
+  "manufacturer": "Elysion",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "A Pirate's Heart",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 35.92%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 11.85% continuously.\nATK ▲ 20.69% of the skill user's ATK continuously.",
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 34.15%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 12.76% continuously.\nATK ▲ 22.28% of the skill user's ATK continuously.",
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 32.38%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 13.67% continuously.\nATK ▲ 23.87% of the skill user's ATK continuously.",
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 30.62%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 14.58% continuously.\nATK ▲ 25.46% of the skill user's ATK continuously.",
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 28.85%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 15.49% continuously.\nATK ▲ 27.06% of the skill user's ATK continuously.",
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 27.08%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 16.4% continuously.\nATK ▲ 28.65% of the skill user's ATK continuously.",
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 25.31%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 17.32% continuously.\nATK ▲ 30.24% of the skill user's ATK continuously.",
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 23.54%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 18.23% continuously.\nATK ▲ 31.83% of the skill user's ATK continuously.",
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 21.77%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 19.14% continuously.\nATK ▲ 33.42% of the skill user's ATK continuously.",
+        "■ Activates when entering Burst stage 1. Affects self.\nDrunken: Hit Rate ▼ 20%, stacks up to 3 times continuously.\n■ Activates only when in Drunken status. Affects all allies.\nCritical Rate ▲ 20.05% continuously.\nATK ▲ 35.02% of the skill user's ATK continuously."
+      ]
+    },
+    {
+      "name": "A Pirate's Spirit",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 8.88% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 8.73% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec.",
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 9.56% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 9.43% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec.",
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 10.24% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 10.13% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec.",
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 10.93% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 10.83% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec.",
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 11.61% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 11.53% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec.",
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 12.29% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 12.24% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec.",
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 12.98% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 12.94% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec.",
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 13.66% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 13.64% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec.",
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 14.34% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 14.34% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec.",
+        "■ Activates when entering Burst Stage 3 while in Drunken status. Affects all allies.\nDistributed Damage ▲ 15.03% x number of Drunken stacks for 10 sec.\nReload Speed ▲ 15.04% x number of Drunken stacks for 10 sec.\n■ Activates when Drunken is at max stacks at the end of Full Burst. Removes all stacks and affects self.\nHangover: Stunned for 10 sec."
+      ]
+    },
+    {
+      "name": "A Pirate's Romance",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all allies.\nCritical Damage ▲ 23.51% for 10 sec.\nAttack Damage ▲ 8.89% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (11.85% * Number of Drunken stacks) of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 25.34% for 10 sec.\nAttack Damage ▲ 9.57% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (12.76% * Number of Drunken stacks) of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 27.18% for 10 sec.\nAttack Damage ▲ 10.26% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (13.68% * Number of Drunken stacks) of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 29.02% for 10 sec.\nAttack Damage ▲ 10.94% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (14.59% * Number of Drunken stacks) of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 30.86% for 10 sec.\nAttack Damage ▲ 11.62% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (15.5% * Number of Drunken stacks) of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 32.69% for 10 sec.\nAttack Damage ▲ 12.31% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (16.41% * Number of Drunken stacks) of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 34.53% for 10 sec.\nAttack Damage ▲ 12.99% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (17.32% * Number of Drunken stacks) of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 36.37% for 10 sec.\nAttack Damage ▲ 13.68% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (18.24% * Number of Drunken stacks) of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 38.2% for 10 sec.\nAttack Damage ▲ 14.36% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (19.15% * Number of Drunken stacks) of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nCritical Damage ▲ 40.04% for 10 sec.\nAttack Damage ▲ 15.04% for 10 sec.\n■ Affects all allies if in Drunken status.\nATK ▲ (20.06% * Number of Drunken stacks) of the skill user's ATK for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

@@ -1,0 +1,62 @@
+{
+  "name": "Volume",
+  "url": "volume",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SMG",
+  "element": "Wind",
+  "burst": "1",
+  "manufacturer": "Tetra",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Freestyle",
+      "cooldown": null,
+      "levels": [
+        "■ Affects self when killing an enemy.\nATK ▲ 6.93% for 5 sec.",
+        "■ Affects self when killing an enemy.\nATK ▲ 7.56% for 5 sec.",
+        "■ Affects self when killing an enemy.\nATK ▲ 8.18% for 5 sec.",
+        "■ Affects self when killing an enemy.\nATK ▲ 8.82% for 5 sec.",
+        "■ Affects self when killing an enemy.\nATK ▲ 9.44% for 5 sec.",
+        "■ Affects self when killing an enemy.\nATK ▲ 10.08% for 5 sec.",
+        "■ Affects self when killing an enemy.\nATK ▲ 10.71% for 5 sec.",
+        "■ Affects self when killing an enemy.\nATK ▲ 11.34% for 5 sec.",
+        "■ Affects self when killing an enemy.\nATK ▲ 11.97% for 5 sec.",
+        "■ Affects self when killing an enemy.\nATK ▲ 12.6% for 5 sec."
+      ]
+    },
+    {
+      "name": "Drop The Beat",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 1.68% for 5 sec.\nTwice: Critical Damage ▲ 3.36% for 5 sec.\nThree times: Critical Damage ▲ 5.05% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 2.69% for 5 sec.\nTwice: Critical Damage ▲ 4.37% for 5 sec.\nThree times: Critical Damage ▲ 6.09% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 3.7% for 5 sec.\nTwice: Critical Damage ▲ 5.38% for 5 sec.\nThree times: Critical Damage ▲ 7.13% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 4.71% for 5 sec.\nTwice: Critical Damage ▲ 6.39% for 5 sec.\nThree times: Critical Damage ▲ 8.17% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 5.72% for 5 sec.\nTwice: Critical Damage ▲ 7.4% for 5 sec.\nThree times: Critical Damage ▲ 9.21% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 6.73% for 5 sec.\nTwice: Critical Damage ▲ 8.41% for 5 sec.\nThree times: Critical Damage ▲ 10.25% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 7.74% for 5 sec.\nTwice: Critical Damage ▲ 9.42% for 5 sec.\nThree times: Critical Damage ▲ 11.29% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 8.75% for 5 sec.\nTwice: Critical Damage ▲ 10.44% for 5 sec.\nThree times: Critical Damage ▲ 12.33% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 9.76% for 5 sec.\nTwice: Critical Damage ▲ 11.45% for 5 sec.\nThree times: Critical Damage ▲ 13.37% for 5 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times entered. Each subsequent effect triggers all effects before it:\nOnce: Cooldown of Burst Skill ▼ 2.34 sec.\nTwice: Cooldown of Burst Skill ▼ 2.7 sec.\nThree times: Cooldown of Burst Skill ▼ 3.17 sec.\n■ Activates when using Burst Skill. Affects all allies.\nEffects vary according to the number of uses. Each subsequent effect triggers all effects before it:\nOnce: Critical Damage ▲ 10.77% for 5 sec.\nTwice: Critical Damage ▲ 12.46% for 5 sec.\nThree times: Critical Damage ▲ 14.42% for 5 sec."
+      ]
+    },
+    {
+      "name": "Turn Up The Volume",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects all allies.\nCritical Rate ▲ 17.54% for 5 sec.",
+        "■ Affects all allies.\nCritical Rate ▲ 19.14% for 5 sec.",
+        "■ Affects all allies.\nCritical Rate ▲ 20.73% for 5 sec.",
+        "■ Affects all allies.\nCritical Rate ▲ 22.33% for 5 sec.",
+        "■ Affects all allies.\nCritical Rate ▲ 23.92% for 5 sec.",
+        "■ Affects all allies.\nCritical Rate ▲ 25.52% for 5 sec.",
+        "■ Affects all allies.\nCritical Rate ▲ 27.11% for 5 sec.",
+        "■ Affects all allies.\nCritical Rate ▲ 28.71% for 5 sec.",
+        "■ Affects all allies.\nCritical Rate ▲ 30.3% for 5 sec.",
+        "■ Affects all allies.\nCritical Rate ▲ 31.9% for 5 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

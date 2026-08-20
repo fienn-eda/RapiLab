@@ -1,0 +1,62 @@
+{
+  "name": "Little Mermaid",
+  "url": "little-mermaid",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SMG",
+  "element": "Wind",
+  "burst": "1",
+  "manufacturer": "Pilgrim",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Bubble Order",
+      "cooldown": null,
+      "levels": [
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 5.34 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 2.5% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 23.12%.",
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 5.58 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 2.66% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 24.66%.",
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 5.82 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 2.83% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 26.2%.",
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 6.05 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 3% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 27.75%.",
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 6.29 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 3.17% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 29.29%.",
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 6.53 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 3.33% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 30.83%.",
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 6.77 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 3.5% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 32.37%.",
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 7 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 3.67% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 33.91%.",
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 7.24 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 3.83% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 35.46%.",
+        "■ Activates only when in Focusing status. Affects all allies.\nFocuses fire continuously.\n■ Activates when Full Burst ends. Affects all allies.\nCooldown of Burst Skill ▼ 7.48 sec.\n■ Activates when entering Full Burst. Affects all allies.\nAttack Damage ▲ 4% for 10 sec.\n■ Activates each time the total ammo expended by allies reaches 400. Affects all allies.\nFills Burst Gauge by 37%."
+      ]
+    },
+    {
+      "name": "Bubble Wave",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 3.16% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 3.16% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 39.6% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 53.12% of final ATK as damage. Attacks sequentially 10 times.",
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 3.37% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 3.37% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 42.24% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 56.66% of final ATK as damage. Attacks sequentially 10 times.",
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 3.58% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 3.58% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 44.88% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 60.21% of final ATK as damage. Attacks sequentially 10 times.",
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 3.79% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 3.79% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 47.52% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 63.75% of final ATK as damage. Attacks sequentially 10 times.",
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 4% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 4% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 50.16% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 67.29% of final ATK as damage. Attacks sequentially 10 times.",
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 4.21% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 4.21% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 52.8% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 70.83% of final ATK as damage. Attacks sequentially 10 times.",
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 4.42% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 4.42% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 55.44% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 74.37% of final ATK as damage. Attacks sequentially 10 times.",
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 4.63% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 4.63% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 58.08% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 77.92% of final ATK as damage. Attacks sequentially 10 times.",
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 4.84% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 4.84% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 60.72% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 81.46% of final ATK as damage. Attacks sequentially 10 times.",
+        "■ Activates when the enemy appears. Affects the target.\nBubble: Damage Taken ▲ 5.05% continuously.\n■ Activates after landing 50 normal attacks. Affects the target if the target is in Bubble status.\nExplosive Bubble: Damage Taken ▲ 5.05% continuously.\nStuns for 3 sec.\nRemoves Bubble.\n■ Activates every 1 sec only during Full Burst. Affects random enemy units.\nDeals 63.36% of final ATK as damage. Attacks sequentially 4 times.\n■ Activates each time the total ammo expended by allies reaches 500. Affects random enemy units.\nBubble Barrage: Deals 85% of final ATK as damage. Attacks sequentially 10 times."
+      ]
+    },
+    {
+      "name": "Siren's Song",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects all allies.\nAttack damage ▲ 6.33% for 10 sec.\nReloads 20.79% magazine(s).\n■ Affects self.\nATK ▲ 10.8% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nAttack damage ▲ 6.75% for 10 sec.\nReloads 22.17% magazine(s).\n■ Affects self.\nATK ▲ 11.52% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nAttack damage ▲ 7.18% for 10 sec.\nReloads 23.56% magazine(s).\n■ Affects self.\nATK ▲ 12.24% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nAttack damage ▲ 7.6% for 10 sec.\nReloads 24.94% magazine(s).\n■ Affects self.\nATK ▲ 12.96% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nAttack damage ▲ 8.02% for 10 sec.\nReloads 26.33% magazine(s).\n■ Affects self.\nATK ▲ 13.68% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nAttack damage ▲ 8.44% for 10 sec.\nReloads 27.72% magazine(s).\n■ Affects self.\nATK ▲ 14.4% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nAttack damage ▲ 8.87% for 10 sec.\nReloads 29.1% magazine(s).\n■ Affects self.\nATK ▲ 15.12% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nAttack damage ▲ 9.29% for 10 sec.\nReloads 30.49% magazine(s).\n■ Affects self.\nATK ▲ 15.84% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nAttack damage ▲ 9.71% for 10 sec.\nReloads 31.87% magazine(s).\n■ Affects self.\nATK ▲ 16.56% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nAttack damage ▲ 10.13% for 10 sec.\nReloads 33.26% magazine(s).\n■ Affects self.\nATK ▲ 17.28% of the skill user's ATK for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

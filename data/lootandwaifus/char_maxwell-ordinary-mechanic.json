@@ -1,0 +1,62 @@
+{
+  "name": "Maxwell: Ordinary Mechanic",
+  "url": "maxwell-ordinary-mechanic",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SR",
+  "element": "Wind",
+  "burst": "2",
+  "manufacturer": "Missilis",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Sequential Limit Release",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 0.5% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 6.25% for 5 sec.",
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 0.56% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 6.67% for 5 sec.",
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 0.61% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 7.08% for 5 sec.",
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 0.67% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 7.5% for 5 sec.",
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 0.72% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 7.92% for 5 sec.",
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 0.78% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 8.33% for 5 sec.",
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 0.84% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 8.75% for 5 sec.",
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 0.89% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 9.16% for 5 sec.",
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 0.95% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 9.58% for 5 sec.",
+        "■ Activates when performing a Full Charge attack. Affects all allies.\nMax HP ▲ 1% of the skill user's max HP continuously. Stacks up to 30 times.\n■ Activates when entering Burst Stage 3. Affects all allies.\nAttack Damage ▲ 10% for 5 sec."
+      ]
+    },
+    {
+      "name": "Output Switching Sequence",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 0.5% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 15% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 3.58%.",
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 0.56% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 16.67% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 3.98%.",
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 0.61% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 18.34% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 4.38%.",
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 0.67% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 20% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 4.77%.",
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 0.72% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 21.67% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 5.17%.",
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 0.78% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 23.33% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 5.57%.",
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 0.84% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 25% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 5.96%.",
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 0.89% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 26.67% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 6.36%.",
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 0.95% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 28.33% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 6.76%.",
+        "■ Activates when using Burst Skill. Affects all allies.\nATK ▲ 1% of the skill user's final max HP for 15 sec.\n■ Activates when using Burst Skill. Affects self.\nOvercurrent: ATK ▲ 30% continuously. Up to 5 stages in total.\n■ Activates when performing a Full Charge attack. Affects all allies.\nFills Burst Gauge by 7.15%."
+      ]
+    },
+    {
+      "name": "Matis Uberbuster",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 175% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 12.5% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 194.44% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 13.89% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 213.89% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 15.28% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 233.33% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 16.67% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 252.78% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 18.06% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 272.22% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 19.44% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 291.67% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 20.83% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 311.11% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 22.22% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 330.56% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 23.61% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use: Matis UberBuster\nCharge Time is fixed. Effect varies according to the stage of Overcurrent. Only one effect is triggered at a time.\nCharge Time: 3sec.\nStage 1 or below: Fixed at 3 sec.\nStage 2: Fixed at 2.5 sec.\nStage 3: Fixed at 2 sec.\nStage 4: Fixed at 1.5 sec.\nStage 5 or above: Fixed at 0.4 sec.\nDamage: 350% of final ATK\nFull Charge Damage: 300%\nMax Ammunition Capacity: 1\nAdditional Effect: Gains Pierce.\n■ Affects all allies.\nAttack Damage ▲ 25% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

@@ -1,0 +1,62 @@
+{
+  "name": "Milk: Blooming Bunny",
+  "url": "milk-blooming-bunny",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SR",
+  "element": "Iron",
+  "burst": "3",
+  "manufacturer": "Tetra",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Embarrassment Suppression",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 171.36% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 70.14% for 40 sec.",
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 184.55% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 75.53% for 40 sec.",
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 197.73% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 80.93% for 40 sec.",
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 210.91% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 86.33% for 40 sec.",
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 224.09% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 91.72% for 40 sec.",
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 237.28% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 97.12% for 40 sec.",
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 250.46% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 102.51% for 40 sec.",
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 263.64% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 107.91% for 40 sec.",
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 276.82% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 113.3% for 40 sec.",
+        "■ Activates when performing a Full Charge attack. Affects self.\nGain Pierce for 6 sec.\n■ Activates when not in the Embarrassment state and when Full Charge lasts for 0.5 sec or more. Affects self.\nEmbarrassment\nFunction: Forcefully reloads at reduced reload speed, but increases attack capabilities and deals Distributed Damage.\nEffect 1: Affects all enemies. Deals 290% of final ATK as Distributed Damage.\nEffect 2: Affects self. Removes 100% of ammo.\nEffect 3: Affects self. Reload speed is fixed at a 50% reduction for 1 reload(s).\nEffect 4: Affects self. Forced Reload.\nEffect 5: Affects self. ATK ▲ 118.7% for 40 sec."
+      ]
+    },
+    {
+      "name": "Outburst",
+      "cooldown": null,
+      "levels": [
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 38.23% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 264.55% of final ATK as Distributed Damage.",
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 41.17% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 284.9% of final ATK as Distributed Damage.",
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 44.11% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 305.25% of final ATK as Distributed Damage.",
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 47.05% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 325.6% of final ATK as Distributed Damage.",
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 50% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 345.95% of final ATK as Distributed Damage.",
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 52.94% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 366.3% of final ATK as Distributed Damage.",
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 55.88% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 386.65% of final ATK as Distributed Damage.",
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 58.82% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 407% of final ATK as Distributed Damage.",
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 61.76% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 427.35% of final ATK as Distributed Damage.",
+        "■ Activates only when in Embarrassment status. Affects self.\nPierce Damage ▲ 64.7% continuously.\n■ Activates only when in Overconfident, Huh?! status. Affects all enemies every 2 sec.\nDeals 447.7% of final ATK as Distributed Damage."
+      ]
+    },
+    {
+      "name": "Embarrassment Explosion",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 69.51% for 10 sec.\nATK ▲ 130% for 10 sec.",
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 74.86% for 10 sec.\nATK ▲ 140% for 10 sec.",
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 80.2% for 10 sec.\nATK ▲ 150% for 10 sec.",
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 85.55% for 10 sec.\nATK ▲ 160% for 10 sec.",
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 90.9% for 10 sec.\nATK ▲ 170% for 10 sec.",
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 96.25% for 10 sec.\nATK ▲ 180% for 10 sec.",
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 101.59% for 10 sec.\nATK ▲ 190% for 10 sec.",
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 106.94% for 10 sec.\nATK ▲ 200% for 10 sec.",
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 112.29% for 10 sec.\nATK ▲ 210% for 10 sec.",
+        "■ Affects self.\nOverconfident, Huh?!:\nGains Immunity to Embarrassment for 10 sec.\nPierce Damage ▲ 117.64% for 10 sec.\nATK ▲ 220% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

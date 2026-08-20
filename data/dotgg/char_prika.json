@@ -1,0 +1,11 @@
+{
+ "name": "Prika",
+ "url": "prika",
+ "source": "manual",
+ "weapon": "SR",
+ "maxAmmo": 6,
+ "damage": "69.04%",
+ "reloadTime": 2,
+ "chargeTime": 1,
+ "chargeDamage": "250%"
+}

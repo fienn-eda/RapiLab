@@ -1,0 +1,62 @@
+{
+  "name": "Scarlet: Black Shadow",
+  "url": "scarlet-black-shadow",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "RL",
+  "element": "Wind",
+  "burst": "3",
+  "manufacturer": "Pilgrim",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Fleetly Fading Breakthrough",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 218.46% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 371.28% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 441.23% of final ATK as Distributed Damage.",
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 225.63% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 392.79% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 486.43% of final ATK as Distributed Damage.",
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 232.81% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 414.32% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 531.63% of final ATK as Distributed Damage.",
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 239.98% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 435.85% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 576.83% of final ATK as Distributed Damage.",
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 247.16% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 457.37% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 622.03% of final ATK as Distributed Damage.",
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 254.32% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 478.89% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 667.23% of final ATK as Distributed Damage.",
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 261.5% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 500.42% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 712.43% of final ATK as Distributed Damage.",
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 268.68% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 521.94% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 757.63% of final ATK as Distributed Damage.",
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 275.85% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 543.47% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 802.83% of final ATK as Distributed Damage.",
+        "■ Activates when performing a Full Charge attack.\nEffects vary according to the number of attacks. Only one effect is triggered at a time.\nThree times: Affects the 1 enemy unit(s) with the lowest final DEF.\nDeals 283.03% of final ATK as damage.\nSix times: Affects enemies within range.\nDeals 565% of final ATK as Distributed Damage.\nNine times: Affects all enemies.\nDeals 848.03% of final ATK as Distributed Damage."
+      ]
+    },
+    {
+      "name": "Fleetly Fading: Asura",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 40% for 10 sec.\nReload 30% of the magazine(s).",
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 42.22% for 10 sec.\nReload 30% of the magazine(s).",
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 44.44% for 10 sec.\nReload 30% of the magazine(s).",
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 46.66% for 10 sec.\nReload 60% of the magazine(s).",
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 48.88% for 10 sec.\nReload 60% of the magazine(s).",
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 51.1% for 10 sec.\nReload 60% of the magazine(s).",
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 53.32% for 10 sec.\nReload 100% of the magazine(s).",
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 55.54% for 10 sec.\nReload 100% of the magazine(s).",
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 57.76% for 10 sec.\nReload 100% of the magazine(s).",
+        "■ Activates when entering Full Burst. Affects self.\nMax Ammunition Capacity ▲ 60% for 10 sec.\nReload 100% of the magazine(s)."
+      ]
+    },
+    {
+      "name": "Fleetly Fading Strike",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 17.28% for 10 sec.\nCharge Damage ▲ 96.41% for 10 sec.",
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 28.15% for 10 sec.\nCharge Damage ▲ 104.54% for 10 sec.",
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 39.02% for 10 sec.\nCharge Damage ▲ 112.68% for 10 sec.",
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 49.89% for 10 sec.\nCharge Damage ▲ 120.81% for 10 sec.",
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 60.76% for 10 sec.\nCharge Damage ▲ 128.95% for 10 sec.",
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 71.64% for 10 sec.\nCharge Damage ▲ 137.09% for 10 sec.",
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 82.51% for 10 sec.\nCharge Damage ▲ 145.22% for 10 sec.",
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 93.38% for 10 sec.\nCharge Damage ▲ 153.36% for 10 sec.",
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 104.25% for 10 sec.\nCharge Damage ▲ 161.49% for 10 sec.",
+        "■ Affects self.\nChanges Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for 10 sec.\nATK ▲ 115.12% for 10 sec.\nCharge Damage ▲ 169.63% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

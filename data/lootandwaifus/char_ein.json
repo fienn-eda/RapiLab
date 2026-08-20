@@ -1,0 +1,62 @@
+{
+  "name": "Ein",
+  "url": "ein",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SR",
+  "element": "Electric",
+  "burst": "3",
+  "manufacturer": "Missilis",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Feather Standby",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 41.18% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 44.4% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 47.61% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 50.83% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 54.04% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 57.26% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 60.48% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 63.69% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 66.91% for 10 sec.",
+        "■ Activates at the start of battle. Affects self.\nSummons 4 Near Feathers.\n■ Activates when entering Burst Skill Stage 3. Affects self.\nATK ▲ 70.12% for 10 sec."
+      ]
+    },
+    {
+      "name": "Feather Shot",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 59.01% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 47.27% for 1 shot(s).",
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 62.54% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 50.91% for 1 shot(s).",
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 66.08% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 54.54% for 1 shot(s).",
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 69.61% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 58.18% for 1 shot(s).",
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 73.15% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 61.82% for 1 shot(s).",
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 76.68% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 65.45% for 1 shot(s).",
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 80.21% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 69.09% for 1 shot(s).",
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 83.75% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 72.73% for 1 shot(s).",
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 87.28% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 76.36% for 1 shot(s).",
+        "■ Activates when Near Feather is summoned. Affects 1 random enemy unit(s).\nNear Feather Attack: Deals 90.81% of final ATK as true damage.\n■ Activates when attacking with Full Charge. Affects self.\nCharge Damage ▲ 80% for 1 shot(s)."
+      ]
+    },
+    {
+      "name": "Feather-All Range",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 31.2% for 10 sec.\nCharge Damage ▲ 82.36% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 170.32% of final ATK as true damage.",
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 33.87% for 10 sec.\nCharge Damage ▲ 88.84% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 184.73% of final ATK as true damage.",
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 36.55% for 10 sec.\nCharge Damage ▲ 95.32% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 199.14% of final ATK as true damage.",
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 39.23% for 10 sec.\nCharge Damage ▲ 101.8% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 213.55% of final ATK as true damage.",
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 41.91% for 10 sec.\nCharge Damage ▲ 108.28% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 227.96% of final ATK as true damage.",
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 44.59% for 10 sec.\nCharge Damage ▲ 114.76% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 242.38% of final ATK as true damage.",
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 47.27% for 10 sec.\nCharge Damage ▲ 121.24% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 256.79% of final ATK as true damage.",
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 49.94% for 10 sec.\nCharge Damage ▲ 127.72% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 271.2% of final ATK as true damage.",
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 52.62% for 10 sec.\nCharge Damage ▲ 134.2% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 285.61% of final ATK as true damage.",
+        "■ Affects self.\nSummons 6 Near Feathers.\nTrue Damage ▲ 55.3% for 10 sec.\nCharge Damage ▲ 140.68% for 10 sec.\n■ Affects 10 enemy unit(s) with the highest final DEF.\nDeals 300.02% of final ATK as true damage."
+      ]
+    }
+  ],
+  "dollskills": null
+}

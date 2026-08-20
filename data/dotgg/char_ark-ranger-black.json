@@ -1,0 +1,11 @@
+{
+ "name": "Ark Ranger Black",
+ "url": "ark-ranger-black",
+ "source": "manual",
+ "weapon": "AR",
+ "chargeTime": 0,
+ "chargeDamage": "100%",
+ "maxAmmo": 60,
+ "damage": "13.65%",
+ "reloadTime": 1
+ }

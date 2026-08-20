@@ -1,0 +1,62 @@
+{
+  "name": "Ludmilla: Winter Owner",
+  "url": "ludmilla-winter-owner",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "MG",
+  "element": "Water",
+  "burst": "3",
+  "manufacturer": "Tetra",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "The Queen's Gaze",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 7.42% for 3 sec.\nDeals 93.62% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 11 round(s) of ammunition.",
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 7.99% for 3 sec.\nDeals 100.82% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 12 round(s) of ammunition.",
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 8.56% for 3 sec.\nDeals 108.02% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 13 round(s) of ammunition.",
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 9.13% for 3 sec.\nDeals 115.22% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 14 round(s) of ammunition.",
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 9.7% for 3 sec.\nDeals 122.42% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 15 round(s) of ammunition.",
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 10.27% for 3 sec.\nDeals 129.62% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 16 round(s) of ammunition.",
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 10.84% for 3 sec.\nDeals 136.83% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 17 round(s) of ammunition.",
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 11.42% for 3 sec.\nDeals 144.03% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 18 round(s) of ammunition.",
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 11.99% for 3 sec.\nDeals 151.23% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 19 round(s) of ammunition.",
+        "■ Activates when landing 60 normal attack(s). Affects the target.\nDamage Taken ▲ 12.56% for 3 sec.\nDeals 158.43% of final ATK as additional damage.\n■ Activates when landing 60 normal attack(s). Affects self.\nReloads 20 round(s) of ammunition."
+      ]
+    },
+    {
+      "name": "Snowstorm",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 64.79% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 8.03% for 10 sec.",
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 69.77% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 8.76% for 10 sec.",
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 74.75% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 9.49% for 10 sec.",
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 79.74% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 10.22% for 10 sec.",
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 84.72% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 10.95% for 10 sec.",
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 89.71% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 11.68% for 10 sec.",
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 94.69% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 12.41% for 10 sec.",
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 99.67% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 13.14% for 10 sec.",
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 104.66% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 13.87% for 10 sec.",
+        "■ Activates when hitting the Core for 60 time(s). Affects the target.\nDeals 109.64% of final ATK as additional damage.\n■ Activates at the beginning of Full Burst. Affects self.\nCritical Rate ▲ 14.6% for 10 sec."
+      ]
+    },
+    {
+      "name": "Guiding Lantern",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nATK ▲ 36.96% for 10 sec.\nReload Speed ▲ 36.96% for 20 sec.",
+        "■ Affects self.\nATK ▲ 39.8% for 10 sec.\nReload Speed ▲ 40.32% for 20 sec.",
+        "■ Affects self.\nATK ▲ 42.64% for 10 sec.\nReload Speed ▲ 43.68% for 20 sec.",
+        "■ Affects self.\nATK ▲ 45.49% for 10 sec.\nReload Speed ▲ 47.04% for 20 sec.",
+        "■ Affects self.\nATK ▲ 48.33% for 10 sec.\nReload Speed ▲ 50.4% for 20 sec.",
+        "■ Affects self.\nATK ▲ 51.17% for 10 sec.\nReload Speed ▲ 53.76% for 20 sec.",
+        "■ Affects self.\nATK ▲ 54.01% for 10 sec.\nReload Speed ▲ 57.12% for 20 sec.",
+        "■ Affects self.\nATK ▲ 56.86% for 10 sec.\nReload Speed ▲ 60.48% for 20 sec.",
+        "■ Affects self.\nATK ▲ 59.7% for 10 sec.\nReload Speed ▲ 63.84% for 20 sec.",
+        "■ Affects self.\nATK ▲ 62.54% for 10 sec.\nReload Speed ▲ 67.2% for 20 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

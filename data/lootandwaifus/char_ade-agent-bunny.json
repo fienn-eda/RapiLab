@@ -1,0 +1,62 @@
+{
+  "name": "Ade: Agent Bunny",
+  "url": "ade-agent-bunny",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SR",
+  "element": "Iron",
+  "burst": "2",
+  "manufacturer": "Tetra",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Agent's Gaze",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 8.98% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec.",
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 9.67% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec.",
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 10.36% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec.",
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 11.05% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec.",
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 11.75% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec.",
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 12.44% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec.",
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 13.13% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec.",
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 13.82% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec.",
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 14.51% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec.",
+        "■ Activates when landing Full Charge attacks on targets within the effective range. Affects all allies.\nATK ▲ 15.2% of the skill user's ATK for 5 sec.\n■ Activates when attacking with Full Charge. Affects self.\nSpy Lens: Minimum Effective Range ▲ 4.44%, stacks up to 10 time(s) and lasts for 5 sec."
+      ]
+    },
+    {
+      "name": "Agent's Movement",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 9.15% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 9.36% continuously.",
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 10.17% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 10.09% continuously.",
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 11.2% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 10.83% continuously.",
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 12.22% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 11.57% continuously.",
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 13.24% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 12.31% continuously.",
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 14.27% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 13.05% continuously.",
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 15.29% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 13.78% continuously.",
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 16.32% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 14.52% continuously.",
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 17.34% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 15.26% continuously.",
+        "■ Activates when landing a Full Charge attack on a target within the effective range. Affects all allies.\nPierce Damage ▲ 18.36% for 5 sec.\n■ Activates only if Spy Lens is at max stacks. Affects self.\nGains Pierce. This effect is continuous.\nATK ▲ 16% continuously."
+      ]
+    },
+    {
+      "name": "Cutting-Edge Agent Equipment",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 29.85% for 10 sec.\nPierce Damage ▲ 5.14% for 10 sec.",
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 32.65% for 10 sec.\nPierce Damage ▲ 5.7% for 10 sec.",
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 35.45% for 10 sec.\nPierce Damage ▲ 6.25% for 10 sec.",
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 38.25% for 10 sec.\nPierce Damage ▲ 6.81% for 10 sec.",
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 41.05% for 10 sec.\nPierce Damage ▲ 7.36% for 10 sec.",
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 43.85% for 10 sec.\nPierce Damage ▲ 7.92% for 10 sec.",
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 46.64% for 10 sec.\nPierce Damage ▲ 8.47% for 10 sec.",
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 49.44% for 10 sec.\nPierce Damage ▲ 9.02% for 10 sec.",
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 52.24% for 10 sec.\nPierce Damage ▲ 9.58% for 10 sec.",
+        "■ Affects self.\nMinimum Effective Range ▲ 55.56% for 10 sec.\n■ Affects all allies.\nAttack Damage ▲ 55.04% for 10 sec.\nPierce Damage ▲ 10.13% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

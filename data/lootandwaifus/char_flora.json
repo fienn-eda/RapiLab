@@ -1,0 +1,111 @@
+{
+  "name": "Flora",
+  "url": "flora",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "MG",
+  "element": "Electric",
+  "burst": "2",
+  "manufacturer": "Missilis",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Petunia",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 2.36% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 2.55% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 2.73% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 2.91% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 3.09% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 3.27% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 3.46% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 3.64% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 3.82% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nRestores HP equal to 1% of the skill user's final max HP every second.\nIncoming Healing ▲ 4% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1."
+      ]
+    },
+    {
+      "name": "Iris",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 6.04% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 18.3% for 5 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 6.5% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 19.71% for 5 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 6.96% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 21.12% for 5 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 7.43% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 22.52% for 5 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 7.89% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 23.93% for 5 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 8.36% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 25.34% for 5 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 8.82% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 26.75% for 5 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 9.29% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 28.16% for 5 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 9.75% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 29.56% for 5 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with HP equal to 10.22% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 30.97% for 5 sec."
+      ]
+    },
+    {
+      "name": "Secret Garden",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all allies.\nRecovers 6.17% of the skill user's final Max HP as HP.\nTrue Damage ▲ 25.05% for 10 sec.",
+        "■ Affects all allies.\nRecovers 6.65% of the skill user's final Max HP as HP.\nTrue Damage ▲ 26.98% for 10 sec.",
+        "■ Affects all allies.\nRecovers 7.12% of the skill user's final Max HP as HP.\nTrue Damage ▲ 28.9% for 10 sec.",
+        "■ Affects all allies.\nRecovers 7.6% of the skill user's final Max HP as HP.\nTrue Damage ▲ 30.83% for 10 sec.",
+        "■ Affects all allies.\nRecovers 8.07% of the skill user's final Max HP as HP.\nTrue Damage ▲ 32.76% for 10 sec.",
+        "■ Affects all allies.\nRecovers 8.55% of the skill user's final Max HP as HP.\nTrue Damage ▲ 34.68% for 10 sec.",
+        "■ Affects all allies.\nRecovers 9.02% of the skill user's final Max HP as HP.\nTrue Damage ▲ 36.61% for 10 sec.",
+        "■ Affects all allies.\nRecovers 9.5% of the skill user's final Max HP as HP.\nTrue Damage ▲ 38.54% for 10 sec.",
+        "■ Affects all allies.\nRecovers 9.97% of the skill user's final Max HP as HP.\nTrue Damage ▲ 40.47% for 10 sec.",
+        "■ Affects all allies.\nRecovers 10.45% of the skill user's final Max HP as HP.\nTrue Damage ▲ 42.39% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "Petunia",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 2.36% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 8.87% of the skill user's max HP (without restoring HP) for 2 sec.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 2.55% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 9.55% of the skill user's max HP (without restoring HP) for 2 sec.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 2.73% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 10.24% of the skill user's max HP (without restoring HP) for 2 sec.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 2.91% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 10.92% of the skill user's max HP (without restoring HP) for 2 sec.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 3.09% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 11.6% of the skill user's max HP (without restoring HP) for 2 sec.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 3.27% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 12.28% of the skill user's max HP (without restoring HP) for 2 sec.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 3.46% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 12.97% of the skill user's max HP (without restoring HP) for 2 sec.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 3.64% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 13.65% of the skill user's max HP (without restoring HP) for 2 sec.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 3.82% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 14.33% of the skill user's max HP (without restoring HP) for 2 sec.",
+        "■ Activates at the start of battle as long as this unit is alive. Affects self and both adjacent allies.\nPeace of Mind: Restores HP equal to 1% of the skill user's final Max HP every second continuously.\nIncoming Healing ▲ 4% continuously. Stacks up to 5 times.\n■ Activates after landing 100 normal attacks. Affects all Electric Code allies.\nIncreases the stack count of stackable buffs by 1.\n■ Activates when entering Burst Stage 2. Affects all allies in the Peace of Mind state.\nMax HP ▲ 15.01% of the skill user's max HP (without restoring HP) for 2 sec."
+      ]
+    },
+    {
+      "name": "Iris",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 6.04% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 18.3% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 26.66% of the skill user's ATK for 10 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 6.5% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 19.71% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 28.71% of the skill user's ATK for 10 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 6.96% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 21.12% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 30.76% of the skill user's ATK for 10 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 7.43% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 22.52% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 32.81% of the skill user's ATK for 10 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 7.89% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 23.93% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 34.86% of the skill user's ATK for 10 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 8.36% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 25.34% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 36.91% of the skill user's ATK for 10 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 8.82% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 26.75% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 38.96% of the skill user's ATK for 10 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 9.29% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 28.16% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 41.02% of the skill user's ATK for 10 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 9.75% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 29.56% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 43.07% of the skill user's ATK for 10 sec.",
+        "■ Activates when the HP of an adjacent ally drops to 90% or below while the ally is still alive. Affects all allies.\nCreates a shield with 10.22% of the skill user's final max HP that lasts for 10 sec.\n■ Activates when either adjacent ally reaches max HP. Affects all allies.\nTrue Damage ▲ 30.97% for 10 sec.\n■ Activates when a shield is placed in front of this unit. Affects all allies in the Peace of Mind state.\nATK ▲ 45.12% of the skill user's ATK for 10 sec."
+      ]
+    },
+    {
+      "name": "Secret Garden",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all allies.\nRestores HP equal to 6.17% of the skill user's final max HP.\nTrue Damage ▲ 25.05% for 10 sec.\nATK ▲ 50.73% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nRestores HP equal to 6.65% of the skill user's final max HP.\nTrue Damage ▲ 26.98% for 10 sec.\nATK ▲ 54.64% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nRestores HP equal to 7.12% of the skill user's final max HP.\nTrue Damage ▲ 28.9% for 10 sec.\nATK ▲ 58.54% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nRestores HP equal to 7.6% of the skill user's final max HP.\nTrue Damage ▲ 30.83% for 10 sec.\nATK ▲ 62.44% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nRestores HP equal to 8.07% of the skill user's final max HP.\nTrue Damage ▲ 32.76% for 10 sec.\nATK ▲ 66.35% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nRestores HP equal to 8.55% of the skill user's final max HP.\nTrue Damage ▲ 34.68% for 10 sec.\nATK ▲ 70.25% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nRestores HP equal to 9.02% of the skill user's final max HP.\nTrue Damage ▲ 36.61% for 10 sec.\nATK ▲ 74.15% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nRestores HP equal to 9.5% of the skill user's final max HP.\nTrue Damage ▲ 38.54% for 10 sec.\nATK ▲ 78.05% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nRestores HP equal to 9.97% of the skill user's final max HP.\nTrue Damage ▲ 40.47% for 10 sec.\nATK ▲ 81.96% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nRestores HP equal to 10.45% of the skill user's final max HP.\nTrue Damage ▲ 42.39% for 10 sec.\nATK ▲ 85.86% of the skill user's ATK for 10 sec."
+      ]
+    }
+  ]
+}

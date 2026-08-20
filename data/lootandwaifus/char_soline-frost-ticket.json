@@ -1,0 +1,62 @@
+{
+  "name": "Soline: Frost Ticket",
+  "url": "soline-frost-ticket",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SG",
+  "element": "Water",
+  "burst": "1",
+  "manufacturer": "Elysion",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "I'll Check Your Ticket!",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 5.91% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 5.34 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount.",
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 6.36% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 5.58 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount.",
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 6.82% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 5.82 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount.",
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 7.27% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 6.05 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount.",
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 7.73% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 6.29 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount.",
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 8.18% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 6.53 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount.",
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 8.64% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 6.77 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount.",
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 9.09% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 7 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount.",
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 9.55% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 7.24 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount.",
+        "■ Activates at the start of battle and when using Burst Skill. Affects all allies.\nIssues 1 ticket, up to a maximum of 2. This effect is continuous.\nTicket effect: Max HP ▲ number of tickets * 10% of the skill user's Max HP.\n■ Activates when entering Full Burst. Affects all allies.\nCooldown of Burst Skill ▼ 7.48 sec.\n■ Activates when entering Full Burst. Affects all allies.\nRemoves First Train Discount."
+      ]
+    },
+    {
+      "name": "I'll Help You Board the Train!",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 7.25% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets.",
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 7.8% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets.",
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 8.36% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets.",
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 8.92% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets.",
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 9.48% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets.",
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 10.03% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets.",
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 10.59% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets.",
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 11.15% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets.",
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 11.71% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets.",
+        "■ Activates when the HP of anyone in the squad is lower than 15%. Affects the target if the target has any tickets.\nRecovers 12.27% of the skill user's final Max HP as HP.\nTicket count ▼ 1.\n■ Activates at the start of battle. Affects all allies.\nFirst Train Discount for 6 sec.\nFunction: The effects of I'll Help You Board the Train! will not consume tickets."
+      ]
+    },
+    {
+      "name": "I'll Get You There Safely!",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all allies.\nRecovers 19.06% of the skill user's final Max HP as HP.",
+        "■ Affects all allies.\nRecovers 20.53% of the skill user's final Max HP as HP.",
+        "■ Affects all allies.\nRecovers 22% of the skill user's final Max HP as HP.",
+        "■ Affects all allies.\nRecovers 23.46% of the skill user's final Max HP as HP.",
+        "■ Affects all allies.\nRecovers 24.93% of the skill user's final Max HP as HP.",
+        "■ Affects all allies.\nRecovers 26.4% of the skill user's final Max HP as HP.",
+        "■ Affects all allies.\nRecovers 27.86% of the skill user's final Max HP as HP.",
+        "■ Affects all allies.\nRecovers 29.33% of the skill user's final Max HP as HP.",
+        "■ Affects all allies.\nRecovers 30.8% of the skill user's final Max HP as HP.",
+        "■ Affects all allies.\nRecovers 32.26% of the skill user's final Max HP as HP."
+      ]
+    }
+  ],
+  "dollskills": null
+}

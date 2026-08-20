@@ -1,0 +1,62 @@
+{
+  "name": "Raven",
+  "url": "raven",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "RL",
+  "element": "Iron",
+  "burst": "3",
+  "manufacturer": "Abnormal",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Shock Wave",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 40.45% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 28.08% of the skill user's ATK for 10 sec.",
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 43.56% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 30.24% of the skill user's ATK for 10 sec.",
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 46.67% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 32.4% of the skill user's ATK for 10 sec.",
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 49.78% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 34.56% of the skill user's ATK for 10 sec.",
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 52.9% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 36.72% of the skill user's ATK for 10 sec.",
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 56.01% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 38.88% of the skill user's ATK for 10 sec.",
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 59.12% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 41.04% of the skill user's ATK for 10 sec.",
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 62.23% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 43.2% of the skill user's ATK for 10 sec.",
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 65.34% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 45.36% of the skill user's ATK for 10 sec.",
+        "■ Activates when performing a Full Charge attack. Affects the enemy unit nearest to the crosshair.\nDeals 68.46% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nATK ▲ 47.52% of the skill user's ATK for 10 sec."
+      ]
+    },
+    {
+      "name": "Blue Blade",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 12.48% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 12.48% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 27.96% for 15 sec.\nRemoves Vital Attack.",
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 13.44% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 13.44% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 30.11% for 15 sec.\nRemoves Vital Attack.",
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 14.4% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 14.4% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 32.26% for 15 sec.\nRemoves Vital Attack.",
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 15.36% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 15.36% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 34.41% for 15 sec.\nRemoves Vital Attack.",
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 16.32% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 16.32% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 36.56% for 15 sec.\nRemoves Vital Attack.",
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 17.28% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 17.28% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 38.72% for 15 sec.\nRemoves Vital Attack.",
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 18.24% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 18.24% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 40.87% for 15 sec.\nRemoves Vital Attack.",
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 19.2% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 19.2% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 43.02% for 15 sec.\nRemoves Vital Attack.",
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 20.16% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 20.16% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 45.17% for 15 sec.\nRemoves Vital Attack.",
+        "■ Activates at the start of battle. Affects self.\nVital Attack: Damage to Parts ▲ 21.12% for 5 sec.\n■ Activates when entering Full Burst. Affects self.\nVital Attack: Damage to Parts ▲ 21.12% for 5 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if self is not in A.N. Mode status.\nSingle Point Attack: Sustained damage ▲ 47.32% for 15 sec.\nRemoves Vital Attack."
+      ]
+    },
+    {
+      "name": "Tempest",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all enemies (including parts).\nDeals 290.9% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 52.85% for 10 sec.",
+        "■ Affects all enemies (including parts).\nDeals 313.28% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 56.91% for 10 sec.",
+        "■ Affects all enemies (including parts).\nDeals 335.66% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 60.98% for 10 sec.",
+        "■ Affects all enemies (including parts).\nDeals 358.04% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 65.04% for 10 sec.",
+        "■ Affects all enemies (including parts).\nDeals 380.41% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 69.11% for 10 sec.",
+        "■ Affects all enemies (including parts).\nDeals 402.79% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 73.18% for 10 sec.",
+        "■ Affects all enemies (including parts).\nDeals 425.17% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 77.24% for 10 sec.",
+        "■ Affects all enemies (including parts).\nDeals 447.55% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 81.31% for 10 sec.",
+        "■ Affects all enemies (including parts).\nDeals 469.92% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 85.37% for 10 sec.",
+        "■ Affects all enemies (including parts).\nDeals 492.3% of final ATK as Burst Skill damage.\n■ Affects self.\nA.N. Mode:\nEffect 1: Removes Single Point Attack.\nEffect 2: Sustained damage ▲ 89.44% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

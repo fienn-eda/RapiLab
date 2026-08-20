@@ -1,0 +1,111 @@
+{
+  "name": "Zwei",
+  "url": "zwei",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SG",
+  "element": "Electric",
+  "burst": "1",
+  "manufacturer": "Elysion",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Pierce Equation",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 11.89% for 1 round(s).\nPierce Damage ▲ 5.94% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 12.81% for 1 round(s).\nPierce Damage ▲ 6.4% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 13.72% for 1 round(s).\nPierce Damage ▲ 6.86% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 14.64% for 1 round(s).\nPierce Damage ▲ 7.32% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 15.55% for 1 round(s).\nPierce Damage ▲ 7.77% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 16.47% for 1 round(s).\nPierce Damage ▲ 8.23% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 17.38% for 1 round(s).\nPierce Damage ▲ 8.69% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 18.3% for 1 round(s).\nPierce Damage ▲ 9.15% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 19.21% for 1 round(s).\nPierce Damage ▲ 9.6% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 20.13% for 1 round(s).\nPierce Damage ▲ 10.06% for 10 sec."
+      ]
+    },
+    {
+      "name": "Frame Analysis",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 4.38% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 11.01% for 5 sec.",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 4.73% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 11.86% for 5 sec.",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 5.08% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 12.7% for 5 sec.",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 5.43% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 13.55% for 5 sec.",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 5.78% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 14.4% for 5 sec.",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 6.13% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 15.25% for 5 sec.",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 6.48% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 16.09% for 5 sec.",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 6.83% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 16.94% for 5 sec.",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 7.17% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 17.79% for 5 sec.",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 7.52% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 18.63% for 5 sec."
+      ]
+    },
+    {
+      "name": "Overcharge Formula",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 29.95% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 9.15% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 32.26% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 9.85% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 34.56% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 10.56% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 36.86% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 11.26% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 39.17% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 11.96% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 41.47% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 12.67% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 43.78% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 13.37% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 46.08% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 14.08% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 48.38% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 14.78% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.5 sec\nDamage: 50.69% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Damage ▲ 15.48% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "Pierce Equation",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 11.89% for 1 round(s).\nPierce Damage ▲ 5.94% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 14.76%, stacks up to 3 time(s), for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 12.81% for 1 round(s).\nPierce Damage ▲ 6.4% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 15.9%, stacks up to 3 time(s), for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 13.72% for 1 round(s).\nPierce Damage ▲ 6.86% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 17.04%, stacks up to 3 time(s), for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 14.64% for 1 round(s).\nPierce Damage ▲ 7.32% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 18.17%, stacks up to 3 time(s), for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 15.55% for 1 round(s).\nPierce Damage ▲ 7.77% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 19.31%, stacks up to 3 time(s), for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 16.47% for 1 round(s).\nPierce Damage ▲ 8.23% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 20.44%, stacks up to 3 time(s), for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 17.38% for 1 round(s).\nPierce Damage ▲ 8.69% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 21.58%, stacks up to 3 time(s), for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 18.3% for 1 round(s).\nPierce Damage ▲ 9.15% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 22.72%, stacks up to 3 time(s), for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 19.21% for 1 round(s).\nPierce Damage ▲ 9.6% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 23.85%, stacks up to 3 time(s), for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nPierce Damage ▲ 20.13% for 1 round(s).\nPierce Damage ▲ 10.06% for 10 sec.\n■ Activates when performing a normal attack during Full Burst. Affects all allies.\nPierce Damage ▲ 24.99%, stacks up to 3 time(s), for 1 round(s)."
+      ]
+    },
+    {
+      "name": "Frame Analysis",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 4.38% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 11.01% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 8.86% for 5 sec, stacks up to 3 time(s).",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 4.73% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 11.86% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 9.55% for 5 sec, stacks up to 3 time(s).",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 5.08% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 12.7% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 10.23% for 5 sec, stacks up to 3 time(s).",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 5.43% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 13.55% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 10.91% for 5 sec, stacks up to 3 time(s).",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 5.78% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 14.4% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 11.59% for 5 sec, stacks up to 3 time(s).",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 6.13% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 15.25% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 12.28% for 5 sec, stacks up to 3 time(s).",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 6.48% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 16.09% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 12.96% for 5 sec, stacks up to 3 time(s).",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 6.83% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 16.94% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 13.64% for 5 sec, stacks up to 3 time(s).",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 7.17% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 17.79% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 14.32% for 5 sec, stacks up to 3 time(s).",
+        "■ Activates after 5 normal attack(s). Affects all allies.\nRestores 7.52% of Cover HP.\n■ Activates when entering Full Burst. Affects all allies.\nCritical Rate ▲ 18.63% for 10 sec.\n■ Activates when performing a normal attack while in Pierce Attacks 101 status. Affects all allies.\nCritical Rate ▲ 15% for 5 sec, stacks up to 3 time(s)."
+      ]
+    },
+    {
+      "name": "Overcharge Formula",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 29.95% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 14.79% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 32.26% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 15.92% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 34.56% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 17.06% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 36.86% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 18.2% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 39.17% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 19.34% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 41.47% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 20.48% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 43.78% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 21.61% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 46.08% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 22.75% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 48.38% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 23.89% for 10 sec.",
+        "■ Affects self.\nChanges the weapon in use:\nCharge Time: 1.2 sec\nDamage: 50.69% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1\nAdditional Effect: Pierce\n■ Affects all allies.\nPierce Attacks 101: Pierce Damage ▲ 25.03% for 10 sec."
+      ]
+    }
+  ]
+}

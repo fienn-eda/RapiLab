@@ -1,0 +1,111 @@
+{
+  "name": "Drake",
+  "url": "drake-nikke",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SG",
+  "element": "Fire",
+  "burst": "3",
+  "manufacturer": "Missilis",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Overcharge",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 7% for 10 sec.\nATK ▲ 7% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 7.54% for 10 sec.\nATK ▲ 7.54% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 8.08% for 10 sec.\nATK ▲ 8.08% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 8.62% for 10 sec.\nATK ▲ 8.62% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 9.15% for 10 sec.\nATK ▲ 9.15% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 9.69% for 10 sec.\nATK ▲ 9.69% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 10.23% for 10 sec.\nATK ▲ 10.23% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 10.77% for 10 sec.\nATK ▲ 10.77% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 11.31% for 10 sec.\nATK ▲ 11.31% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies.\nHit Rate ▲ 11.85% for 10 sec.\nATK ▲ 11.85% for 10 sec."
+      ]
+    },
+    {
+      "name": "Thunder Bolt",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 58.24% of final ATK as damage.",
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 62.72% of final ATK as damage.",
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 67.19% of final ATK as damage.",
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 71.68% of final ATK as damage.",
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 76.16% of final ATK as damage.",
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 80.64% of final ATK as damage.",
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 85.11% of final ATK as damage.",
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 89.6% of final ATK as damage.",
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 94.07% of final ATK as damage.",
+        "■ Activates after 10 attacks. Affects the 3 enemy unit(s) with the lowest remaining HP.\nDeals 98.55% of final ATK as damage."
+      ]
+    },
+    {
+      "name": "Drake Special",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects enemies within attack range.\nDeals 741% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 42.65% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 798% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 45.93% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 855% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 49.21% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 912% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 52.5% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 969% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 55.78% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 1026% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 59.06% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 1083% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 62.34% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 1140% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 65.62% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 1197% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 68.9% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 1254% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 72.18% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "Overcharge",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 11.87% for 10 sec.\nATK ▲ 7% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 37.75% for 10 sec.\nMax Ammunition Capacity ▲ 29.62% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 12.78% for 10 sec.\nATK ▲ 7.54% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 40.65% for 10 sec.\nMax Ammunition Capacity ▲ 31.9% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 13.7% for 10 sec.\nATK ▲ 8.08% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 43.56% for 10 sec.\nMax Ammunition Capacity ▲ 34.18% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 14.61% for 10 sec.\nATK ▲ 8.62% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 46.46% for 10 sec.\nMax Ammunition Capacity ▲ 36.46% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 15.52% for 10 sec.\nATK ▲ 9.15% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 49.36% for 10 sec.\nMax Ammunition Capacity ▲ 38.74% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 16.44% for 10 sec.\nATK ▲ 9.69% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 52.27% for 10 sec.\nMax Ammunition Capacity ▲ 41.02% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 17.35% for 10 sec.\nATK ▲ 10.23% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 55.17% for 10 sec.\nMax Ammunition Capacity ▲ 43.3% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 18.26% for 10 sec.\nATK ▲ 10.77% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 58.08% for 10 sec.\nMax Ammunition Capacity ▲ 45.58% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 19.18% for 10 sec.\nATK ▲ 11.31% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 60.98% for 10 sec.\nMax Ammunition Capacity ▲ 47.86% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nHit Rate ▲ 20.09% for 10 sec.\nATK ▲ 11.85% for 10 sec.\n■ Activates when entering Full Burst. Affects all allies with a Shotgun.\nATK ▲ 63.88% for 10 sec.\nMax Ammunition Capacity ▲ 50.14% for 10 sec."
+      ]
+    },
+    {
+      "name": "Thunder Bolt",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 58.24% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 119.12% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 62.72% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 128.29% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 67.19% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 137.45% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 71.68% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 146.61% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 76.16% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 155.78% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 80.64% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 164.94% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 85.11% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 174.1% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 89.6% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 183.27% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 94.07% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 192.43% of final ATK as damage.",
+        "■ Activates after 10 normal attack(s). Affects 3 enemy unit(s) with the lowest remaining HP.\nDeals 98.55% of final ATK as damage.\n■ Activates after 5 normal attack(s). Affects 1 enemy unit(s) with the lowest remaining HP.\nDeals 201.6% of final ATK as damage."
+      ]
+    },
+    {
+      "name": "Drake Special",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects enemies within attack range.\nDeals 1778.4% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 42.65% for 10 sec.\nAttack Damage ▲ 18.72% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 1915.2% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 45.93% for 10 sec.\nAttack Damage ▲ 20.16% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 2052% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 49.21% for 10 sec.\nAttack Damage ▲ 21.6% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 2188.8% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 52.5% for 10 sec.\nAttack Damage ▲ 23.04% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 2325.6% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 55.78% for 10 sec.\nAttack Damage ▲ 24.48% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 2462.4% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 59.06% for 10 sec.\nAttack Damage ▲ 25.92% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 2599.2% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 62.34% for 10 sec.\nAttack Damage ▲ 27.36% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 2736% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 65.62% for 10 sec.\nAttack Damage ▲ 28.8% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 2872.8% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 68.9% for 10 sec.\nAttack Damage ▲ 30.24% for 10 sec.",
+        "■ Affects enemies within attack range.\nDeals 3009.6% of final ATK as damage.\n■ Affects self.\nMax Ammunition Capacity ▲ 72.18% for 10 sec.\nAttack Damage ▲ 31.68% for 10 sec."
+      ]
+    }
+  ]
+}

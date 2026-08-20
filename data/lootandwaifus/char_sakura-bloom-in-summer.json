@@ -1,0 +1,62 @@
+{
+  "name": "Sakura: Bloom in Summer",
+  "url": "sakura-bloom-in-summer",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "AR",
+  "element": "Wind",
+  "burst": "3",
+  "manufacturer": "Tetra",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Bloom",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 3.01% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 5.92 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 5.92 sec.",
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 3.24% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 6.38 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 6.38 sec.",
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 3.48% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 6.84 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 6.84 sec.",
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 3.71% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 7.28 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 7.28 sec.",
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 3.94% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 7.74 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 7.74 sec.",
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 4.17% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 8.2 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 8.2 sec.",
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 4.4% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 8.66 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 8.66 sec.",
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 4.64% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 9.1 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 9.1 sec.",
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 4.87% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 9.56 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 9.56 sec.",
+        "■ Activates at the start of battle. Affects self.\nForcefully uses Skill 2.\n■ Activates when an ally or self destroys an enemy's part. Affects self.\nSustained Damage ▲ 5.1% for 30 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects self if in Dancing Flower status.\nDancing Flower Duration ▲ 10.02 sec.\n■ Activates when an ally or self destroys an enemy's part. Affects all enemies who are in Sakura Petals status.\nSakura Petals Duration ▲ 10.02 sec."
+      ]
+    },
+    {
+      "name": "Full Glory",
+      "cooldown": 30.0,
+      "levels": [
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 9.24% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 151.27% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 9.95% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 162.9% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 10.66% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 174.54% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 11.37% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 186.18% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 12.08% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 197.81% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 12.8% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 209.45% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 13.51% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 221.09% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 14.22% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 232.72% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 14.93% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 244.36% of final ATK as sustained damage every 1 sec for 15 sec.",
+        "■ Affects self.\nDancing Flower: Attack Damage ▲ 15.64% for 15 sec.\n■ Affects the enemy with the highest final ATK.\nSakura Petals: Deals 256% of final ATK as sustained damage every 1 sec for 15 sec."
+      ]
+    },
+    {
+      "name": "Ephemeral Spender",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects random enemies.\nDeals 270.13% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 20.77% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec.",
+        "■ Affects random enemies.\nDeals 290.91% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 22.37% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec.",
+        "■ Affects random enemies.\nDeals 311.69% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 23.97% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec.",
+        "■ Affects random enemies.\nDeals 332.47% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 25.57% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec.",
+        "■ Affects random enemies.\nDeals 353.25% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 27.17% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec.",
+        "■ Affects random enemies.\nDeals 374.03% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 28.77% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec.",
+        "■ Affects random enemies.\nDeals 394.8% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 30.36% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec.",
+        "■ Affects random enemies.\nDeals 415.58% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 31.96% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec.",
+        "■ Affects random enemies.\nDeals 436.36% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 33.56% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec.",
+        "■ Affects random enemies.\nDeals 457.14% of final ATK as damage. Attacks sequentially 10 times.\n■ Affects the same targets.\nDeals 35.16% of final ATK as sustained damage every 1 sec, stacks up to 10 times and lasts for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

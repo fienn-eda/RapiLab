@@ -1,0 +1,62 @@
+{
+  "name": "Snow White",
+  "url": "snow-white",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "AR",
+  "element": "Iron",
+  "burst": "3",
+  "manufacturer": "Pilgrim",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Determination",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 51.75% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 5.17% for 5 sec.",
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 55.2% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 5.52% for 5 sec.",
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 58.65% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 5.86% for 5 sec.",
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 62.1% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 6.21% for 5 sec.",
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 65.55% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 6.55% for 5 sec.",
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 69% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 6.9% for 5 sec.",
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 72.45% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 7.24% for 5 sec.",
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 75.9% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 7.59% for 5 sec.",
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 79.35% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 7.93% for 5 sec.",
+        "■ Activates when normal attack hits 30 time(s). Affects the target(s).\nDeals 82.8% of final ATK as additional damage.\n■ Activates when normal attack hits 30 time(s). Affects self.\nATK ▲ 8.28% for 5 sec."
+      ]
+    },
+    {
+      "name": "Seven Dwarves: V & VI",
+      "cooldown": 15.0,
+      "levels": [
+        "■ Affects enemies within range.\nDeals 90.46% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 16.31% for 10 sec.",
+        "■ Affects enemies within range.\nDeals 96.49% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 17.4% for 10 sec.",
+        "■ Affects enemies within range.\nDeals 102.52% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 18.48% for 10 sec.",
+        "■ Affects enemies within range.\nDeals 108.55% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 19.57% for 10 sec.",
+        "■ Affects enemies within range.\nDeals 114.58% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 20.66% for 10 sec.",
+        "■ Affects enemies within range.\nDeals 120.61% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 21.75% for 10 sec.",
+        "■ Affects enemies within range.\nDeals 126.64% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 22.83% for 10 sec.",
+        "■ Affects enemies within range.\nDeals 132.67% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 23.92% for 10 sec.",
+        "■ Affects enemies within range.\nDeals 138.7% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 25.01% for 10 sec.",
+        "■ Affects enemies within range.\nDeals 144.73% of final ATK as damage.\n■ Activates when using this skill during Full Burst. Affects self.\nCritical Rate ▲ 26.1% for 10 sec."
+      ]
+    },
+    {
+      "name": "Seven Dwarves: I",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 124.87% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 166.5% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 208.12% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 249.75% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 291.37% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 333% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 374.62% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 416.25% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 457.87% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 5 sec\nDamage: 499.5% of final ATK\nFull Charge Damage: 1000% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce"
+      ]
+    }
+  ],
+  "dollskills": null
+}

@@ -1,0 +1,62 @@
+{
+  "name": "Anis: Sparkling Summer",
+  "url": "anis-sparkling-summer",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SG",
+  "element": "Electric",
+  "burst": "3",
+  "manufacturer": "Tetra",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Sparkling Boost",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 32.68% of the skill user's ATK for 10 sec.\nReload Speed ▲ 29.12% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 35.2% of the skill user's ATK for 10 sec.\nReload Speed ▲ 31.36% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 37.71% of the skill user's ATK for 10 sec.\nReload Speed ▲ 33.6% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 40.22% of the skill user's ATK for 10 sec.\nReload Speed ▲ 35.84% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 42.74% of the skill user's ATK for 10 sec.\nReload Speed ▲ 38.08% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 45.25% of the skill user's ATK for 10 sec.\nReload Speed ▲ 40.32% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 47.77% of the skill user's ATK for 10 sec.\nReload Speed ▲ 42.56% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 50.28% of the skill user's ATK for 10 sec.\nReload Speed ▲ 44.8% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 52.8% of the skill user's ATK for 10 sec.\nReload Speed ▲ 47.04% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects all Electric Code allies.\nATK ▲ 55.31% of the skill user's ATK for 10 sec.\nReload Speed ▲ 49.28% for 10 sec."
+      ]
+    },
+    {
+      "name": "Sparkling Missile",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 225.97% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 4.08% for 10 sec.",
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 243.36% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 4.4% for 10 sec.",
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 260.74% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 4.71% for 10 sec.",
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 278.12% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 5.02% for 10 sec.",
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 295.5% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 5.34% for 10 sec.",
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 312.89% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 5.65% for 10 sec.",
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 330.27% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 5.97% for 10 sec.",
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 347.65% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 6.28% for 10 sec.",
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 365.04% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 6.6% for 10 sec.",
+        "■ Activates when firing the last bullet. Affects the 2 enemy unit(s) with the highest final ATK.\nDeals 382.42% of final ATK as damage.\n■ Activates when firing the last bullet. Affects self.\nDamage to Interruption Parts ▲ 6.91% for 10 sec."
+      ]
+    },
+    {
+      "name": "Sparkling Wave",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nMax Ammunition Capacity ▼ 43.68% for 10 sec.\nReload Speed ▲ 16.38% for 10 sec.\nElemental Advantage Attack Damage ▲ 24.96% for 10 sec.",
+        "■ Affects self.\nMax Ammunition Capacity ▼ 47.04% for 10 sec.\nReload Speed ▲ 17.64% for 10 sec.\nElemental Advantage Attack Damage ▲ 26.88% for 10 sec.",
+        "■ Affects self.\nMax Ammunition Capacity ▼ 50.4% for 10 sec.\nReload Speed ▲ 18.9% for 10 sec.\nElemental Advantage Attack Damage ▲ 28.8% for 10 sec.",
+        "■ Affects self.\nMax Ammunition Capacity ▼ 53.76% for 10 sec.\nReload Speed ▲ 20.16% for 10 sec.\nElemental Advantage Attack Damage ▲ 30.72% for 10 sec.",
+        "■ Affects self.\nMax Ammunition Capacity ▼ 57.12% for 10 sec.\nReload Speed ▲ 21.42% for 10 sec.\nElemental Advantage Attack Damage ▲ 32.64% for 10 sec.",
+        "■ Affects self.\nMax Ammunition Capacity ▼ 60.48% for 10 sec.\nReload Speed ▲ 22.68% for 10 sec.\nElemental Advantage Attack Damage ▲ 34.56% for 10 sec.",
+        "■ Affects self.\nMax Ammunition Capacity ▼ 63.84% for 10 sec.\nReload Speed ▲ 23.94% for 10 sec.\nElemental Advantage Attack Damage ▲ 36.48% for 10 sec.",
+        "■ Affects self.\nMax Ammunition Capacity ▼ 67.2% for 10 sec.\nReload Speed ▲ 25.2% for 10 sec.\nElemental Advantage Attack Damage ▲ 38.4% for 10 sec.",
+        "■ Affects self.\nMax Ammunition Capacity ▼ 70.56% for 10 sec.\nReload Speed ▲ 26.46% for 10 sec.\nElemental Advantage Attack Damage ▲ 40.32% for 10 sec.",
+        "■ Affects self.\nMax Ammunition Capacity ▼ 73.92% for 10 sec.\nReload Speed ▲ 27.72% for 10 sec.\nElemental Advantage Attack Damage ▲ 42.24% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

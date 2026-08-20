@@ -1,0 +1,62 @@
+{
+  "name": "Blanc",
+  "url": "blanc",
+  "source": "lootandwaifus",
+  "class": "Defender",
+  "weapon": "AR",
+  "element": "Wind",
+  "burst": "2",
+  "manufacturer": "Tetra",
+  "cooldown": 60.0,
+  "skills": [
+    {
+      "name": "Lucky Guard",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 6.97% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 7.51% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 8.04% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 8.58% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 9.12% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 9.65% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 10.19% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 10.73% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 11.26% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec.",
+        "■ Activates after 120 normal attack(s).\nCreates a shared Shield equal to 11.8% of the skill user's final Max HP that protects all allies from damage. Lasts for 5 sec."
+      ]
+    },
+    {
+      "name": "Rabbit Twins W",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 1.78% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec.",
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 1.99% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec.",
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 2.2% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec.",
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 2.41% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec.",
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 2.62% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec.",
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 2.84% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec.",
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 3.05% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec.",
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 3.26% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec.",
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 3.47% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec.",
+        "■ Activates after Full Burst ends. Affects all allies.\nConstantly recovers 3.68% of the skill user's final Max HP every 1 sec for 5 sec.\n■ Activates when Full Burst ends with an ally from the same squad still on the battlefield. Affects self.\nCooldown of Burst Skill ▼ 40.76 sec."
+      ]
+    },
+    {
+      "name": "Showtime",
+      "cooldown": 60.0,
+      "levels": [
+        "■ Affects all allies.\nConstantly recovers 2.05% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 18.72% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 20.08% for 10 sec.",
+        "■ Affects all allies.\nConstantly recovers 2.25% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 20.16% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 22.21% for 10 sec.",
+        "■ Affects all allies.\nConstantly recovers 2.45% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 21.6% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 24.34% for 10 sec.",
+        "■ Affects all allies.\nConstantly recovers 2.65% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 23.04% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 26.48% for 10 sec.",
+        "■ Affects all allies.\nConstantly recovers 2.85% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 24.48% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 28.61% for 10 sec.",
+        "■ Affects all allies.\nConstantly recovers 3.04% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 25.92% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 30.74% for 10 sec.",
+        "■ Affects all allies.\nConstantly recovers 3.24% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 27.36% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 32.87% for 10 sec.",
+        "■ Affects all allies.\nConstantly recovers 3.44% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 28.8% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 35% for 10 sec.",
+        "■ Affects all allies.\nConstantly recovers 3.64% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 30.24% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 37.13% for 10 sec.",
+        "■ Affects all allies.\nConstantly recovers 3.84% of the skill user's final Max HP every 1 sec for 8 sec.\n■ Affects 1 ally unit(s) with the lowest remaining HP (except the skill user).\nGain Indomitability for 10 sec.\nMax HP ▲ 31.68% for 10 sec.\n■ Affects all enemies.\nDamage Taken ▲ 39.26% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

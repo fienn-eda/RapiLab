@@ -1,0 +1,62 @@
+{
+  "name": "Noir",
+  "url": "noir",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SG",
+  "element": "Wind",
+  "burst": "3",
+  "manufacturer": "Tetra",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Lucky Charm",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 8.32% of the skill user's ATK constantly.",
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 8.96% of the skill user's ATK constantly.",
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 9.6% of the skill user's ATK constantly.",
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 10.24% of the skill user's ATK constantly.",
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 10.88% of the skill user's ATK constantly.",
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 11.52% of the skill user's ATK constantly.",
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 12.16% of the skill user's ATK constantly.",
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 12.8% of the skill user's ATK constantly.",
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 13.44% of the skill user's ATK constantly.",
+        "■ Activates when above 70% HP. Affects all allies.\nATK ▲ 14.08% of the skill user's ATK constantly."
+      ]
+    },
+    {
+      "name": "Rabbit Twins B",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 3 round(s) for 10 sec.\nReload 26.02% magazine(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 3 round(s) for 10 sec.\nReload 27.56% magazine(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 3 round(s) for 10 sec.\nReload 29.1% magazine(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 3 round(s) for 10 sec.\nReload 30.64% magazine(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 4 round(s) for 10 sec.\nReload 32.18% magazine(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 4 round(s) for 10 sec.\nReload 33.72% magazine(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 4 round(s) for 10 sec.\nReload 35.26% magazine(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 4 round(s) for 10 sec.\nReload 36.8% magazine(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 5 round(s) for 10 sec.\nReload 38.34% magazine(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nMax Ammunition Capacity ▲ 5 round(s) for 10 sec.\nReload 39.88% magazine(s)."
+      ]
+    },
+    {
+      "name": "Finale",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all enemies.\nDeals 207.79% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 8.23% for 10 sec.\nDamage to Interruption Parts ▲ 13.72% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 6.86% for 30 sec.\nDamage to Interruption Parts ▲ 11.44% for 30 sec.",
+        "■ Affects all enemies.\nDeals 223.77% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 8.87% for 10 sec.\nDamage to Interruption Parts ▲ 14.78% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 7.39% for 30 sec.\nDamage to Interruption Parts ▲ 12.32% for 30 sec.",
+        "■ Affects all enemies.\nDeals 239.76% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 9.5% for 10 sec.\nDamage to Interruption Parts ▲ 15.84% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 7.92% for 30 sec.\nDamage to Interruption Parts ▲ 13.2% for 30 sec.",
+        "■ Affects all enemies.\nDeals 255.74% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 10.13% for 10 sec.\nDamage to Interruption Parts ▲ 16.89% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 8.44% for 30 sec.\nDamage to Interruption Parts ▲ 14.08% for 30 sec.",
+        "■ Affects all enemies.\nDeals 271.72% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 10.77% for 10 sec.\nDamage to Interruption Parts ▲ 17.95% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 8.97% for 30 sec.\nDamage to Interruption Parts ▲ 14.96% for 30 sec.",
+        "■ Affects all enemies.\nDeals 287.71% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 11.4% for 10 sec.\nDamage to Interruption Parts ▲ 19% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 9.5% for 30 sec.\nDamage to Interruption Parts ▲ 15.84% for 30 sec.",
+        "■ Affects all enemies.\nDeals 303.69% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 12.03% for 10 sec.\nDamage to Interruption Parts ▲ 20.06% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 10.03% for 30 sec.\nDamage to Interruption Parts ▲ 16.72% for 30 sec.",
+        "■ Affects all enemies.\nDeals 319.68% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 12.67% for 10 sec.\nDamage to Interruption Parts ▲ 21.12% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 10.56% for 30 sec.\nDamage to Interruption Parts ▲ 17.6% for 30 sec.",
+        "■ Affects all enemies.\nDeals 335.66% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 13.3% for 10 sec.\nDamage to Interruption Parts ▲ 22.17% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 11.08% for 30 sec.\nDamage to Interruption Parts ▲ 18.48% for 30 sec.",
+        "■ Affects all enemies.\nDeals 351.64% of final ATK as Burst Skill damage.\n■ Affects all allies with a Shotgun.\nHit Rate ▲ 13.93% for 10 sec.\nDamage to Interruption Parts ▲ 23.23% for 10 sec.\n■ Activates with an ally from the same squad still on the battlefield. Affects all allies.\nHit Rate ▲ 11.61% for 30 sec.\nDamage to Interruption Parts ▲ 19.36% for 30 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

@@ -1,0 +1,62 @@
+{
+  "name": "D: Killer Wife",
+  "url": "d-killer-wife",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SR",
+  "element": "Fire",
+  "burst": "1",
+  "manufacturer": "Elysion",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Calm Sniping",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲8% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲8.62% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲9.24% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲9.85% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲10.47% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲11.08% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲11.7% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲12.32% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲12.93% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 3 time(s). Affects self.\nGain Pierce for 1 shot.\n■ Activates when entering Full Burst. Affects all allies with a Sniper Rifle.\nPierce Damage ▲13.55% for 10 sec."
+      ]
+    },
+    {
+      "name": "Assault Formation",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 4.13 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 2.99% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 4.45 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 3.22% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 4.77 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 3.45% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 5.09 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 3.68% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 5.4 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 3.91% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 5.72 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 4.14% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 6.04 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 4.37% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 6.36 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 4.6% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 6.68 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 4.83% for 10 sec.",
+        "■ Activates when attacking with Full Charge for 8 time(s). Affects all allies.\nCooldown of Burst Skill ▼ 7 sec.\n■ Activates when attacking with Full Charge for 5 time(s). Affects all allies.\nAttack damage ▲ 5.06% for 10 sec."
+      ]
+    },
+    {
+      "name": "Kill the Target",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects the enemy nearest to the crosshair.\nDeals 159.12% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 9.6% for 10 sec.\nAllies that hit the body: ATK ▲ 7.2% of the skill user's ATK for 10 sec.",
+        "■ Affects the enemy nearest to the crosshair.\nDeals 171.36% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 10.34% for 10 sec.\nAllies that hit the body: ATK ▲ 7.76% of the skill user's ATK for 10 sec.",
+        "■ Affects the enemy nearest to the crosshair.\nDeals 183.6% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 11.08% for 10 sec.\nAllies that hit the body: ATK ▲ 8.31% of the skill user's ATK for 10 sec.",
+        "■ Affects the enemy nearest to the crosshair.\nDeals 195.84% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 11.82% for 10 sec.\nAllies that hit the body: ATK ▲ 8.87% of the skill user's ATK for 10 sec.",
+        "■ Affects the enemy nearest to the crosshair.\nDeals 208.08% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 12.56% for 10 sec.\nAllies that hit the body: ATK ▲ 9.42% of the skill user's ATK for 10 sec.",
+        "■ Affects the enemy nearest to the crosshair.\nDeals 220.32% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 13.3% for 10 sec.\nAllies that hit the body: ATK ▲ 9.97% of the skill user's ATK for 10 sec.",
+        "■ Affects the enemy nearest to the crosshair.\nDeals 232.56% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 14.04% for 10 sec.\nAllies that hit the body: ATK ▲ 10.53% of the skill user's ATK for 10 sec.",
+        "■ Affects the enemy nearest to the crosshair.\nDeals 244.8% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 14.78% for 10 sec.\nAllies that hit the body: ATK ▲ 11.08% of the skill user's ATK for 10 sec.",
+        "■ Affects the enemy nearest to the crosshair.\nDeals 257.04% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 15.52% for 10 sec.\nAllies that hit the body: ATK ▲ 11.64% of the skill user's ATK for 10 sec.",
+        "■ Affects the enemy nearest to the crosshair.\nDeals 269.28% of final ATK as additional damage.\nInflicts Wipe Out on the target for 10 sec.\n■ Activates when allies' normal attack hits a certain area of the target afflicted with Wipe Out. Affects allies.\nBuff takes effect depending on the area hit.\nAllies that hit parts: Damage dealt when attacking core ▲ 16.26% for 10 sec.\nAllies that hit the body: ATK ▲ 12.19% of the skill user's ATK for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

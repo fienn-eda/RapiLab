@@ -1,0 +1,62 @@
+{
+  "name": "Crown",
+  "url": "crown",
+  "source": "lootandwaifus",
+  "class": "Defender",
+  "weapon": "MG",
+  "element": "Iron",
+  "burst": "2",
+  "manufacturer": "Pilgrim",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "One for All",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 40.32% of the skill user's ATK for 15 sec.\nReload Speed ▲ 27.72% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 23.4% of the skill user's DEF for 15 sec.\nReload Speed ▲ 27.72% for 15 sec.",
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 43% of the skill user's ATK for 15 sec.\nReload Speed ▲ 29.56% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 24.96% of the skill user's DEF for 15 sec.\nReload Speed ▲ 29.56% for 15 sec.",
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 45.69% of the skill user's ATK for 15 sec.\nReload Speed ▲ 31.41% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 26.52% of the skill user's DEF for 15 sec.\nReload Speed ▲ 31.41% for 15 sec.",
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 48.38% of the skill user's ATK for 15 sec.\nReload Speed ▲ 33.26% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 28.08% of the skill user's DEF for 15 sec.\nReload Speed ▲ 33.26% for 15 sec.",
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 51.07% of the skill user's ATK for 15 sec.\nReload Speed ▲ 35.11% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 29.64% of the skill user's DEF for 15 sec.\nReload Speed ▲ 35.11% for 15 sec.",
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 53.76% of the skill user's ATK for 15 sec.\nReload Speed ▲ 36.96% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 31.2% of the skill user's DEF for 15 sec.\nReload Speed ▲ 36.96% for 15 sec.",
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 56.44% of the skill user's ATK for 15 sec.\nReload Speed ▲ 38.8% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 32.76% of the skill user's DEF for 15 sec.\nReload Speed ▲ 38.8% for 15 sec.",
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 59.13% of the skill user's ATK for 15 sec.\nReload Speed ▲ 40.65% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 34.32% of the skill user's DEF for 15 sec.\nReload Speed ▲ 40.65% for 15 sec.",
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 61.82% of the skill user's ATK for 15 sec.\nReload Speed ▲ 42.5% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 35.88% of the skill user's DEF for 15 sec.\nReload Speed ▲ 42.5% for 15 sec.",
+        "■ Activates at the start of Full Burst. Affects all allies who previously used their Burst Skills.\nATK ▲ 64.51% of the skill user's ATK for 15 sec.\nReload Speed ▲ 44.35% for 15 sec.\n■ Affects all allies who did not previously use their Burst Skills.\nDEF ▲ 37.44% of the skill user's DEF for 15 sec.\nReload Speed ▲ 44.35% for 15 sec."
+      ]
+    },
+    {
+      "name": "Royal Attire",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after 65 normal attacks. Affects self.\nRelax: Incoming healing ▲ 2.54% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 2.57 sec.\nAttract: Taunts all enemies for 2.57 sec.\nRestores HP equal to 3.27% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 13.12% for 7 sec.",
+        "■ Activates after 62 normal attacks. Affects self.\nRelax: Incoming healing ▲ 2.71% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 2.84 sec.\nAttract: Taunts all enemies for 2.84 sec.\nRestores HP equal to 3.49% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 13.99% for 7 sec.",
+        "■ Activates after 59 normal attacks. Affects self.\nRelax: Incoming healing ▲ 2.88% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 3.11 sec.\nAttract: Taunts all enemies for 3.11 sec.\nRestores HP equal to 3.7% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 14.87% for 7 sec.",
+        "■ Activates after 56 normal attacks. Affects self.\nRelax: Incoming healing ▲ 3.05% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 3.38 sec.\nAttract: Taunts all enemies for 3.38 sec.\nRestores HP equal to 3.92% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 15.74% for 7 sec.",
+        "■ Activates after 53 normal attacks. Affects self.\nRelax: Incoming healing ▲ 3.22% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 3.65 sec.\nAttract: Taunts all enemies for 3.65 sec.\nRestores HP equal to 4.14% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 16.62% for 7 sec.",
+        "■ Activates after 51 normal attacks. Affects self.\nRelax: Incoming healing ▲ 3.38% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 3.92 sec.\nAttract: Taunts all enemies for 3.92 sec.\nRestores HP equal to 4.36% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 17.49% for 7 sec.",
+        "■ Activates after 49 normal attacks. Affects self.\nRelax: Incoming healing ▲ 3.55% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 4.19 sec.\nAttract: Taunts all enemies for 4.19 sec.\nRestores HP equal to 4.58% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 18.37% for 7 sec.",
+        "■ Activates after 47 normal attacks. Affects self.\nRelax: Incoming healing ▲ 3.72% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 4.46 sec.\nAttract: Taunts all enemies for 4.46 sec.\nRestores HP equal to 4.8% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 19.24% for 7 sec.",
+        "■ Activates after 45 normal attacks. Affects self.\nRelax: Incoming healing ▲ 3.89% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 4.73 sec.\nAttract: Taunts all enemies for 4.73 sec.\nRestores HP equal to 5.01% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 20.12% for 7 sec.",
+        "■ Activates after 43 normal attacks. Affects self.\nRelax: Incoming healing ▲ 4.06% continuously. Stacks up to 20 times.\n■ Activates when Relax is at max stacks. Removes stacks and affects self.\nInvulnerable for 5 sec.\nAttract: Taunts all enemies for 5 sec.\nRestores HP equal to 5.23% of the skill user's final Max HP.\n■ Activates when recovery takes effect. Affects all allies.\nAttack Damage ▲ 20.99% for 7 sec."
+      ]
+    },
+    {
+      "name": "Last Kingdom",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects all allies.\nAttack Damage ▲ 22.65% for 15 sec.\nCreates a Shield equal to 6.53% of the skill user's final Max HP for 15 sec.",
+        "■ Affects all allies.\nAttack Damage ▲ 24.16% for 15 sec.\nCreates a Shield equal to 6.96% of the skill user's final Max HP for 15 sec.",
+        "■ Affects all allies.\nAttack Damage ▲ 25.67% for 15 sec.\nCreates a Shield equal to 7.4% of the skill user's final Max HP for 15 sec.",
+        "■ Affects all allies.\nAttack Damage ▲ 27.18% for 15 sec.\nCreates a Shield equal to 7.84% of the skill user's final Max HP for 15 sec.",
+        "■ Affects all allies.\nAttack Damage ▲ 28.69% for 15 sec.\nCreates a Shield equal to 8.27% of the skill user's final Max HP for 15 sec.",
+        "■ Affects all allies.\nAttack Damage ▲ 30.2% for 15 sec.\nCreates a Shield equal to 8.71% of the skill user's final Max HP for 15 sec.",
+        "■ Affects all allies.\nAttack Damage ▲ 31.71% for 15 sec.\nCreates a Shield equal to 9.14% of the skill user's final Max HP for 15 sec.",
+        "■ Affects all allies.\nAttack Damage ▲ 33.22% for 15 sec.\nCreates a Shield equal to 9.58% of the skill user's final Max HP for 15 sec.",
+        "■ Affects all allies.\nAttack Damage ▲ 34.73% for 15 sec.\nCreates a Shield equal to 10.01% of the skill user's final Max HP for 15 sec.",
+        "■ Affects all allies.\nAttack Damage ▲ 36.24% for 15 sec.\nCreates a Shield equal to 10.45% of the skill user's final Max HP for 15 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

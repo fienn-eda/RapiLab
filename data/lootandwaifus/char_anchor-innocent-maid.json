@@ -1,0 +1,62 @@
+{
+  "name": "Anchor: Innocent Maid",
+  "url": "anchor-innocent-maid",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "RL",
+  "element": "Water",
+  "burst": "2",
+  "manufacturer": "Elysion",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Starfish (Shaped) Omurice",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 18.29% for 5 sec.\nTwice: Distributed Damage ▲ 17.96% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 1.79% of the skill user's Max HP every 1 sec for 8 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 19.7% for 5 sec.\nTwice: Distributed Damage ▲ 19.34% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 1.93% of the skill user's Max HP every 1 sec for 8 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 21.11% for 5 sec.\nTwice: Distributed Damage ▲ 20.72% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 2.07% of the skill user's Max HP every 1 sec for 8 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 22.51% for 5 sec.\nTwice: Distributed Damage ▲ 22.1% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 2.21% of the skill user's Max HP every 1 sec for 8 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 23.92% for 5 sec.\nTwice: Distributed Damage ▲ 23.49% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 2.34% of the skill user's Max HP every 1 sec for 8 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 25.33% for 5 sec.\nTwice: Distributed Damage ▲ 24.87% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 2.48% of the skill user's Max HP every 1 sec for 8 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 26.74% for 5 sec.\nTwice: Distributed Damage ▲ 26.25% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 2.62% of the skill user's Max HP every 1 sec for 8 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 28.14% for 5 sec.\nTwice: Distributed Damage ▲ 27.63% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 2.76% of the skill user's Max HP every 1 sec for 8 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 29.55% for 5 sec.\nTwice: Distributed Damage ▲ 29.01% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 2.9% of the skill user's Max HP every 1 sec for 8 sec.",
+        "■ Activates when entering Full Burst. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Potency of HP ▲ 30.96% for 5 sec.\nTwice: Distributed Damage ▲ 30.4% for 10 sec.\nThree times: Stack count of debuffs ▼ 1.\n■ Activates when entering Full Burst while an ally from the same squad is on the battlefield. Affects all allies.\nRecovers 3.04% of the skill user's Max HP every 1 sec for 8 sec."
+      ]
+    },
+    {
+      "name": "Sea Anemone (Shaped) Pasta",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 5.98% for 10 sec.\nTwice: ATK ▲ 20.65% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 23.82% for 15 sec.",
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 6.44% for 10 sec.\nTwice: ATK ▲ 22.25% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 25.62% for 15 sec.",
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 6.9% for 10 sec.\nTwice: ATK ▲ 23.85% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 27.42% for 15 sec.",
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 7.36% for 10 sec.\nTwice: ATK ▲ 25.44% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 29.23% for 15 sec.",
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 7.83% for 10 sec.\nTwice: ATK ▲ 27.04% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 31.03% for 15 sec.",
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 8.29% for 10 sec.\nTwice: ATK ▲ 28.64% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 32.83% for 15 sec.",
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 8.75% for 10 sec.\nTwice: ATK ▲ 30.23% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 34.63% for 15 sec.",
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 9.21% for 10 sec.\nTwice: ATK ▲ 31.83% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 36.44% for 15 sec.",
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 9.67% for 10 sec.\nTwice: ATK ▲ 33.43% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 38.24% for 15 sec.",
+        "■ Activates when Full Burst ends. Affects all allies.\nEffects vary according to the number of times used. Each subsequent effect triggers all effects before it:\nOnce: Hit Rate ▲ 10.13% for 10 sec.\nTwice: ATK ▲ 35.02% of the skill user's ATK for 10 sec.\nThree times: Reload Speed ▲ 40.04% for 15 sec."
+      ]
+    },
+    {
+      "name": "Seaside Stroll",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 35.56% of their Max HP. Lasts for 25 sec.\nRecovers 23.56% of the skill user's Max HP as HP.\nATK ▲ 17.78% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 38.3% of their Max HP. Lasts for 25 sec.\nRecovers 25.41% of the skill user's Max HP as HP.\nATK ▲ 19.15% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 41.04% of their Max HP. Lasts for 25 sec.\nRecovers 27.25% of the skill user's Max HP as HP.\nATK ▲ 20.52% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 43.77% of their Max HP. Lasts for 25 sec.\nRecovers 29.1% of the skill user's Max HP as HP.\nATK ▲ 21.88% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 46.51% of their Max HP. Lasts for 25 sec.\nRecovers 30.95% of the skill user's Max HP as HP.\nATK ▲ 23.25% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 49.24% of their Max HP. Lasts for 25 sec.\nRecovers 32.79% of the skill user's Max HP as HP.\nATK ▲ 24.62% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 51.98% of their Max HP. Lasts for 25 sec.\nRecovers 34.64% of the skill user's Max HP as HP.\nATK ▲ 25.99% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 54.72% of their Max HP. Lasts for 25 sec.\nRecovers 36.49% of the skill user's Max HP as HP.\nATK ▲ 27.36% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 57.45% of their Max HP. Lasts for 25 sec.\nRecovers 38.33% of the skill user's Max HP as HP.\nATK ▲ 28.72% of the skill user's ATK for 10 sec.",
+        "■ Affects all allies.\nStorage: Stores excess healing received by the skill user, up to 60.19% of their Max HP. Lasts for 25 sec.\nRecovers 40.18% of the skill user's Max HP as HP.\nATK ▲ 30.09% of the skill user's ATK for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

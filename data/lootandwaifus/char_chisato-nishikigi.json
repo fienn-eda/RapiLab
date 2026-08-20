@@ -1,0 +1,62 @@
+{
+  "name": "Chisato Nishikigi",
+  "url": "chisato-nishikigi",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SMG",
+  "element": "Iron",
+  "burst": "3",
+  "manufacturer": "Abnormal",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Extrasensory",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 31.72%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 28.73%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 13.22%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%.",
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 34.16%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 30.94%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 14.23%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%.",
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 36.61%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 33.15%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 15.25%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%.",
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 39.05%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 35.36%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 16.27%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%.",
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 41.49%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 37.57%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 17.28%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%.",
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 43.93%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 39.78%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 18.3%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%.",
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 46.37%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 41.99%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 19.32%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%.",
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 48.81%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 44.2%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 20.33%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%.",
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 51.25%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 46.41%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 21.35%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%.",
+        "■ Activates at the start of battle. Affects self.\nCharges Extrasensory to 100%, up to 100%. This effect is continuous and cannot be removed.\n■ Activates while in Extrasensory status. Affects self.\nEffects vary according to the charge level of Extrasensory. Each subsequent effect triggers all effects before it:\nOnly when at 100%: Dodging Bullets: Invulnerable for 2 sec.\nOnly when above 70%: ATK ▲ 53.69%. This effect is continuous and cannot be removed.\nOnly when above 55%: True Damage ▲ 48.62%. This effect is continuous and cannot be removed.\nOnly when above 25%: Hit Rate ▲ 22.37%. This effect is continuous and cannot be removed.\n■ Affects self every 2 sec.\nExtrasensory ▼ 1%."
+      ]
+    },
+    {
+      "name": "AP Rounds",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 279.01% of final ATK as true damage.",
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 300.48% of final ATK as true damage.",
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 321.94% of final ATK as true damage.",
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 343.4% of final ATK as true damage.",
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 364.87% of final ATK as true damage.",
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 386.33% of final ATK as true damage.",
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 407.79% of final ATK as true damage.",
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 429.25% of final ATK as true damage.",
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 450.72% of final ATK as true damage.",
+        "■ Activates when using Burst Skill. Affects self.\nNormal attacks deal true damage for 10 sec.\n■ Activates after landing 48 normal attack(s). Affects the target.\nDeals 472.18% of final ATK as true damage."
+      ]
+    },
+    {
+      "name": "Emergency Charge",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 43.23% for 10 sec.",
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 46.56% for 10 sec.",
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 49.88% for 10 sec.",
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 53.21% for 10 sec.",
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 56.53% for 10 sec.",
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 59.86% for 10 sec.",
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 63.18% for 10 sec.",
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 66.51% for 10 sec.",
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 69.84% for 10 sec.",
+        "■ Affects self.\nCharges Extrasensory to 100%.\nATK ▲ 73.16% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

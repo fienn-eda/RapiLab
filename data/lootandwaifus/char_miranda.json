@@ -1,0 +1,111 @@
+{
+  "name": "Miranda",
+  "url": "miranda",
+  "source": "lootandwaifus",
+  "class": "Supporter",
+  "weapon": "SMG",
+  "element": "Fire",
+  "burst": "1",
+  "manufacturer": "Elysion",
+  "cooldown": 20.0,
+  "skills": [
+    {
+      "name": "Health Up!",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 3.31% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.09% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 3.55% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.28% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 3.78% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.47% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.02% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.66% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.26% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.85% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.49% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.03% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.73% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.22% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.97% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.41% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 5.2% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.6% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 5.44% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.79% for 5 sec."
+      ]
+    },
+    {
+      "name": "Wake Up!",
+      "cooldown": null,
+      "levels": [
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 19.49% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 20.99% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 22.49% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 23.99% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 25.49% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 26.99% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 28.49% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 29.99% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 31.49% for 10 sec.",
+        "■ Activates at the beginning of Full Burst. Affects all allies. Critical Damage ▲ 32.99% for 10 sec."
+      ]
+    },
+    {
+      "name": "Powering Up!",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 23.87% for 10 sec.\nCritical Damage ▲ 33.22% for 10 sec.",
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 25.71% for 10 sec.\nCritical Damage ▲ 35.78% for 10 sec.",
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 27.55% for 10 sec.\nCritical Damage ▲ 38.34% for 10 sec.",
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 29.38% for 10 sec.\nCritical Damage ▲ 40.89% for 10 sec.",
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 31.22% for 10 sec.\nCritical Damage ▲ 43.45% for 10 sec.",
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 33.06% for 10 sec.\nCritical Damage ▲ 46.01% for 10 sec.",
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 34.89% for 10 sec.\nCritical Damage ▲ 48.56% for 10 sec.",
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 36.73% for 10 sec.\nCritical Damage ▲ 51.12% for 10 sec.",
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 38.57% for 10 sec.\nCritical Damage ▲ 53.67% for 10 sec.",
+        "■ Affects 1 ally unit(s) with the highest final ATK (includes the skill user if there are not enough allies).\nATK ▲ 40.4% for 10 sec.\nCritical Damage ▲ 56.23% for 10 sec."
+      ]
+    }
+  ],
+  "dollskills": [
+    {
+      "name": "Health Up!",
+      "cooldown": null,
+      "levels": [
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 3.31% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.09% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 29.58% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 3.55% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.28% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 31.86% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 3.78% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.47% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 34.13% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.02% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.66% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 36.41% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.26% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 2.85% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 38.68% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.49% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.03% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 40.96% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.73% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.22% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 43.24% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 4.97% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.41% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 45.51% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 5.2% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.6% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 47.79% for 5 sec.",
+        "■ Activates after landing 30 normal attack(s). Affects all allies.\nHit Rate ▲ 5.44% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects all allies with a Submachine Gun.\nHit Rate ▲ 3.79% for 5 sec.\n■ Activates after landing 30 normal attack(s). Affects self.\nATK ▲ 50.06% for 5 sec."
+      ]
+    },
+    {
+      "name": "Wake Up!",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 19.49% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 17.79% for 10 sec.\nAttack Damage ▲ 14% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 50.48% for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 20.99% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 19.15% for 10 sec.\nAttack Damage ▲ 15.08% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 54.36% for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 22.49% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 20.52% for 10 sec.\nAttack Damage ▲ 16.16% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 58.24% for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 23.99% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 21.89% for 10 sec.\nAttack Damage ▲ 17.23% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 62.12% for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 25.49% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 23.26% for 10 sec.\nAttack Damage ▲ 18.31% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 66.01% for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 26.99% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 24.63% for 10 sec.\nAttack Damage ▲ 19.39% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 69.89% for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 28.49% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 26% for 10 sec.\nAttack Damage ▲ 20.47% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 73.77% for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 29.99% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 27.37% for 10 sec.\nAttack Damage ▲ 21.54% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 77.66% for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 31.49% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 28.73% for 10 sec.\nAttack Damage ▲ 22.62% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 81.54% for 1 round(s).",
+        "■ Activates when entering Full Burst. Affects all allies.\nCritical Damage ▲ 32.99% for 10 sec.\n■ Activates when entering Full Burst. Affects self.\nCritical Rate ▲ 30.1% for 10 sec.\nAttack Damage ▲ 23.7% for 10 sec.\n■ Activates when entering Full Burst. Affects 1 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nCritical Rate ▲ 85.42% for 1 round(s)."
+      ]
+    },
+    {
+      "name": "Powering Up!",
+      "cooldown": 20.0,
+      "levels": [
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 23.87% for 10 sec.\nCritical Damage ▲ 33.22% for 10 sec.",
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 25.71% for 10 sec.\nCritical Damage ▲ 35.78% for 10 sec.",
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 27.55% for 10 sec.\nCritical Damage ▲ 38.34% for 10 sec.",
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 29.38% for 10 sec.\nCritical Damage ▲ 40.89% for 10 sec.",
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 31.22% for 10 sec.\nCritical Damage ▲ 43.45% for 10 sec.",
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 33.06% for 10 sec.\nCritical Damage ▲ 46.01% for 10 sec.",
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 34.89% for 10 sec.\nCritical Damage ▲ 48.56% for 10 sec.",
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 36.73% for 10 sec.\nCritical Damage ▲ 51.12% for 10 sec.",
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 38.57% for 10 sec.\nCritical Damage ▲ 53.67% for 10 sec.",
+        "■ Affects 2 ally unit(s) with the highest final ATK (except the skill user; including the skill user if there are not enough allies).\nATK ▲ 40.4% for 10 sec.\nCritical Damage ▲ 56.23% for 10 sec."
+      ]
+    }
+  ]
+}

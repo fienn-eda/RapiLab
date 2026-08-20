@@ -1,0 +1,62 @@
+{
+  "name": "Modernia",
+  "url": "modernia",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "MG",
+  "element": "Fire",
+  "burst": "3",
+  "manufacturer": "Pilgrim",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "High-Speed Evolution",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 1.9% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 9.93%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec.",
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 2.03% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 10.41%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec.",
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 2.16% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 10.89%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec.",
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 2.29% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 11.37%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec.",
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 2.41% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 11.85%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec.",
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 2.54% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 12.33%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec.",
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 2.67% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 12.81%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec.",
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 2.8% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 13.29%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec.",
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 2.92% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 13.77%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec.",
+        "■ Activates when normal attack hits. Affects the target(s).\nDeals 3.05% of final ATK as additional damage.\n■ Activates when normal attack hits 200 time(s). Affects self.\nCritical Damage ▲ 14.25%, stacks up to 5 time(s) and lasts for 10 sec.\nMax Ammunition Capacity ▼ 5.04%, stacks up to 5 time(s) and lasts for 10 sec."
+      ]
+    },
+    {
+      "name": "Giant Leap",
+      "cooldown": null,
+      "levels": [
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 5.35% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 18.36% for 10 sec.",
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 5.7% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 19.59% for 10 sec.",
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 6.06% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 20.81% for 10 sec.",
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 6.42% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 22.04% for 10 sec.",
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 6.77% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 23.26% for 10 sec.",
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 7.13% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 24.48% for 10 sec.",
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 7.49% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 25.71% for 10 sec.",
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 7.84% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 26.93% for 10 sec.",
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 8.2% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 28.16% for 10 sec.",
+        "■ Affects all allies. Activates when entering Full Burst.\nHit Rate ▲ 8.56% for 15 sec.\n■ Affects self. Activates when normal attack hits 200 time(s) during increasing Hit Rate status.\nATK ▲ 29.38% for 10 sec."
+      ]
+    },
+    {
+      "name": "New World",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 1.52% of final ATK as damage for 15 sec.",
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 1.6% of final ATK as damage for 15 sec.",
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 1.68% of final ATK as damage for 15 sec.",
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 1.76% of final ATK as damage for 15 sec.",
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 1.84% of final ATK as damage for 15 sec.",
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 1.92% of final ATK as damage for 15 sec.",
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 2% of final ATK as damage for 15 sec.",
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 2.08% of final ATK as damage for 15 sec.",
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 2.16% of final ATK as damage for 15 sec.",
+        "■ Affects all allies.\nFull Burst Duration ▲ 5 sec.\n■ Affects self.\nUnlimited ammunition for 15 sec.\nDestroy Mode:\nExtends her line of sight and auto-aims at all enemies within range. The stage target is treated as a single enemy regardless of whether it has parts (including interruption parts).\nDeals 2.24% of final ATK as damage for 15 sec."
+      ]
+    }
+  ],
+  "dollskills": null
+}

@@ -1,0 +1,62 @@
+{
+  "name": "Maxwell",
+  "url": "maxwell",
+  "source": "lootandwaifus",
+  "class": "Attacker",
+  "weapon": "SR",
+  "element": "Iron",
+  "burst": "3",
+  "manufacturer": "Missilis",
+  "cooldown": 40.0,
+  "skills": [
+    {
+      "name": "Straight Shot",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 2.65% for 10 sec.\nATK ▲ 25.46% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 2.85% for 10 sec.\nATK ▲ 27.42% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 3.06% for 10 sec.\nATK ▲ 29.38% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 3.26% for 10 sec.\nATK ▲ 31.34% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 3.46% for 10 sec.\nATK ▲ 33.3% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 3.67% for 10 sec.\nATK ▲ 35.26% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 3.87% for 10 sec.\nATK ▲ 37.22% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 4.08% for 10 sec.\nATK ▲ 39.18% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 4.28% for 10 sec.\nATK ▲ 41.14% for 10 sec.",
+        "■ Activates when entering Full Burst. Affects 2 allies with the highest final ATK.\nCharge Speed ▲ 4.48% for 10 sec.\nATK ▲ 43.1% for 10 sec."
+      ]
+    },
+    {
+      "name": "Spark Shot",
+      "cooldown": null,
+      "levels": [
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 2.85%.\nCritical Damage ▲ 8.22%.",
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 3.07%.\nCritical Damage ▲ 8.85%.",
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 3.29%.\nCritical Damage ▲ 9.48%.",
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 3.51%.\nCritical Damage ▲ 10.12%.",
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 3.73%.\nCritical Damage ▲ 10.75%.",
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 3.95%.\nCritical Damage ▲ 11.38%.",
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 4.17%.\nCritical Damage ▲ 12.01%.",
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 4.39%.\nCritical Damage ▲ 12.65%.",
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 4.61%.\nCritical Damage ▲ 13.28%.",
+        "■ Activates when there are above 5 enemy unit(s), excluding Nikkes. Affects self.\nCritical Rate ▲ 4.83%.\nCritical Damage ▲ 13.91%."
+      ]
+    },
+    {
+      "name": "Pierce shot",
+      "cooldown": 40.0,
+      "levels": [
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 144.85% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 219.14% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 293.42% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 367.71% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 442% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 516.28% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 590.57% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 664.85% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 739.14% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce",
+        "■ Affects self.\nChange the weapon in use:\nCharge Time: 2 sec\nDamage: 813.42% of final ATK\nFull Charge Damage: 300% of damage\nMax Ammunition Capacity: 1 round(s)\nAdditional Effect: Pierce"
+      ]
+    }
+  ],
+  "dollskills": null
+}
