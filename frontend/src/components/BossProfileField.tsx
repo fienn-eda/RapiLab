@@ -18,6 +18,7 @@ import type { RaidRotation, RotationBoss } from '../types/raidRotation'
 import { BOSS_RANGE_BANDS, type BossRangeBand } from '../types/recommend'
 import type { NikkeElement } from '../types/supportedUnit'
 import { NumberField } from './fields/NumberField'
+import { ToggleChip } from './fields/ToggleChip'
 import { RaidRotationPicker } from './RaidRotationPicker'
 import { HelpTip } from './HelpTip'
 import { HelpText } from './HelpText'
@@ -327,103 +328,93 @@ export function BossProfileField({
             </select>
           </div>
 
-          {/* 설명 버튼이 <label> 밖에 있는 이유: 라벨 안에서는 아무 클릭이나
-              체크박스를 토글하므로, 설명을 열려던 클릭이 보스 설정을 바꾼다. */}
-          <div className="checkbox-row">
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={value.core_hittable}
-                onChange={(event) =>
-                  onChange({
-                    ...value,
-                    core_hittable: event.target.checked,
-                    // 코어를 못 때리면 뚫고 지나갈 것도 없다. 엔진도 두 값을 같이 읽지만,
-                    // 폼에서 모순 상태를 아예 만들지 않는 편이 화면이 정직하다.
-                    pierce_hits_body_behind_core:
-                      event.target.checked && value.pierce_hits_body_behind_core,
-                    // 코어를 못 때리면 크기도 의미가 없다. 값을 남겨 두면 화면에서
-                    // 사라진 칸이 계산에는 남는다.
-                    core_diameter_px: event.target.checked ? value.core_diameter_px : '',
-                  })
-                }
-              />
+          <div className="chip-row">
+            <ToggleChip
+              type="checkbox"
+              checked={value.core_hittable}
+              onChange={(checked) =>
+                onChange({
+                  ...value,
+                  core_hittable: checked,
+                  // 코어를 못 때리면 뚫고 지나갈 것도 없다. 엔진도 두 값을 같이 읽지만,
+                  // 폼에서 모순 상태를 아예 만들지 않는 편이 화면이 정직하다.
+                  pierce_hits_body_behind_core: checked && value.pierce_hits_body_behind_core,
+                  // 코어를 못 때리면 크기도 의미가 없다. 값을 남겨 두면 화면에서
+                  // 사라진 칸이 계산에는 남는다.
+                  core_diameter_px: checked ? value.core_diameter_px : '',
+                })
+              }
+              help={
+                <HelpTip label="코어 타격 가능">
+                  <HelpText>{HELP.boss.coreHittable}</HelpText>
+                </HelpTip>
+              }
+            >
               코어 타격 가능
-            </label>
-            <HelpTip label="코어 타격 가능">
-              <HelpText>{HELP.boss.coreHittable}</HelpText>
-            </HelpTip>
-          </div>
+            </ToggleChip>
 
-          <div className="checkbox-row">
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={value.pierce_hits_body_behind_core}
-                onChange={(event) =>
-                  onChange({
-                    ...value,
-                    pierce_hits_body_behind_core: event.target.checked,
-                    core_hittable: event.target.checked || value.core_hittable,
-                  })
-                }
-              />
+            <ToggleChip
+              type="checkbox"
+              checked={value.pierce_hits_body_behind_core}
+              onChange={(checked) =>
+                onChange({
+                  ...value,
+                  pierce_hits_body_behind_core: checked,
+                  core_hittable: checked || value.core_hittable,
+                })
+              }
+              help={
+                <HelpTip label="상시 코어 2관통">
+                  <HelpText>{HELP.boss.corePierce}</HelpText>
+                </HelpTip>
+              }
+            >
               상시 코어 2관통
-            </label>
-            <HelpTip label="상시 코어 2관통">
-              <HelpText>{HELP.boss.corePierce}</HelpText>
-            </HelpTip>
-          </div>
+            </ToggleChip>
 
-          <div className="checkbox-row">
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={value.part_destructible}
-                onChange={(event) =>
-                  onChange({ ...value, part_destructible: event.target.checked })
-                }
-              />
+            <ToggleChip
+              type="checkbox"
+              checked={value.part_destructible}
+              onChange={(checked) => onChange({ ...value, part_destructible: checked })}
+              help={
+                <HelpTip label="부위파괴 기믹">
+                  <HelpText>{HELP.boss.partDestructible}</HelpText>
+                </HelpTip>
+              }
+            >
               부위파괴 기믹
-            </label>
-            <HelpTip label="부위파괴 기믹">
-              <HelpText>{HELP.boss.partDestructible}</HelpText>
-            </HelpTip>
-          </div>
+            </ToggleChip>
 
-          <div className="checkbox-row">
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={value.spawns_adds}
-                onChange={(event) =>
-                  onChange({ ...value, spawns_adds: event.target.checked })
-                }
-              />
+            <ToggleChip
+              type="checkbox"
+              checked={value.spawns_adds}
+              onChange={(checked) => onChange({ ...value, spawns_adds: checked })}
+              help={
+                <HelpTip label="잡몹 생성">
+                  <HelpText>{HELP.boss.spawnsAdds}</HelpText>
+                </HelpTip>
+              }
+            >
               잡몹 생성
-            </label>
-            <HelpTip label="잡몹 생성">
-              <HelpText>{HELP.boss.spawnsAdds}</HelpText>
-            </HelpTip>
-          </div>
+            </ToggleChip>
 
-          {showElementalInterrupt && (
-            <div className="checkbox-row">
-              <label className="checkbox">
-                <input
-                  type="checkbox"
-                  checked={value.elemental_interrupt_required}
-                  onChange={(event) =>
-                    onChange({ ...value, elemental_interrupt_required: event.target.checked })
-                  }
-                />
+            {showElementalInterrupt && (
+              <ToggleChip
+                type="checkbox"
+                checked={value.elemental_interrupt_required}
+                onChange={(checked) =>
+                  onChange({ ...value, elemental_interrupt_required: checked })
+                }
+                help={
+                  <HelpTip label="속성저지 필수">
+                    <HelpText>{HELP.boss.elementalInterrupt}</HelpText>
+                  </HelpTip>
+                }
+              >
                 속성저지 필수
-              </label>
-              <HelpTip label="속성저지 필수">
-                <HelpText>{HELP.boss.elementalInterrupt}</HelpText>
-              </HelpTip>
-            </div>
-          )}
+              </ToggleChip>
+            )}
+          </div>
 
           {/* 거의 바꾸지 않는 값들이라 접어 둔다. 오류가 있을 때는 강제로 펼쳐
               제출을 막는 이유가 접힌 상자 안에 숨지 않게 한다. */}

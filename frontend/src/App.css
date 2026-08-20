@@ -1342,17 +1342,7 @@
   color: var(--text-muted);
 }
 
-.checkbox,
-.radio {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: 14px;
-}
-
-/* Carries the help button beside a checkbox instead of inside its label, where
-   a click meant for the help would toggle the box. */
-.checkbox-row,
+/* 라벨과 그 옆의 설명 버튼을 한 줄에 세운다. */
 .field__label-row {
   display: flex;
   align-items: center;
