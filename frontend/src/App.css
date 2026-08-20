@@ -1106,6 +1106,60 @@
   flex: 2;
 }
 
+/* Toggle chip ------------------------------------------------------------- */
+
+/* 켜고 끄는 칩. 라디오/체크박스를 .visually-hidden으로 숨기고 :has()로 칠하는
+   것은 .element-picker와 같은 구조다.
+
+   선택은 흰색으로 채운다. 이 팔레트에서 흰 채움은 「누르는 것」이고(index.css의
+   --primary) 칩은 실제로 누르는 것이다. 뱃지(.guide-badge)는 테두리만 쓰므로 한
+   화면에 같이 서도 갈린다 - 채움 = 누르는 것, 테두리 = 읽는 것.
+
+   --accent를 안 쓰는 이유: 기믹은 다중 선택이라 켜진 것이 셋이면 빨강이 셋 뜬다.
+   약점 칩이 accent를 써도 괜찮았던 것은 선택이 언제나 정확히 하나여서다. */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+/* 설명 버튼이 있는 칩만 오른쪽에 자리를 낸다 - 없으면 라벨이 상자를 다 쓴다. */
+.chip-toggle:has(.help-tip) {
+  padding-right: var(--sp-2);
+}
+
+.chip-toggle__label {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.chip-toggle:has(input:checked) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-contrast);
+}
+
+/* 흰 바닥 위에서는 설명 버튼의 회색 테두리와 글자가 사라진다. */
+.chip-toggle:has(input:checked) .help-tip__button {
+  color: var(--primary-contrast);
+  border-color: var(--primary-contrast);
+}
+
+.chip-toggle:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* Element picker ---------------------------------------------------------- */
 
 /* 보스의 약점을 코드 아이콘으로 고른다. 라디오 자체는 .visually-hidden으로 숨고,
