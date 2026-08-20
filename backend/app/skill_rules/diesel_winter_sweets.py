@@ -47,8 +47,13 @@ Modeled (DPS-relevant):
   encounter knows the times, bracketed when it does not.
   - `BossProfile.part_destruction_times` declared (2026-08-20): the
     `part_destroyed` trigger opens the skill's own 15s window at each time.
-    Fienn's solo-40 reading (1 · 61 · 126 s) is 45s of a 180s fight, which is
-    -2.91% on the deck total against the untimed reading below.
+    Fienn's solo-40 reading (3 · 63 · 128 s — egg cluster spawns at 2 · 62 ·
+    127 s and is destroyed one second later) is 45s of a 180s fight, which is
+    -2.91% on the deck total against the untimed reading below. That -2.91%
+    was measured on the earlier reading of the same three moments (1 · 61 ·
+    126 s, corrected 2026-08-20 for being 2s early); the windows still total
+    45s and still fall inside the fight, but the delta was not re-measured
+    after the shift.
   - destructible but untimed: applied permanently from battle start, on the
     reading that parts are destroyed often enough for the 15s window to read as
     continuous. That is the more generous half of the original bracket, and the

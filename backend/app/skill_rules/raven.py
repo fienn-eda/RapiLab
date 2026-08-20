@@ -41,8 +41,12 @@ encounter says so instead. Three cases, and the first two are the original
   skill text.
 - declared times (`BossProfile.part_destruction_times`, 2026-08-20): the
   `part_destroyed` trigger opens the same 15s window at each observed time.
-  Fienn's solo-40 reading (1 · 61 · 126 s) puts her at 45s of a 180s fight
-  instead of 15, worth +1.36% on the deck total.
+  Fienn's solo-40 reading (3 · 63 · 128 s — egg cluster spawns at 2 · 62 ·
+  127 s and is destroyed one second later) puts her at 45s of a 180s fight
+  instead of 15, worth +1.36% on the deck total. That +1.36% was measured on
+  the earlier reading of the same three moments (1 · 61 · 126 s, corrected
+  2026-08-20 for being 2s early); the windows still total 45s and still fall
+  inside the fight, but the delta was not re-measured after the shift.
 A.N. Mode's "Removes Single Point Attack" is deliberately NOT modeled: it would
 cut the buff during the burst, and we have no evidence Raven's rotation actually
 loses it there.

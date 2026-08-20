@@ -224,7 +224,7 @@ const timedRotation: RaidRotation = {
   raid: 'solo',
   title: '솔로 레이드 40시즌',
   bosses: [{ name: '사치스러운 거미', weakness: 'Fire', range_band: 'mid',
-             core_diameter_px: null, part_destruction_times: [1, 61, 126],
+             core_diameter_px: null, part_destruction_times: [3, 63, 128],
              spawns_adds: true, stated: {} }],
 }
 
@@ -322,7 +322,7 @@ describe('BossProfileField 회차 보스 피커', () => {
     await user.click(screen.getByRole('radio', { name: '작열사치스러운 거미' }))
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        part_destruction_times: '1, 61, 126',
+        part_destruction_times: '3, 63, 128',
         part_destructible: true,
       }),
     )
