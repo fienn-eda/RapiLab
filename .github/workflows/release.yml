@@ -35,9 +35,22 @@ jobs:
         run: python scripts/build_app.py --version ${{ github.ref_name }}
 
       # 내보내기 전에 얼린 것이 실제로 도는지 본다. 번들 경로, 버전 스탬프,
-      # 프로세스 풀은 얼렸을 때만 깨지는 것들이라 여기서만 잡힌다.
+      # 프로세스 풀, GUI 백엔드 적재는 얼렸을 때만 깨지는 것들이라 여기서만 잡힌다.
+      #
+      # **직접 호출하면 안 된다.** 이 exe는 windowed(console=False)라 셸이 기다리지
+      # 않고 종료 코드도 안 받는다 - `dist/RapiLab/RapiLab.exe --selftest`는
+      # 실패해도 항상 초록이었다. v0.1.0~v0.1.3이 그렇게 나갔다: 로그에는
+      # "FAIL: no units"가 찍혀 있는데 단계는 success였다. `-Wait -PassThru`가
+      # 진짜 종료 코드를 준다(실측: 직접 호출은 LASTEXITCODE가 비어 있고 이쪽은 1).
       - name: Smoke the built app
-        run: dist/RapiLab/RapiLab.exe --selftest
+        run: |
+          $app = Start-Process -FilePath dist\RapiLab\RapiLab.exe `
+                               -ArgumentList '--selftest' -Wait -PassThru
+          $log = "$env:LOCALAPPDATA\RapiLab\selftest.log"
+          if (Test-Path $log) { Get-Content $log }
+          if ($app.ExitCode -ne 0) {
+            throw "selftest failed (exit $($app.ExitCode)) - 위 로그를 볼 것"
+          }
 
       - name: Package
         run: Compress-Archive -Path dist/RapiLab -DestinationPath RapiLab-${{ github.ref_name }}.zip
