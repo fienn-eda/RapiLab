@@ -1761,6 +1761,7 @@ def _simulate_raid_once(
             heating_speed_percent_at=heating_speed_percent_at,
         )
         shot_times = [r.time for r in shot_records]
+        # 톡톡이를 저울질하는 유닛이 실제로 그 모드를 고른 매거진이 있었는지. 화면은
         # 「이 덱에서 어떻게 계산했는지」를 말해야 하는데, 그 답이 이제 유닛의 속성이
         # 아니라 **덱의 재장전 속도와 차속 창**에 달렸다. 어느 샷이 톡톡이인지는
         # 기록의 `is_tap_fire`가 답한다.
