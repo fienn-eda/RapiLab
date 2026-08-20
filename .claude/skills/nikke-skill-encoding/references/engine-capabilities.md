@@ -1346,12 +1346,21 @@ declares them. Two things gate membership:
 - **A stand-in pause is not good enough** when the verdict is close, and the
   tap interval needs its OWN measurement rather than riding on the pause (see
   above). Milk: Blooming Bunny is in — pause 21.889f (n=9, measured 2026-08-15)
-  and tap interval 14.810f (n=21, measured 2026-08-19). ⚠ **Her pause is an AUTO
-  reading and a candidate is played by hand**, so it is the wrong regime for the
-  full charges her mixed magazine still fires; her manual pause is unmeasured.
-  Substituting Ein's manual-equivalent 17.643f moves her steady-state DPS
-  160.56 → 163.04 and her tap-fire gain 10.76% → 7.74% (the cadence choice does
-  not move — her Pierce window forces one full charge per magazine).
+  and tap interval 14.810f (n=21, measured 2026-08-19). Her pause reading is an
+  AUTO one and **a candidate is played by hand**, so it was the wrong regime for
+  the full charges her mixed magazine still fires; since her manual pause is
+  unmeasured she now carries Ein's manual-equivalent 17.643f via
+  `registry.TAP_FIRE_MANUAL_MOTION_DELAY`, which moved her steady-state DPS
+  160.5569 → 163.0417 and her tap-fire gain 10.76% → 7.74% (the cadence choice
+  does not move — her Pierce window forces one full charge per magazine).
+- **A candidate needs a MANUAL pause, and that table overrides the timed one.**
+  `TAP_FIRE_MANUAL_MOTION_DELAY` is last in the `_CHARGE_MOTION_DELAY` merge for
+  exactly that reason: an auto reading is a real measurement of the wrong input.
+  Alice is absent from it because hers was manual from the start. What goes in
+  is `shot gap - FILE charge`, not the measured delay — the 3.5-frame gap
+  between them is the player's eyes-on-the-gauge reaction, and a tap has no such
+  term (nothing to watch), which is why a candidate's two numbers stay apart
+  (Milk: 17.643f pause against a 15f tap interval).
 - **Measuring her is not the same as admitting her.** Ein was the obvious next
   candidate (same SR weapon) and was fully timed on 2026-08-20 — and she stays
   OFF. Her Feather Shot grants herself Charge Damage on every Full Charge, so
