@@ -1357,6 +1357,23 @@ def get_burst_damage_type(slug):
 # the gap between damage numbers, which an RL grenade's travel time distorts
 # with distance. Each timing also checks itself: the shot-to-shot gap must come
 # out as charge time + delay.
+#
+# **These are AUTO-FIRE readings, deliberately** (Fienn's rule, 2026-08-20): in
+# combat the player can only work one of the five seats by hand, so auto fire is
+# what the other four do and it is the right default for this table. A manual
+# reading belongs here only for a unit the player IS working by hand - which
+# means a `TAP_FIRE_CANDIDATES` member, and Alice is the one such entry today.
+#
+# The two are far apart: Ein timed both on one account and read a 22.524f pause
+# on auto against 14.143f on manual (docs/measurements/ein-tap-fire.md). Reading
+# one as the other is an 8-frame error, so a new entry must say which it is.
+#
+# **What goes in the table is `shot gap - FILE charge`, not the delay you
+# measured.** The reading pairs the delay with the MEASURED charge while the
+# engine pairs it with the file value (`shot_interval_with_speed`), and a manual
+# reading's charge carries the player's eyes-on-the-gauge reaction - Ein's
+# measured charge runs 3.81 frames over her file value on manual against -0.54
+# on auto. Auto hides the distinction; manual does not.
 TIMED_CHARGE_MOTION_DELAY = {
     "snow-white-heavy-arms": CHARGE_MOTION_DELAY_SECONDS,   # 0.4
     "anchor-innocent-maid": 0.4,
@@ -1398,14 +1415,23 @@ TIMED_CHARGE_MOTION_DELAY = {
     # answer landing on the stand-in is why that number does not move.
     # docs/measurements/milk-blooming-bunny-charge.md.
     "milk-blooming-bunny": 22 / 60,
-    # 앨리스는 표에서 가장 짧다 - 22프레임 stand-in을 주면 안 된다는 반례이기도 하다
-    # (Fienn 프레임 판독 2026-08-19: 딜레이 n=12 평균 21.889가 아니라 **14.75**,
-    # sd 0.62, 범위 13~15). 같은 영상의 톡톡이 발사 간격이 15.38프레임인 것이
-    # 교차검증이다 - 앨리스에게서는 두 값이 같게 나왔다. (그것은 그녀에게서의
-    # 우연이며 밀크가 반증했다 - `TAP_FIRE_INTERVAL` 참고.) 자기 검산도
+    # 앨리스는 표에서 **유일한 수동 판독**이고, 그래서 가장 짧다 - 그녀가 톡톡이
+    # 후보라 손으로 치는 좌석이기 때문이다(위 규칙). 톡톡이 후보에게 22프레임 자동
+    # stand-in을 주면 안 된다는 반례이기도 하다(Fienn 프레임 판독 2026-08-19: 딜레이
+    # n=12 평균 **14.75**, sd 0.62, 범위 13~15). 같은 영상의 톡톡이 발사 간격
+    # 15.38프레임이 교차검증이고, **수동끼리라 맞는 것이다** - 아인이 같은 계정에서
+    # 수동 멈춤 14.143f와 톡톡이 간격 14.826f로 그 짝을 재현했다. 자기 검산도
     # 통과한다: 차지 87.92 + 딜레이 14.75 = 102.67 대 실측 발간격 101.73(0.95프레임).
     # docs/measurements/alice-tap-fire.md.
     "alice": 15 / 60,
+    # 아인: **자동사격** 판독. 실측 딜레이 22.524f(n=21, sd 0.906)이고 엔진 재현용
+    # 값 `발간격 77.952 - 파일차지 56 = 21.952f`가 정수 격자에서 22에 앉는다. 매거진
+    # 8발이 세 번 맞고 자기 검산은 0.030프레임 - 표에서 가장 단단한 판독이다.
+    # **stand-in과 같은 값이라 딜은 한 자리도 안 움직인다**; 바뀌는 것은 값의 지위이고
+    # 밀크가 2026-08-15에 같은 자리를 지났다. 그녀의 수동 멈춤 14.143f도 같은 문서에
+    # 있지만 여기 쓰지 않는다 - 톡톡이 후보가 아니라 자동으로 도는 좌석이다.
+    # docs/measurements/ein-tap-fire.md.
+    "ein": 22 / 60,
 }
 
 # Charge weapons Fienn has checked and found NO pause on. The engine's default
@@ -1448,11 +1474,17 @@ INFERRED_NO_CHARGE_MOTION_DELAY = frozenset()
 #
 # 22 frames is the value every FRAME-NUMBER reading agrees on - Bready (SR, 49
 # readings, checked against her charge and shot gap to 0.042 of a frame), Centi
-# (RL), and Milk (SR, 9 readings averaging 21.889). Those are the best-resolved
-# measurements in the table and they span both charge weapon classes, which is
-# why the stand-in comes from them rather than from the Full-Burst-clock
-# readings, whose 0.01-sec display skips 0.04 in places
-# (docs/measurements/bready-charge.md, milk-blooming-bunny-charge.md).
+# (RL), Milk (SR, 9 readings averaging 21.889) and now Ein (SR, 21 readings, an
+# interval-derived 21.952 that self-checks to 0.030 of a frame). Those are the
+# best-resolved measurements in the table and they span both charge weapon
+# classes, which is why the stand-in comes from them rather than from the
+# Full-Burst-clock readings, whose 0.01-sec display skips 0.04 in places
+# (docs/measurements/bready-charge.md, milk-blooming-bunny-charge.md,
+# ein-tap-fire.md).
+#
+# All four are AUTO-FIRE readings, which is what this stand-in is for - see the
+# convention note on `TIMED_CHARGE_MOTION_DELAY`. Handing it to a tap-fire
+# candidate, who is played by hand, is a different mistake and an 8-frame one.
 #
 # Milk is the one unit that was ever timed BECAUSE she carried this stand-in -
 # the sensitivity sweep put her at 3.07%, the largest of the seventeen - and she
@@ -1477,7 +1509,7 @@ _ASSUMED_CHARGE_MOTION_DELAY = frozenset()
 # the middle of the range, the real error is roughly half of it:
 #
 #     maiden-ice-rose 1.94%   eunhwa-tactical-upgrade 1.92%   laplace 1.27%
-#     ein 1.16%   rouge 1.12%   maxwell-ordinary-mechanic 0.94%
+#     rouge 1.12%   maxwell-ordinary-mechanic 0.94%
 #     d-killer-wife 0.81%   maxwell 0.80%   red-hood 0.69%   ada-wong 0.54%
 #     arcana 0.53%   diesel-winter-sweets-highlight 0.50%   dolla 0.46%
 #     takina-inoue 0.05%   diesel-winter-sweets-intro -0.13%
@@ -1490,6 +1522,10 @@ _ASSUMED_CHARGE_MOTION_DELAY = frozenset()
 #
 # Milk: Blooming Bunny is the one left out of this table at 3.07%, and she is
 # what `_ASSUMED_CHARGE_MOTION_DELAY` now holds alone.
+#
+# 아인(1.16%)은 이 표에 있었으나 2026-08-20에 실측됐다 - 자동사격 답이 stand-in과 같은
+# 22프레임이었다. 즉 이 표의 논거("재도 숫자가 안 바뀐다")를 한 번 더 확인해 준 셈이다.
+# docs/measurements/ein-tap-fire.md.
 STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY = frozenset({
     "ada-wong",
     "arcana",
@@ -1497,7 +1533,6 @@ STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY = frozenset({
     "diesel-winter-sweets-highlight",
     "diesel-winter-sweets-intro",
     "dolla",
-    "ein",
     "eunhwa-tactical-upgrade",
     "laplace",
     "laplace-signature",
@@ -1528,20 +1563,29 @@ def get_charge_motion_delay(slug):
 
 # 매거진마다 **톡톡이와 풀차지를 저울질할** 유닛.
 #
-# 톡톡이는 차지를 시작하자마자 방아쇠를 놓는 조작이다. 그 샷은 게이지를 전혀 안 채우고
-# (Fienn 실측 2026-08-19: 게이지가 오르는 첫 프레임과 발사 프레임이 같다) 대미지는
-# 게이지 퍼센트에 정확히 비례하므로, **톡톡이 샷의 배율은 정확히 100%**다. 대신 발
-# 간격이 차지를 뺀 멈춤 하나로 줄어든다.
+# 톡톡이는 차지를 시작하자마자 방아쇠를 놓는 조작이다. 대미지는 HUD 게이지 퍼센트에
+# 정확히 비례하고 발사에 필요한 최소 게이지가 103%이므로 **톡톡이 샷의 배율은 103%**다
+# (`attack_rate.TAP_FIRE_CHARGE_BONUS`). 대신 발 간격이 차지를 뺀 멈춤 하나로 줄어든다.
 #
-# **톡톡이 간격은 멈춤에서 유도할 수 없다.** 한동안 이 자리에는 「톡톡이 간격은 새로
-# 잴 값이 아니라 그 유닛의 `TIMED_CHARGE_MOTION_DELAY`(멈춤) 그 자체 - 차지가 0이니
-# 남는 것이 멈춤뿐」이라고 적혀 있었고, 앨리스에게서 두 값이 같게 나온 것(14.75f /
-# 15.38f)이 그 근거였다. **밀크가 그것을 반증했다** - 그녀의 멈춤은 21.889f(n=9)인데
-# 톡톡이 간격은 14.810f(n=21)로, 두 평균이 약 16시그마 떨어져 있다. 앨리스에서의
-# 일치는 우연이었고, 밀크에게 그 법칙을 적용하면 발수를 32% 과소평가한다
-# (참 발수가 그 추정의 1.48배다).
-# 그래서 톡톡이 간격은 아래 `TAP_FIRE_INTERVAL`이 따로 든다
-# (docs/measurements/milk-blooming-bunny-tap-fire.md).
+# **톡톡이 간격은 `TIMED_CHARGE_MOTION_DELAY`에서 유도할 수 없다 - 두 표가 서로 다른
+# 조작을 재고 있기 때문이다.** 멈춤 표는 **자동사격** 값이고(5명 중 1명만 손으로 치므로
+# 나머지 넷은 자동이다), 톡톡이 간격은 정의상 **수동** 값이다.
+#
+# 한동안 이 자리에는 밀크가 「멈춤 21.889f 대 톡톡이 14.810f, 약 16시그마」로 그 유도를
+# 반증했고 앨리스의 일치(14.75f / 15.38f)는 우연이었다고 적혀 있었다. **아인이 같은
+# 계정에서 두 조작을 다 재서 원인을 갈랐다** - 자동 멈춤 22.524f · 수동 멈춤 14.143f ·
+# 톡톡이 간격 14.826f다. 밀크의 16시그마는 유닛별 사실이 아니라 **자동 대 수동**이었고,
+# 앨리스의 일치는 우연이 아니라 **그녀의 멈춤만 수동으로 쟀기 때문**이다(그녀는 톡톡이
+# 후보다). 두 표를 따로 드는 결론은 그대로지만 이유가 다르므로 **무엇을 재야 하는지도
+# 다르다** - 톡톡이 후보에게는 수동 멈춤을 재야 한다
+# (docs/measurements/ein-tap-fire.md, milk-blooming-bunny-tap-fire.md).
+#
+# ⚠ **그래서 밀크가 지금 어긋나 있다.** 후보라는 것은 그녀를 손으로 친다는 뜻인데
+# `optimal_full_charges`에 넘어가는 풀차지 멈춤은 그녀의 **자동** 값 22프레임이다
+# (`attack_rate`의 호출부가 `charge_motion_delay`를 그대로 넘긴다). 그녀의 수동 멈춤은
+# 아직 안 쟀다. 아인의 수동 환산값 17.643f를 대입해 보면 정상상태 DPS가 160.56 →
+# 163.04로 오르고 톡톡이 이득이 10.76% → 7.74%로 줄어든다 - 케이던스 선택 자체는 안
+# 바뀐다(Pierce 창이 매거진당 풀차지 1발을 강제한다). **실측 전까지는 건드리지 않는다.**
 #
 # 실측이 없는 유닛은 여전히 멈춤으로 대신한다 - 그것이 지금까지의 동작이고, 값을
 # 모른다는 사실이 후보 자격을 막는 것은 `TAP_FIRE_CANDIDATES`가 옵트인이라는 사실
@@ -1550,7 +1594,8 @@ TAP_FIRE_INTERVAL = {
     # 앨리스: 톡톡이 발 간격 15.38f(n=8) - 그녀의 멈춤 14.75f와 같은 15프레임에 앉는다
     # (docs/measurements/alice-tap-fire.md).
     "alice": 15 / 60,
-    # 밀크: 14.810f(n=21, sd 0.602, 13~16). 그녀의 멈춤 22프레임과 **다른 값**이다.
+    # 밀크: 14.810f(n=21, sd 0.602, 13~16). 그녀의 표 안 멈춤 22프레임과 다른 값인데,
+    # 그 22프레임이 **자동** 판독이기 때문이다 - 위 절 참고.
     "milk-blooming-bunny": 15 / 60,
 }
 
@@ -1590,8 +1635,15 @@ def get_full_charge_window(slug):
 # 그 구간이 10초에 40발이 나오는 곳이다.
 #
 # 옵트인인 이유는 톡톡이 간격이 **유닛마다 따로 재야 하는 값**이기 때문이다. 앨리스와
-# 밀크는 실측이 있어 켠다. 아인 등 나머지 SR은 멈춤조차 22프레임 stand-in이고 톡톡이
+# 밀크는 실측이 있어 켠다. 나머지 SR은 멈춤조차 22프레임 자동 stand-in이고 톡톡이
 # 간격은 아예 재지 않았으므로, 켜면 두 겹의 미측정 위에서 모드가 갈린다.
+#
+# **아인은 재고도 안 켠다** (2026-08-20). 그녀의 톡톡이 간격 15프레임은 실측됐지만 그
+# 값으로 계산하면 풀차지가 이긴다 - 그녀는 Full Charge마다 자기에게 Charge Damage를
+# 걸어(Feather Shot) **풀차지가 스스로 사슬을 잇는 유일한 후보**이고, 톡톡이 한 발이 그
+# 사슬을 끊는다(Fienn 실측: 풀차지 → 톡톡이 → 풀차지에서 게이지가 343% → 274%로
+# 되돌아온다). 사슬이 유지되는 상태에서 풀차지 +4.1%, 버스트 창에서 +44.8%이고, 버프
+# 없는 상태는 전투 첫 발에만 존재한다. docs/measurements/ein-tap-fire.md.
 TAP_FIRE_CANDIDATES = frozenset({"alice", "milk-blooming-bunny"})
 
 

@@ -21,6 +21,7 @@ from app.skill_rules.registry import (  # noqa: E402
     TIMED_CHARGE_MOTION_DELAY,
     _ASSUMED_CHARGE_MOTION_DELAY,
     get_charge_motion_delay,
+    is_tap_fire_candidate,
 )
 
 
@@ -35,6 +36,18 @@ def test_milk_is_timed_at_the_frame_her_reading_lands_on():
     the stand-in carries - so registering her moves no damage, and the point of
     the entry is that it is now a measurement rather than a guess."""
     assert TIMED_CHARGE_MOTION_DELAY["milk-blooming-bunny"] == 22 / 60
+
+
+def test_ein_carries_her_auto_reading_and_not_her_manual_one():
+    """아인은 자동으로 도는 좌석이라 표에 들어갈 값이 자동 판독이다.
+
+    같은 계정에서 두 조작을 다 쟀고 **8.4프레임** 벌어졌다 - 자동 22.524f, 수동
+    14.143f(docs/measurements/ein-tap-fire.md). 수동 쪽이 더 정밀해 보이지만 그것은
+    **손으로 치는 좌석에만** 해당하고, 그런 좌석은 `TAP_FIRE_CANDIDATES`뿐이다.
+    이 테스트는 누가 "더 잘 잰 값"이라며 수동 판독으로 갈아끼우면 깨진다.
+    """
+    assert TIMED_CHARGE_MOTION_DELAY["ein"] == 22 / 60
+    assert not is_tap_fire_candidate("ein")
 
 
 def test_the_two_stand_in_groups_are_disjoint():
