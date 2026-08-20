@@ -58,6 +58,7 @@ import { EvaluationResults } from './EvaluationResults'
 import { RaidResults } from './RaidResults'
 import { SaveRunButton } from './SaveRunButton'
 import { SavedRunList } from './SavedRunList'
+import { SeasonGuideCard } from './SeasonGuideCard'
 import { ToggleChip } from './fields/ToggleChip'
 import { UnitPalette, type UnitInvestment } from './UnitPalette'
 import { HELP } from '../lib/helpText'
@@ -805,6 +806,10 @@ export function RecommendPanel({
 
   // 실행 버튼은 두 자리 중 하나에 선다 - 아래 폼을 볼 것. 내용물은 같으므로
   // 여기서 한 번만 만든다.
+  // 보스 카드 피커와 가이드 카드가 같은 회차를 본다 - 두 번 계산하면 둘이
+  // 다른 회차를 가리키는 날이 온다.
+  const soloRotation = latestRotationFor(rotations, 'solo')
+
   const actionButtons = (
     <>
       <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
@@ -845,64 +850,69 @@ export function RecommendPanel({
       </header>
 
       <form onSubmit={handleSubmit} className="recommend-form">
-        {/* Everything needed to CONFIGURE a run sits in one row: the boss on
-            the left, the mode choice on the right. The boss fields used
-            to close the form instead, 2040px below the button that acts on
-            them with the whole 70-chip palette in between - so the input that
-            moves the answer most (Element) was the one a player never scrolled
-            to, and a minute of simulation ran against a default nobody chose. */}
+        {/* 왼쪽은 내가 고르는 것(보스 설정 · 모드), 오른쪽은 내가 읽는 것
+            (시즌 가이드). 실행에 필요한 설정이 전부 이 한 줄에 있다.
+
+            보스 칸이 폼 끝에 있던 시절에는 그것을 누르는 버튼에서 2040px 아래,
+            70개짜리 팔레트 너머에 있었다 - 답을 가장 크게 움직이는 입력(속성)이
+            플레이어가 한 번도 스크롤해 닿지 않는 자리였고, 아무도 고르지 않은
+            기본값에 대고 1분짜리 시뮬레이션이 돌았다. */}
         <div className="recommend-form__setup">
-          <BossProfileField
-            value={draft}
-            errors={touched ? errors : {}}
-            onChange={setDraft}
-            rotation={latestRotationFor(rotations, 'solo')}
-            defaultEnemyDef={SOLO_RAID_DEFAULT_ENEMY_DEF}
-            defaultCollapsed
-          />
+          <div className="recommend-form__controls">
+            <BossProfileField
+              value={draft}
+              errors={touched ? errors : {}}
+              onChange={setDraft}
+              rotation={soloRotation}
+              defaultEnemyDef={SOLO_RAID_DEFAULT_ENEMY_DEF}
+              defaultCollapsed
+            />
 
-          <fieldset className="group">
-            <legend className="group__legend">모드</legend>
-            {/* 네 문장을 전부 세워 두면 세로가 길어지고, 정작 지금 무엇을
-                하려는지는 고른 하나가 답한다. 그래서 힌트는 선택된 모드의 것만
-                칩 줄 아래 한 줄로 선다. */}
-            <div className="chip-row">
-              {RECOMMEND_MODES.map((option) => (
-                <ToggleChip
-                  key={option}
-                  type="radio"
-                  name="recommend-mode"
-                  checked={mode === option}
-                  onChange={() => switchMode(option)}
-                >
-                  {MODE_LABEL[option]}
-                </ToggleChip>
-              ))}
-            </div>
-            <p className="mode-switch__hint group__hint">
-              <HelpText>{MODE_HINT[mode]}</HelpText>
-            </p>
-
-            {mode !== 'single' && (
-              <div className="field">
-                <label className="field__label" htmlFor={numDecksId}>
-                  덱 개수
-                </label>
-                <select
-                  id={numDecksId}
-                  className="field__input"
-                  value={numDecks}
-                  onChange={(event) => setNumDecks(Number(event.target.value))}
-                >
-                  {NUM_DECKS_OPTIONS.map((n) => (
-                    <option key={n} value={n} disabled={n < nonEmptyDeckCount}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
+            <fieldset className="group">
+              <legend className="group__legend">모드</legend>
+              {/* 네 문장을 전부 세워 두면 세로가 길어지고, 정작 지금 무엇을
+                  하려는지는 고른 하나가 답한다. 그래서 힌트는 선택된 모드의 것만
+                  칩 줄 아래 한 줄로 선다. */}
+              <div className="chip-row">
+                {RECOMMEND_MODES.map((option) => (
+                  <ToggleChip
+                    key={option}
+                    type="radio"
+                    name="recommend-mode"
+                    checked={mode === option}
+                    onChange={() => switchMode(option)}
+                  >
+                    {MODE_LABEL[option]}
+                  </ToggleChip>
+                ))}
               </div>
-            )}
-          </fieldset>
+              <p className="mode-switch__hint group__hint">
+                <HelpText>{MODE_HINT[mode]}</HelpText>
+              </p>
+
+              {mode !== 'single' && (
+                <div className="field">
+                  <label className="field__label" htmlFor={numDecksId}>
+                    덱 개수
+                  </label>
+                  <select
+                    id={numDecksId}
+                    className="field__input"
+                    value={numDecks}
+                    onChange={(event) => setNumDecks(Number(event.target.value))}
+                  >
+                    {NUM_DECKS_OPTIONS.map((n) => (
+                      <option key={n} value={n} disabled={n < nonEmptyDeckCount}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </fieldset>
+          </div>
+
+          <SeasonGuideCard rotation={soloRotation} boss={draft} />
         </div>
 
         {/* 덱 컬럼이 없는 모드의 실행 버튼. 자기가 작용하는 보스·모드 설정

@@ -1093,6 +1093,21 @@ describe('RecommendPanel mode switch', () => {
     expect(screen.getByText('속성저지 파훼 불가')).toBeInTheDocument()
   })
 
+  // 가이드 카드는 보스 설정과 같은 줄에 서고, 뱃지는 그 설정에서 파생된다 -
+  // 손으로 다시 적지 않으므로 실제 계산 입력과 어긋날 수 없다.
+  it('보스 설정에서 켠 기믹이 가이드 카드의 뱃지가 된다', async () => {
+    const user = userEvent.setup()
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+
+    const guide = screen.getByRole('region', { name: /가이드/ })
+    expect(within(guide).queryByText('잡몹 생성')).not.toBeInTheDocument()
+
+    await expandBossProfile(user)
+    await user.click(screen.getByLabelText('잡몹 생성'))
+
+    expect(within(guide).getByText('잡몹 생성')).toBeInTheDocument()
+  })
+
   it('선택된 모드의 설명만 보인다', async () => {
     const user = userEvent.setup()
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
