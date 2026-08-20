@@ -1259,6 +1259,22 @@ that shot is (docs/measurements/alice-tap-fire.md):
   new default, and it is only ever safe to READ, never to assume, that the two
   agree.
 
+- **"Tap fire" names the INPUT, not the multiplier — a fast enough charge speed
+  makes the same input produce a FULL charge.** Alice is where the two axes come
+  apart: inside her burst window the charge is driven to **0 frames** (Wonderland
+  80.15% + overload 8.96%, then Skill 1's caster-based 0.17505 sec erasing the
+  remainder), so a tapped trigger already reads 383%. The engine expresses this as
+  "full charge wins here": with a zero charge, the tap and the full charge take the
+  **same** interval (the 15-frame pause), so `tap_fire_wins` picks the larger
+  multiplier. Probed across her charge-speed conditions (2026-08-20): she scores
+  all-full-charge in every one of them at stock reload, and still all-full-charge
+  inside the burst window even in a deck that removes the reload entirely — that
+  deck taps only OUTSIDE the window. **So the 103% floor never understates her**;
+  had the engine tapped that window it would have scored 1.03 instead of 3.83.
+  It also means the UI's "always tap fire" copy does not contradict the engine
+  scoring full charges there — the copy describes the hand, the engine computes
+  the multiplier.
+
 **Only the two endpoints can ever be optimal — for a single magazine fired in
 one mode.** Damage is linear in the hold and the interval is that hold plus a
 constant, so `multiplier(h) / (h + delay)` has a derivative whose SIGN does not
