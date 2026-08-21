@@ -100,6 +100,14 @@ export function DeckCard({
           )
         })}
       </ol>
+      {/* 0이면 아무것도 안 그린다 — 대부분의 덱이 0이라 「없음」을 그리면 잡음이
+          된다. 옛 SavedRun에는 필드가 아예 없고, 그때도 이 비교가 거짓이다. */}
+      {(deck.gauge_bound_cycles ?? 0) > 0 && (
+        <p className="deck-results__gauge-bound" title={HELP.results.gaugeBoundTitle}>
+          <span aria-hidden="true">🔋</span>{' '}
+          버충 밀림 {deck.gauge_bound_cycles}/{deck.total_cycles} 사이클
+        </p>
+      )}
       {deck.hold_burst_slugs.length > 0 && (
         <p className="deck-results__hold">
           <span aria-hidden="true">⏳</span>{' '}

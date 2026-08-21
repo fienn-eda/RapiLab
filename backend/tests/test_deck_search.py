@@ -651,6 +651,30 @@ def test_a_summary_names_the_seats_the_player_has_to_hold():
     assert behind["hold_burst_slugs"] == []
 
 
+def test_a_summary_reports_how_many_cycles_the_gauge_held_up():
+    """**버충 밀림** - 쿨은 돌았는데 게이지가 안 차서 못 쓴 사이클 수와, 그
+    전투가 완주한 사이클 수. 추천을 믿을지 말지는 유저가 판단할 몫이고,
+    판단하려면 이 둘이 화면까지 가야 한다.
+
+    분모는 **완주한 창의 수**다 - `full_burst_end`를 센다. 이벤트 개수나
+    `full_burst_start` 수를 세는 구현은 이 픽스처에서 각각 5와 0을 낸다.
+    """
+    from app import deck_search
+    result = {
+        "total_damage": 1.0, "damage_log": [], "gauge_bound_cycles": 2,
+        "events": [{"type": "burst", "tier": 1, "time": 0.0, "gauge_bound": True},
+                   {"type": "full_burst_end", "time": 10.0},
+                   {"type": "full_burst_end", "time": 25.0},
+                   {"type": "full_burst_end", "time": 40.0}],
+    }
+
+    summary = deck_search._summarize(
+        [FakeUnit("a", 1), FakeUnit("b", 2), FakeUnit("c", 3)], result)
+
+    assert summary["gauge_bound_cycles"] == 2
+    assert summary["total_cycles"] == 3
+
+
 def test_a_taste_variant_needs_a_deck_that_induces_it():
     """Bready enters Lingering Taste by RECEIVING a buff that increases
     sustained damage ("Activates when gaining a buff that increases sustained

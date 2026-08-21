@@ -79,6 +79,7 @@ def test_feasible_roster_returns_ranked_decks_and_exclusions():
         "deck", "total_damage", "burst_damage", "normal_attack_damage", "skill_damage",
         "hold_burst_slugs", "tap_fire_slugs", "partial_charge_slugs",
         "partial_charge_full_rounds", "seating",
+        "gauge_bound_cycles", "total_cycles",
     }
     assert len(first["deck"]) == 5
     parts = first["burst_damage"] + first["normal_attack_damage"] + first["skill_damage"]
@@ -122,11 +123,30 @@ def test_recommend_raid_partitions_roster_and_reports_leftovers():
         "deck", "total_damage", "burst_damage", "normal_attack_damage", "skill_damage",
         "hold_burst_slugs", "tap_fire_slugs", "partial_charge_slugs",
         "partial_charge_full_rounds", "pinned_slugs", "seating",
+        "gauge_bound_cycles", "total_cycles",
     }
     assert sorted(deck["deck"]) == sorted(FEASIBLE)
     assert deck["pinned_slugs"] == []
     assert body["leftover_slugs"] == []
     assert body["combined_total_damage"] == deck["total_damage"]
+
+
+def test_the_gauge_bound_count_survives_the_route():
+    """**응답 모델에 없는 키는 라우트가 조용히 지운다.** 엔진이 값을 실어도
+    화면에는 안 도착하고, 백엔드 테스트는 「없음과 없음」을 비교해 초록이 된다 -
+    이 저장소가 이미 그렇게 당했다.
+
+    그래서 여기서는 라우트를 실제로 통과한 **JSON**을 본다. 분모가 0이 아닌
+    것까지 보는 이유는, 필드만 선언하고 배선을 안 한 구현이 기본값 0/0으로
+    통과하기 때문이다.
+    """
+    roster = [_nikke(slug) for slug in FEASIBLE]
+    body = client.post("/api/recommend",
+                       json={"roster": roster, "boss": BOSS, "top_n": 1}).json()
+
+    deck = body["decks"][0]
+    assert deck["total_cycles"] > 0
+    assert 0 <= deck["gauge_bound_cycles"] <= deck["total_cycles"]
 
 
 def test_recommend_raid_infeasible_is_422_naming_exclusions():

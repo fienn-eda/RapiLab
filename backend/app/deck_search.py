@@ -707,6 +707,14 @@ def _summarize(ordered_deck, result):
         # above to be the one they get. Empty for every other deck. Same
         # contract as hold_burst_slugs: the deck alone does not carry it.
         "seating": result.get("seating", {}),
+        # 쿨은 돌았는데 게이지가 안 차서 버스트를 못 쓴 사이클 수(**버충 밀림**).
+        # 게이지가 덱 속성이 된 이상 이 수가 곧 「이 편성이 실전에서 밀리는가」다.
+        # 분모는 이 전투가 완주한 사이클 전부이고, 분자는 그중 첫 사이클을 뺀
+        # 나머지에서만 나온다 - 첫 사이클엔 돌고 있던 쿨다운이 없어 밀릴 것이
+        # 없다(`raid_simulator`의 계수 참조).
+        "gauge_bound_cycles": result.get("gauge_bound_cycles", 0),
+        "total_cycles": sum(1 for e in result.get("events", ())
+                            if e["type"] == "full_burst_end"),
         "result": result,
     }
 

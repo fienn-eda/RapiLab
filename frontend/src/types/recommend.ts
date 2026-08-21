@@ -83,6 +83,15 @@ export interface DeckRecommendation {
   // hold_burst_slugs와 다르다: 자리는 버스트 우선순위와 **다른 축**이라 애초에
   // 목록이 표현하는 것이 아니다.
   seating: Record<string, SeatingEntry>
+  // 쿨타임은 돌았는데 게이지가 안 차서 버스트를 못 쓴 사이클 수와, 이 전투가
+  // 완주한 사이클 수. 「게이지가 병목인 사이클」이 아니다 — 게이지와 쿨타임이
+  // 같은 시각이면 게이지가 없었어도 같은 때 터졌으므로 세지 않는다.
+  //
+  // 옵셔널인 이유는 백엔드가 안 보내서가 아니라(항상 보낸다) 이 브랜치 이전에
+  // 저장한 SavedRun의 localStorage JSON에 이 필드가 없기 때문이다 —
+  // partial_charge_full_rounds가 같은 자리다.
+  gauge_bound_cycles?: number
+  total_cycles?: number
 }
 
 export interface SeatingEntry {

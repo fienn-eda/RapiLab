@@ -893,23 +893,6 @@ def _resolve_conditional_fb_deltas(context, events, conditional_full_burst_delta
     return resolved
 
 
-def _cycle_gap(events, cycle_index):
-    """사이클 `cycle_index`가 직전 풀 버스트의 종료로부터 실제로 얼마나 뒤에
-    시작했는가 - 게이지 하한에 붙었는지(Fienn의 용어로 **버충 밀림**)를 가리는 값.
-
-    끝을 티어 1의 발동으로 재는 것은 스케줄러가 `fire_time`을 그 시각으로 잡기
-    때문이다: 창은 티어 갭과 `FULL_BURST_OPEN_DELAY`만큼 더 뒤에 열린다.
-
-    전투 안에서 일어나지 않은 사이클은 무한대다 - 채움 시간은 쟀지만 그 사이클이
-    없으므로 게이지가 무엇을 막았다고 말할 수 없다."""
-    ends = [e["time"] for e in events if e["type"] == "full_burst_end"]
-    tier1_fires = [e["time"] for e in events
-                   if e["type"] == "burst" and e["tier"] == 1]
-    if cycle_index <= 0 or cycle_index >= len(tier1_fires):
-        return float("inf")
-    return tier1_fires[cycle_index] - ends[cycle_index - 1]
-
-
 def simulate_raid(*args, **kwargs):
     """한 번의 레이드 시뮬레이션. 대부분의 덱에서는 `_simulate_raid_once`를 정확히
     한 번 부르는 것과 같다.
@@ -2597,11 +2580,18 @@ def _simulate_raid_once(
         skill_hits_by_slug=_gauge_skill_hits(damage_log),
         speed_multiplier_at=gauge_fill_speed_at)
     result["gauge_charge_times"] = resolved_gauge
-    # 쿨은 돌았는데 게이지가 안 차서 기다린 사이클 수(**버충 밀림**). 간격이
-    # 게이지와 같으면 게이지가 정한 것이고, 더 길면 쿨다운이 정한 것이다.
+    # 쿨은 돌았는데 게이지가 안 차서 기다린 사이클 수(**버충 밀림**). 스케줄러가
+    # 사이클마다 선언한 것을 세기만 한다 - 실현된 간격에서 되유도하면 게이지와
+    # 쿨다운이 같은 시각인 사이클(아무것도 밀리지 않은 사이클)까지 구속으로
+    # 세어진다.
+    #
+    # 첫 사이클은 빼고 센다: 그 사이클엔 돌고 있던 쿨다운이 아예 없어 게이지가
+    # 유일한 시작 조건이므로, 세면 모든 덱에 상수 1이 붙는다. 그 사이클의 게이지는
+    # 덱이 넣은 타격이 아니라 보스의 기본값이기도 하다(`gauge_charge_times`의
+    # 키가 1부터인 것과 같은 이유).
+    tier1_bursts = [e for e in events if e["type"] == "burst" and e["tier"] == 1]
     result["gauge_bound_cycles"] = sum(
-        1 for cycle_index, seconds in resolved_gauge.items()
-        if seconds >= _cycle_gap(events, cycle_index) - 1e-6)
+        1 for e in tier1_bursts[1:] if e["gauge_bound"])
     return (result,
             _resolve_conditional_fb_deltas(
                 context, events, conditional_full_burst_deltas),

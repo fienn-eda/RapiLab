@@ -142,6 +142,11 @@ def simulate_burst_cycle(
     MG 예열이 창 안 어디에 떨어지느냐가 그 사이클의 채움 속도를 정한다.
     이 스케줄러는 값이 어디서 왔는지 모른다. raid_simulator가 고정점까지
     반복하며 이 표를 갱신한다.
+
+    각 "burst" 이벤트는 `gauge_bound`를 달고 나온다 - 그 사이클의 발동 시각을
+    **게이지가 정했는가**(쿨다운보다 늦게 준비됐는가)다. 등호는 거짓이다.
+    이 자리에서만 알 수 있어서 여기서 싣는다: 이벤트 로그의 시각만으로는
+    게이지와 쿨다운이 같은 사이클을 게이지가 이긴 사이클과 구별할 수 없다.
     """
     gap = 0.0 if mode == "auto" else 0.1
     last_used_at = {member["slug"]: float("-inf") for member in deck}
@@ -190,6 +195,13 @@ def simulate_burst_cycle(
             break
 
         fire_time = max(gauge_ready, *tier_ready_time.values())
+        # 게이지가 이 사이클을 **밀었는가** - 쿨다운은 전부 돌았는데 게이지가 아직
+        # 안 차서 기다린 사이클(Fienn의 용어로 **버충 밀림**). 등호는 밀림이
+        # 아니다: 두 시각이 같으면 게이지가 없었어도 같은 때 터졌으므로 아무것도
+        # 밀리지 않았다. `max()`를 고르는 이 자리가 어느 쪽이 이겼는지 아는
+        # 유일한 자리라 여기서 선언한다 - 나중에 실현된 간격에서 되유도하면
+        # 그 동점을 다시 가려낼 수 없다.
+        gauge_bound = gauge_ready > max(tier_ready_time.values())
 
         if fire_time >= fight_duration:
             break
@@ -208,7 +220,10 @@ def simulate_burst_cycle(
                              fire_count, stunned_until) <= fire_time
             ]
             chosen = eligible[0]
-            events.append({"type": "burst", "tier": tier, "slug": chosen["slug"], "time": fire_time})
+            # `gauge_bound`는 사이클의 성질이라 그 사이클의 세 버스트가 모두
+            # 같은 값을 단다 - 셋이 함께 밀린 것이지 하나만 밀린 것이 아니다.
+            events.append({"type": "burst", "tier": tier, "slug": chosen["slug"],
+                           "time": fire_time, "gauge_bound": gauge_bound})
             last_used_at[chosen["slug"]] = fire_time
             last_fired_at[chosen["slug"]] = fire_time
             fire_count[chosen["slug"]] += 1

@@ -247,3 +247,34 @@ describe('DeckCard 보스 설정', () => {
     expect(screen.queryByText(/약점/)).not.toBeInTheDocument()
   })
 })
+
+describe('DeckCard 버충 밀림', () => {
+  // 게이지가 덱 속성이 된 뒤로 이 숫자가 「이 편성이 실전에서 밀리는가」를 말하는
+  // 유일한 자리다. 총딜만 보면 밀린 **결과**는 보여도 밀렸다는 **사실**은 안 보인다.
+  it('밀린 사이클이 있으면 그 수를 분모와 함께 말한다', () => {
+    render(
+      <DeckCard label="덱 1" deck={{ ...DECK, gauge_bound_cycles: 11, total_cycles: 14 }} />,
+    )
+
+    expect(screen.getByText(/버충 밀림 11\/14 사이클/)).toBeInTheDocument()
+  })
+
+  // 0이면 아무것도 안 그린다 - 대부분의 덱이 0이라 「없음」을 그리면 카드마다
+  // 붙는 잡음이 된다.
+  it('밀린 사이클이 0이면 줄 자체를 안 그린다', () => {
+    render(
+      <DeckCard label="덱 1" deck={{ ...DECK, gauge_bound_cycles: 0, total_cycles: 14 }} />,
+    )
+
+    expect(screen.queryByText(/버충 밀림/)).not.toBeInTheDocument()
+  })
+
+  // 옛 SavedRun에는 이 필드가 아예 없다(partial_charge_full_rounds와 같은 자리).
+  // `undefined > 0`은 거짓이라 줄이 안 그려지는 것이 맞고, 분모 자리에 undefined가
+  // 새어 나오는 일도 없어야 한다.
+  it('옛 저장본처럼 필드가 없어도 안 터지고 줄을 안 그린다', () => {
+    render(<DeckCard label="덱 1" deck={DECK} />)
+
+    expect(screen.queryByText(/버충 밀림/)).not.toBeInTheDocument()
+  })
+})

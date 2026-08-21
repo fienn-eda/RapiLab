@@ -85,6 +85,57 @@ def test_second_cycle_waits_for_the_slowest_tiers_cooldown_instead_of_missing():
     assert starts == [5.0 + FULL_BURST_OPEN_DELAY, 25.0 + FULL_BURST_OPEN_DELAY]
 
 
+def _tier1_bursts(events):
+    return [e for e in events if e["type"] == "burst" and e["tier"] == 1]
+
+
+def test_a_cycle_is_gauge_bound_only_when_the_gauge_opens_after_every_cooldown():
+    """`gauge_bound`은 그 사이클의 발동 시각을 **게이지가 정했는가**다.
+
+    쿨다운 1초짜리 덱은 창이 닫히자마자 준비되므로 게이지가 늦고, 40초짜리
+    덱은 게이지가 아무리 빨라도 쿨다운을 못 이긴다. 두 방향을 같이 재는 이유는
+    한쪽만 재면 상수를 돌려주는 구현이 통과하기 때문이다.
+    """
+    def flags(cooldown):
+        deck = [{"slug": f"u{tier}", "burst_tier": tier, "cooldown": cooldown}
+                for tier in (1, 2, 3)]
+        return [e["gauge_bound"] for e in _tier1_bursts(simulate_burst_cycle(
+            deck, gauge_charge_time=5.0, fight_duration=60.0, mode="auto"))]
+
+    assert all(flags(1.0)), "쿨은 다 돌았고 게이지만 남았으면 게이지가 민 것이다"
+    # 첫 사이클은 예외 없이 게이지가 정한다 - 돌고 있던 쿨다운이 없다.
+    assert flags(40.0)[0] is True
+    assert not any(flags(40.0)[1:]), "쿨다운이 더 늦으면 게이지는 아무것도 안 밀었다"
+
+
+def test_a_cycle_the_gauge_and_the_cooldown_open_together_is_not_gauge_bound():
+    """**동점은 밀림이 아니다** - 게이지가 없었어도 그 사이클은 같은 시각에
+    터졌으므로 아무것도 밀리지 않았다.
+
+    동점을 손으로 만든다: 사이클 0은 t=GAUGE에 터지고 그 창은
+    `OPEN_DELAY + DURATION` 뒤에 닫히므로 사이클 1의 게이지 준비 시각은
+    거기서 다시 GAUGE 뒤다. 쿨다운을 그 시각에 **정확히** 맞춘다.
+
+    첫 단언이 그 동점이 실제로 성립했는지부터 확인하는 것이 이 테스트의 절반이다 -
+    격자가 어긋나 두 시각이 갈리면 이 테스트는 아무것도 안 재게 되고, 옛 구현
+    (`>=`)도 그대로 통과한다.
+    """
+    gauge = 5.0
+    end_of_opening_window = (gauge + FULL_BURST_OPEN_DELAY) + FULL_BURST_DURATION
+    gauge_ready = end_of_opening_window + gauge
+    cooldown = gauge_ready - gauge
+    assert gauge + cooldown == gauge_ready, "동점이 성립해야 재는 것이 있다"
+
+    deck = [{"slug": f"u{tier}", "burst_tier": tier, "cooldown": cooldown}
+            for tier in (1, 2, 3)]
+    events = simulate_burst_cycle(deck, gauge_charge_time=gauge,
+                                  fight_duration=60.0, mode="auto")
+
+    second = _tier1_bursts(events)[1]
+    assert second["time"] == gauge_ready, "동점이면 발동 시각은 어느 쪽으로 봐도 같다"
+    assert second["gauge_bound"] is False
+
+
 def test_missing_a_burst_tier_entirely_is_reported_as_missed():
     # A deck with no Burst 1 member at all can never enter Full Burst no
     # matter how long it waits - this is the one case still a real "miss".

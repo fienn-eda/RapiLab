@@ -129,24 +129,60 @@ def test_gauge_bound_cycles_use_the_computed_gauge(real_deck_and_boss):
     아닌 사이클은 그보다 길다(쿨다운이 정한다). 그 하한이 사이클마다 자기 키의
     값이라는 것이 이 변경의 요지다.
 
-    `gauge_bound_cycles`를 여기서 독립적으로 다시 세는 것은 그 진단 값이 표가
-    아니라 **실제 타임라인**과 맞는지 보기 위해서다.
+    「병목」과 **밀림**(`gauge_bound_cycles`)은 같은 수가 아니다 - 게이지와
+    쿨다운이 같은 시각인 사이클은 병목이지만 아무것도 안 밀렸다. 그래서 여기서
+    다시 센 병목 수는 밀림 수의 **상한**이다. 등호로 못박으면 동점이 생기는 날
+    엉뚱한 이유로 빨개진다.
     """
     ordered, boss = real_deck_and_boss
     result = evaluate_deck(ordered, boss)
 
     computed = result["gauge_charge_times"]
     starts, ends = _cycle_starts_and_ends(result)
-    bound = 0
+    bottleneck = 0
     for cycle_index, seconds in sorted(computed.items()):
         if cycle_index >= len(starts):
             continue        # 채움은 쟀지만 그 사이클은 전투 안에서 안 일어났다
         gap = starts[cycle_index] - ends[cycle_index - 1]
         assert gap >= seconds + CYCLE_OVERHEAD - 1e-6, "게이지는 하한이다"
         if gap == pytest.approx(seconds + CYCLE_OVERHEAD, abs=1e-6):
-            bound += 1
-    assert bound, "이 편성은 게이지가 병목인 사이클이 있어야 한다"
-    assert bound == result["gauge_bound_cycles"]
+            bottleneck += 1
+    assert bottleneck, "이 편성은 게이지가 병목인 사이클이 있어야 한다"
+    assert result["gauge_bound_cycles"], "이 편성은 실제로 밀리는 사이클이 있다"
+    assert result["gauge_bound_cycles"] <= bottleneck
+
+
+def test_the_opening_cycle_is_not_counted_as_gauge_bound():
+    """첫 사이클은 **모든 덱에서** 게이지가 정한다 - 돌고 있던 쿨다운이 아예
+    없어서 게이지가 유일한 시작 조건이다. 그래서 세지 않는다: 세면 어떤 덱도
+    0이 될 수 없고, 「밀림 0」이라는 말이 아예 못 나온다.
+
+    SR 덱은 창마다 게이지를 2초대에 채워 두 번째 사이클부터는 쿨다운이 병목이다.
+    스케줄러는 첫 사이클을 여전히 「게이지가 정했다」고 선언하는데(아래 첫
+    단언), 그런데도 집계는 **0**이어야 한다 - 첫 사이클을 세는 구현은 여기서 1을
+    낸다.
+    """
+    result = _synthetic_result(_synthetic_deck("SR", burst_energy=28_000))
+    tier1 = [e for e in result["events"]
+             if e["type"] == "burst" and e["tier"] == 1]
+
+    assert tier1[0]["gauge_bound"] is True
+    assert result["gauge_bound_cycles"] == 0
+
+
+def test_a_deck_that_barely_charges_reports_its_cycles_as_gauge_bound():
+    """반대 방향 - 타격당 500짜리 MG 덱은 게이지가 20초대라 20초 쿨다운을
+    매 사이클 이긴다. 마지막 사이클만 예외인데, 게이지가 전투가 끝날 때까지
+    다 안 차서 그 사이클은 보스 기본값으로 떨어지기 때문이다.
+
+    첫 사이클을 빼고 세므로 「가득 찬」 값은 사이클 수보다 둘 작다.
+    """
+    result = _synthetic_result(_synthetic_deck("MG", burst_energy=500))
+    tier1 = [e for e in result["events"]
+             if e["type"] == "burst" and e["tier"] == 1]
+
+    assert [e["gauge_bound"] for e in tier1] == [True] * (len(tier1) - 1) + [False]
+    assert result["gauge_bound_cycles"] == len(tier1) - 2
 
 
 def test_a_deck_that_cannot_charge_gets_a_longer_gauge_than_one_that_can():
