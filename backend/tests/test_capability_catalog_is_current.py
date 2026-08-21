@@ -1,5 +1,5 @@
-"""The engine capability catalog must list every resource fill kind and reset
-trigger the engine actually implements.
+"""The engine capability catalog must name every fill kind, reset trigger, and
+burst-gauge fill trigger the engine actually implements.
 
 The catalog (`.claude/skills/nikke-skill-encoding/references/
 engine-capabilities.md`) is what an encoding session consults to answer "can the
@@ -13,16 +13,33 @@ mentioned that a resource can have several fill sources at once, and a five-slug
 capabilities that were, four slugs out of five, already built. This test is the
 part of that fix that survives.
 
-Adding a fill kind or reset trigger therefore means documenting it. The check is
-by NAME, so it catches a new branch nobody wrote up; it cannot judge whether the
-prose is any good.
+Adding one therefore means documenting it. **What is scanned**, three things:
+
+- `ResourceSpec` fill kinds - `kind == "..."` in `raid_simulator.py`.
+- `ResourceSpec` reset triggers - `reset_spec["trigger"] == "..."` there too.
+- `burst_gauge.fill_times`'s `bonus_fills` trigger kinds - the keys its
+  dispatcher splits on. **Added 2026-08-22, after a real escape:**
+  `every_own_full_charge` was built, wired and shipped with the catalog
+  untouched and this file stayed green, because the scan read one file
+  (`raid_simulator.py`) and that trigger lives in `burst_gauge.py`.
+
+**What is still NOT caught** - the rule remains partly yours (CLAUDE.md says so):
+
+- Stats, triggers and spec-dict keys are not scanned at all.
+- Whether the prose is any good, or even in the right section. The check is by
+  NAME: `_documents` only asks whether the quoted name appears ANYWHERE in the
+  catalog. A one-word mention passes. Worse, the mention need not be prose the
+  scan put there - the `every_own_full_charge` write-up quotes the name in its
+  literal spec form, so widening the scan would NOT retroactively have caught
+  that escape once the catalog was fixed by hand. This guard raises the floor;
+  it does not replace reading the catalog when you build a capability.
 """
 import re
 from pathlib import Path
 
 import pytest
 
-from app import raid_simulator
+from app import burst_gauge, raid_simulator
 
 CATALOG = (Path(__file__).resolve().parents[2] / ".claude" / "skills"
            / "nikke-skill-encoding" / "references" / "engine-capabilities.md")
@@ -34,6 +51,10 @@ SEPARATELY_RESOLVED_FILL_KINDS = {"squad_burst_cycle_conditional"}
 
 def _source():
     return Path(raid_simulator.__file__).read_text(encoding="utf-8")
+
+
+def _burst_gauge_source():
+    return Path(burst_gauge.__file__).read_text(encoding="utf-8")
 
 
 def _catalog():
@@ -81,6 +102,33 @@ def test_every_resource_reset_trigger_is_in_the_catalog():
     assert not undocumented, (
         "these ResourceSpec reset triggers exist in raid_simulator but are "
         f"absent from the capability catalog: {undocumented}."
+    )
+
+
+def test_every_burst_gauge_fill_trigger_is_in_the_catalog():
+    """The squad burst gauge has its own fill triggers, in its own module.
+
+    `burst_gauge.fill_times`'s `bonus_fills` takes a list of specs where the KEY
+    an element carries names its trigger kind, and `fill_times` splits the list
+    on those keys. They are a capability an encoding session has to be able to
+    look up, exactly like a `ResourceSpec` fill kind - and until 2026-08-22 they
+    were outside every scan here, which is how `every_own_full_charge` shipped
+    with the catalog untouched and this file green.
+    """
+    triggers = set(re.findall(r'for f in bonus_fills if "([a-z_]+)" in f',
+                              _burst_gauge_source()))
+    # Guard the scan itself: this reads one comprehension shape, so a refactor
+    # that dispatches differently must come here rather than silently scanning
+    # nothing - the same trap the fill-kind scan defends against.
+    assert len(triggers) >= 2, f"bonus-fill trigger scan found only {sorted(triggers)}"
+
+    catalog = _catalog()
+    undocumented = sorted(t for t in triggers if not _documents(catalog, t))
+    assert not undocumented, (
+        "these burst_gauge bonus_fill triggers exist in the engine but are "
+        f"absent from the capability catalog: {undocumented}. Add them to "
+        f"{CATALOG.name} - a trigger missing from it reads as a capability the "
+        "engine does not have, and the next session records it as a gap."
     )
 
 

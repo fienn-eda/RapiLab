@@ -1619,7 +1619,15 @@ key rather than a new argument. Two kinds exist:
   full charges, against the measured three. The trigger is the shot's kind, so
   a tap-fire (partial-charge) shot does NOT count — the text says "Full Charge
   attack" — and neither does a hit her SKILL produced (`skill_hits_by_slug`),
-  since no weapon fired it. Consumers: `helm.build_frontline_command_gauge_fills`
+  since no weapon fired it.
+  **Only register a CHARGE weapon here.** `fill_times` reads the shot's kind off
+  `ShotRecord.is_tap_fire`, which is `False` for every shot a non-charge weapon
+  takes, so an AR/MG/SMG/SG seat registered with this key charges the gauge on
+  **every single bullet** — a silent 10-100x, not an error. Both consumers today
+  are SR, so nothing is wrong now; a future holder on a magazine weapon needs a
+  different trigger, not this one. (The engine cannot catch this for you: "not a
+  tap" and "a full charge" are the same boolean today.)
+  Consumers: `helm.build_frontline_command_gauge_fills`
   (Frontline Command, +14.31%, **Favorite Item only** — base Helm's copy of the
   skill has no gauge bullet at all, which is why the builder is told its slug)
   and `maxwell_ordinary_mechanic.build_output_switching_gauge_fills` (Output

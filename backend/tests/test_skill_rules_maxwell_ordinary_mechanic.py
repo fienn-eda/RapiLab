@@ -19,11 +19,14 @@ SEQUENTIAL_LIMIT_RELEASE = {
 OUTPUT_SWITCHING_SEQUENCE = {
     "description_value_01": "1",     # squad ATK % of caster Max HP
     "description_value_02": "15",    # duration
-    "description_value_03": "7.15",  # deferred: burst gauge fill %
+    # 템플릿이 이름을 대지 않는 슬롯. 전 레벨에서 07과 값이 같아 값으로는 못
+    # 가르므로, 게이지 충전으로 읽으면 오늘은 맞고 근거는 틀린다.
+    "description_value_03": "7.15",
     "description_value_04": "0",
     "description_value_05": "30",    # Overcurrent self ATK % per stage
     "description_value_06": "5",     # Overcurrent stages
-    "description_value_07": "7.15",  # deferred: burst gauge fill %
+    # 원문 "Fills Burst Gauge by {description_value_07}%" - 이 슬롯이 게이지다.
+    "description_value_07": "7.15",  # full-charge squad Burst Gauge fill %
 }
 MATIS_UBERBUSTER = {
     "description_value_01": "2.5",   # deferred: transform charge time (stage 2)

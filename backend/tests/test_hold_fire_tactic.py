@@ -209,20 +209,27 @@ def test_holding_mihara_IS_A_WASH_at_this_decks_computed_gauge():
     14.31% 충전」이 배선되며 중앙값 2.4초(1.6~3.0)로 내려와 **+0.05%**
     (2026-08-22). 세 번째는 앞 판본의 독스트링이 예고한 복귀 그대로다.
 
-    부호가 게이지의 함수라는 것은 옛 엔진에서 상수만 올려 확인했다 - 2.4에서
-    +2.15%, 2.8에서 +3.41%, **3.2에서 -2.61%**, 6.0에서 -7.61%. 홀드가 버리는
-    평타는 그대로인데 살린 라운드 버프가 갚아 주는 양이 로테이션이 느려질수록
-    줄어드는 것이 메커니즘이다.
+    부호가 게이지의 함수라는 것은 상수만 올려 확인했다 - 2.4에서 +2.15%, 2.8에서
+    +3.41%, **3.2에서 -2.61%**, 6.0에서 -7.61%. 홀드가 버리는 평타는 그대로인데
+    살린 라운드 버프가 갚아 주는 양이 로테이션이 느려질수록 줄어드는 것이
+    메커니즘이다. **그 표로 위의 +0.05%를 예측하지 마라** - 옛 엔진에서 게이지가
+    전 사이클 하나의 상수이던 때 잰 것이고, 지금은 사이클마다 다른 분포다
+    (평상 1.6~3.0, 홀드 2.0~2.8 - 그 분포 차이 자체가 효과의 일부다). 표는 부호가
+    게이지에 민감하다는 것만 말한다.
 
     ⚠ **이 덱으로 홀드의 인과를 재지 마라.** 전환점 바로 위에 앉아 있어서 게이지를
     건드리는 어떤 변경이든 부호를 뒤집는다 - 그건 홀드가 무엇을 하는지가 아니라
     로테이션 속도를 재는 것이다. 인과는
     `test_holding_ada_pays_ONLY_in_a_deck_that_can_preserve_her_buff`가 잰다.
+    그래서 밴드도 그 형제 테스트와 같은 관례(abs=0.01)로 둔다 - **판별력은 안
+    잃는다**(옛 값 0.951은 이 밴드에서도 실패한다). 다섯 자리로 못박으면 게이지를
+    건드리는 다음 세션이 「숫자를 갱신하라」로 읽는데, 이 테스트가 말하려는 것은
+    특정 고정점이 아니라 **본전**이다.
     """
     ordering = _ordering(WITH_GRANTER, MIHARA)
     plain = evaluate_deck(ordering, BOSS)
     held = evaluate_deck(ordering, BOSS, hold_fire={MIHARA})
-    assert held["total_damage"] / plain["total_damage"] == pytest.approx(1.0005, abs=0.0005)
+    assert held["total_damage"] / plain["total_damage"] == pytest.approx(1.0, abs=0.01)
 
 
 def test_holding_a_transforming_unit_that_never_declared_its_release_is_refused():
