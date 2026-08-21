@@ -1562,9 +1562,16 @@ tests can still pass (the effect registers and `total_for` returns it), but the
 value never reaches `calculate_damage`, so it does NOT change simulated damage.
 
 **Not a damage concept at all** — no consumer will ever exist without a bigger
-model: `burst_gauge_fill_speed_percent` (gauge charge time is a fixed sim
-input), `shield_amount`, and anything HP/heal/DEF/survivability. Defer these;
+model: `shield_amount` and anything HP/heal/DEF/survivability. Defer these;
 if a Nikke's contribution is mostly these, say so — a thin encoding is honest.
+
+`burst_gauge_fill_speed_percent` used to sit in that group with the reason "gauge
+charge time is a fixed sim input". **That reason expired on 2026-08-21**: gauge
+fill is now computed per deck from the deck's own shot timeline
+(`burst_gauge.fill_times`, fed back through `simulate_raid`'s fixed point), so
+the bigger model exists. The stat is still inert TODAY because nothing multiplies
+the accumulated energy by it yet — but that is a missing WIRE, not a missing
+concept, so record the bullet rather than writing the unit off.
 
 **`damage_to_parts_up` and `damage_to_interruption_parts_up` are inert too**, and
 deliberately so. `calculate_damage` still TAKES `damage_to_parts_up` but leaves
