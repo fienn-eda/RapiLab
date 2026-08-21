@@ -147,6 +147,9 @@ def test_the_gauge_delay_and_count_survive_the_route():
 
     deck = body["decks"][0]
     assert deck["total_cycles"] > 0
+    # 이 픽스처가 실제로 밀리는 덱임을 먼저 못박는다. 안 그러면 아래 쌍조건이
+    # 「거짓 == 거짓」으로 무너져, 개수만 잇고 시간을 빠뜨린 회귀도 통과한다.
+    assert deck["gauge_bound_cycles"] > 0
     assert 0 <= deck["gauge_bound_cycles"] <= deck["total_cycles"]
     # 밀린 사이클이 있으면 밀린 시간도 있어야 한다(그 반대도). 둘은 같은 사실의
     # 두 측면이라 한쪽만 0인 응답은 배선이 끊긴 것이다.

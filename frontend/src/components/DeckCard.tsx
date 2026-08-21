@@ -109,7 +109,7 @@ export function DeckCard({
         <p className="deck-results__gauge-bound" title={HELP.results.gaugeDelayTitle}>
           <span aria-hidden="true">🔋</span>{' '}
           버충 밀림 +{(deck.gauge_delay_seconds ?? 0).toFixed(1)}초 ·{' '}
-          {deck.total_cycles} 사이클 중 {deck.gauge_bound_cycles}
+          {deck.total_cycles ?? 0} 사이클 중 {deck.gauge_bound_cycles}
         </p>
       )}
       {deck.hold_burst_slugs.length > 0 && (

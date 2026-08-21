@@ -657,7 +657,7 @@ def test_a_summary_reports_how_many_cycles_the_gauge_held_up():
     판단하려면 이 둘이 화면까지 가야 한다.
 
     분모는 **완주한 창의 수**다 - `full_burst_end`를 센다. 이벤트 개수나
-    `full_burst_start` 수를 세는 구현은 이 픽스처에서 각각 5와 0을 낸다.
+    `full_burst_start` 수를 세는 구현은 이 픽스처에서 각각 4와 0을 낸다.
     """
     from app import deck_search
     result = {
