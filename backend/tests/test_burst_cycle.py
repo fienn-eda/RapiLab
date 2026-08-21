@@ -640,3 +640,40 @@ def test_no_overrides_is_todays_behaviour():
     with_none = simulate_burst_cycle(deck, 5.0, 100.0, full_burst_duration_overrides=None)
     without = simulate_burst_cycle(deck, 5.0, 100.0)
     assert with_none == without
+
+
+def test_gauge_charge_overrides_change_named_cycles_only():
+    """사이클별 게이지는 그 사이클의 하한에만 걸린다 - 게이지가 덱 속성이고
+    재장전 위치에 따라 사이클마다 다르기 때문이다(docs/measurements/burst-gauge-fill.md).
+
+    쿨다운을 1초로 두어 게이지가 항상 병목이게 만든다. 그러면 사이클 간격이
+    곧 `FULL_BURST_DURATION + 그 사이클의 게이지 + 티어갭`이다.
+    """
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "cooldown": 1.0},
+        {"slug": "b2", "burst_tier": 2, "cooldown": 1.0},
+        {"slug": "b3", "burst_tier": 3, "cooldown": 1.0},
+    ]
+    events = simulate_burst_cycle(
+        deck, gauge_charge_time=2.4, fight_duration=100.0, mode="manual",
+        gauge_charge_overrides={1: 5.0},
+    )
+    starts = [e["time"] for e in events if e["type"] == "full_burst_start"]
+    gaps = [round(b - a, 6) for a, b in zip(starts, starts[1:])]
+    # 사이클 1의 게이지가 5.0이므로 사이클 1 -> 2의 간격만 길다.
+    assert gaps[0] == pytest.approx(FULL_BURST_DURATION + 2.4 + 0.2)
+    assert gaps[1] == pytest.approx(FULL_BURST_DURATION + 5.0 + 0.2)
+    assert gaps[2] == pytest.approx(FULL_BURST_DURATION + 2.4 + 0.2)
+
+
+def test_empty_gauge_overrides_are_todays_behaviour():
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "cooldown": 1.0},
+        {"slug": "b2", "burst_tier": 2, "cooldown": 1.0},
+        {"slug": "b3", "burst_tier": 3, "cooldown": 1.0},
+    ]
+    without = simulate_burst_cycle(deck, gauge_charge_time=2.4, fight_duration=100.0,
+                                   mode="manual")
+    with_empty = simulate_burst_cycle(deck, gauge_charge_time=2.4, fight_duration=100.0,
+                                      mode="manual", gauge_charge_overrides={})
+    assert without == with_empty

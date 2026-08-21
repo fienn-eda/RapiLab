@@ -110,6 +110,7 @@ def simulate_burst_cycle(
     fight_duration,
     mode="auto",
     full_burst_duration_overrides=None,
+    gauge_charge_overrides=None,
     on_battle_start=None,
     on_tier_fire=None,
     on_full_burst_enter=None,
@@ -134,6 +135,13 @@ def simulate_burst_cycle(
     +0/+2/+5초)은 자원 상태를 봐야 정해지는데, 자원은 이 스케줄러가 창을
     확정한 뒤에야 채워지기 때문이다. raid_simulator가 고정점까지 반복하며
     이 테이블을 갱신한다.
+
+    `gauge_charge_overrides`는 {사이클 인덱스: 초}로, 그 사이클의 게이지 하한을
+    통째로 대체한다(`gauge_charge_time`은 그 표에 없는 사이클의 값이자 첫 패스의
+    시드다). 게이지는 덱이 넣은 **타격 수**로 차므로 사이클마다 다르다 - 재장전과
+    MG 예열이 창 안 어디에 떨어지느냐가 그 사이클의 채움 속도를 정한다.
+    이 스케줄러는 값이 어디서 왔는지 모른다. raid_simulator가 고정점까지
+    반복하며 이 표를 갱신한다.
     """
     gap = 0.0 if mode == "auto" else 0.1
     last_used_at = {member["slug"]: float("-inf") for member in deck}
@@ -155,7 +163,10 @@ def simulate_burst_cycle(
         on_battle_start(0.0)
 
     while True:
-        gauge_ready = time + gauge_charge_time
+        gauge_ready = time + (
+            (gauge_charge_overrides or {}).get(cycle_index - 1, gauge_charge_time)
+            if cycle_index > 0 else gauge_charge_time
+        )
 
         if any(not members_by_tier[tier] for tier in (1, 2, 3)):
             events.append({"type": "full_burst_missed", "time": gauge_ready})
