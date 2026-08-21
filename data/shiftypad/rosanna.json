@@ -5,6 +5,7 @@
   "reloadTime": 1.67,
   "chargeTime": 0.0,
   "chargeDamage": "100%",
+  "burstGen": "0.05%",
   "element": "Electric",
   "burst": "1",
   "skills": [

@@ -5,6 +5,7 @@
   "reloadTime": 2.0,
   "chargeTime": 1.0,
   "chargeDamage": "250%",
+  "burstGen": "2.8%",
   "element": "Wind",
   "burst": "2",
   "skills": [

@@ -125,6 +125,10 @@ def normalize_shiftypad(bundle):
         "reloadTime": _sec(shot["reload_time"]),
         "chargeTime": _sec(shot["charge_time"]),
         "chargeDamage": _pct(shot["full_charge_damage"]),
+        # 발당 버스트 게이지 에너지. dotgg가 같은 값을 `burstGen`으로(값÷10000을
+        # 퍼센트로) 싣고 있어 그 형태를 맞춘다 - 무기 스탯을 읽는 쪽이 출처를
+        # 안 가려도 되게 하려는 것이다.
+        "burstGen": _pct(shot["burst_energy_pershot"] / 100),
         "element": _ELEMENT_NAMES.get(element, element),
         "burst": _burst_tier(directory["use_burst_skill"]),
         "skills": skills,

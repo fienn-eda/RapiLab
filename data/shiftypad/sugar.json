@@ -5,6 +5,7 @@
   "reloadTime": 0.67,
   "chargeTime": 0.0,
   "chargeDamage": "100%",
+  "burstGen": "0.45%",
   "element": "Iron",
   "burst": "3",
   "skills": [

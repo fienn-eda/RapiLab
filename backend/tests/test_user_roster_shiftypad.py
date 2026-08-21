@@ -61,9 +61,12 @@ def test_weapon_source_lets_a_lootandwaifus_slug_take_shiftypad_weapon_stats(mon
     # weapon stats from data/shiftypad/sugar.json, except reload_time: Sugar is
     # a clip shotgun, so the file's 0.67 sec buys three of her nine rounds and
     # the magazine costs three of them (registry.CLIP_RELOAD_SPLITS).
+    # burst_energy_pershot is the file's burstGen "0.45%" x 10000; pellets_per_shot
+    # is 10 because she is an SG (registry.get_pellets_per_shot).
     assert spec.weapon_stats == {
         "weapon": "SG", "damage_percent": 231.6, "max_ammo": 9,
         "reload_time": 0.67 * 3, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        "burst_energy_pershot": 4500.0, "pellets_per_shot": 10,
     }
     # meta still prefers the lootandwaifus file
     assert (spec.burst_tier, spec.element, spec.burst_cooldown) == (3, "Iron", 40.0)

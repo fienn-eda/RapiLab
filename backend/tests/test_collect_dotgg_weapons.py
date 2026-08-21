@@ -77,7 +77,7 @@ def test_stub_for_magazine_weapon_prefills_the_charge_fields():
 
 def test_unfilled_stub_is_rejected_by_the_weapon_stats_loader():
     stub = cdw.make_stub({"name": "Prika", "url": "prika", "weapon": "MG"}, "prika")
-    assert _weapon_stats(stub) is None
+    assert _weapon_stats(stub, "prika") is None
 
 
 def _write(path, data):

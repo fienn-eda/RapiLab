@@ -5,6 +5,7 @@
   "reloadTime": 2.0,
   "chargeTime": 1.5,
   "chargeDamage": "350%",
+  "burstGen": "2.8%",
   "element": "Fire",
   "burst": "3",
   "skills": [

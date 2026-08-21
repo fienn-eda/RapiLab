@@ -1712,6 +1712,37 @@ def get_clip_reload_splits(slug):
     return CLIP_RELOAD_SPLITS.get(slug, 1)
 
 
+# 방아쇠 한 번이 내보내는 탄환 수. 게이지는 **타격마다** 차므로 산탄은 펠릿 수만큼
+# 곱해진다(브리드 25발 = 게이지 151/160px, 빗나간 펠릿은 0 - Fienn 2026-08-21).
+# 수집된 86정 전수: SG만 10이고 츠바이만 5, 나머지 무기군은 전부 1이다.
+# dotgg 파일에는 `shot_count`가 없어 여기 산다.
+_PELLET_EXCEPTIONS = {"zwei": 5}
+
+
+def get_pellets_per_shot(slug, weapon):
+    """이 유닛의 방아쇠 한 번이 내는 탄환 수. 산탄이 아니면 1."""
+    base = slug.split("-signature")[0]
+    if base in _PELLET_EXCEPTIONS:
+        return _PELLET_EXCEPTIONS[base]
+    return 10 if weapon == "SG" else 1
+
+
+# dotgg 파일에 `burstGen`이 없는 유닛의 발당 게이지 에너지. 원본 번들
+# (`data/shiftypad/raw/`, gitignore라 런타임에 없다)에서 옮겨 적었고,
+# `scripts/audit_burst_energy.py`가 수집 때마다 대조한다.
+#
+# 크리스탈 웨이브는 MODE_VARIANTS라 `_weapon_stats`가 실제로 받는 slug는
+# 기저 이름이 아니라 -mg/-snipe다 - 둘 다 같은 dotgg 파일(같은 기저 무기)을
+# 읽으므로 값은 같다.
+BURST_ENERGY_FALLBACK = {
+    "ark-ranger-black": 2_000.0,               # AR
+    "cinderella-crystal-wave-mg": 500.0,       # MG
+    "cinderella-crystal-wave-snipe": 500.0,    # Snipe 모드도 같은 기저 무기다
+    "marciana-marine-study": 2_000.0,          # AR
+    "prika": 28_000.0,                         # SR
+}
+
+
 def get_burst_resolves_after_cast(slug):
     """Whether this Nikke's burst nuke resolves a beat AFTER the cast rather
     than at it - see `_BURST_RESOLVES_AFTER_CAST`. False for the vast majority,

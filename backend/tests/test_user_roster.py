@@ -1,3 +1,5 @@
+import pytest
+
 from app import user_roster
 from app.models import OverloadOption, UserNikkeState
 from app.roster import assemble_simulation_inputs
@@ -50,9 +52,12 @@ def test_loads_drake_end_to_end_from_real_data_files():
     # weapon stats from data/dotgg/char_drake-nikke.json ("damage": "214.3%", maxAmmo 9, ...)
     # reload_time is the file's 0.5 sec x 3, because Drake is a clip shotgun:
     # she loads three of her nine rounds at a time (registry.CLIP_RELOAD_SPLITS).
+    # burst_energy_pershot is the file's burstGen "0.45%" x 10000; pellets_per_shot
+    # is 10 because she is an SG (registry.get_pellets_per_shot).
     assert spec.weapon_stats == {
         "weapon": "SG", "damage_percent": 214.3, "max_ammo": 9,
         "reload_time": 1.5, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        "burst_energy_pershot": 4500.0, "pellets_per_shot": 10,
     }
     # skill values assembled at max level (DRAKE_SPECIAL fixture ground truth)
     assert float(spec.skill_values["drake_special"]["description_value_01"]) == 1254.0
@@ -177,3 +182,27 @@ def test_actual_basis_builds_specs_from_the_real_level_stats():
     # 쪽에는 애초에 값이 없기 때문이다.
     assert specs_actual[0].base_stats == {"atk": 300_000.0, "def": 0.0,
                                           "max_hp": 9_000_000.0}
+
+
+def test_shotgun_pellets_reach_weapon_stats():
+    """산탄은 방아쇠 한 번에 펠릿이 여러 발 나가고 게이지는 **펠릿마다** 찬다
+    (브리드 25발 = 151/160px, 명중률 94.4%). dotgg에는 `shot_count`가 없어
+    registry 테이블로 둔다 - `CLIP_RELOAD_SPLITS`와 같은 자리다.
+    """
+    from app.skill_rules.registry import get_pellets_per_shot
+    assert get_pellets_per_shot("brid-silent-track", "SG") == 10
+    assert get_pellets_per_shot("zwei", "SG") == 5
+    assert get_pellets_per_shot("alice", "SR") == 1
+
+
+def test_weapon_stats_carry_burst_energy_from_both_sources():
+    """게이지 상수가 두 출처 모두에서 같은 키로 나와야 한다 - shiftypad를 쓰는
+    유닛과 dotgg를 쓰는 유닛의 경로가 갈리기 때문이다(skill_values.load_weapon_data).
+    """
+    alice = load_nikke_spec(_state("alice"))          # SR, dotgg burstGen "2.8%"
+    assert alice.weapon_stats["burst_energy_pershot"] == pytest.approx(28000.0)
+    assert alice.weapon_stats["pellets_per_shot"] == 1
+
+    brid = load_nikke_spec(_state("brid-silent-track"))   # SG
+    assert brid.weapon_stats["burst_energy_pershot"] == pytest.approx(2000.0)
+    assert brid.weapon_stats["pellets_per_shot"] == 10

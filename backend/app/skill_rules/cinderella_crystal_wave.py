@@ -152,7 +152,10 @@ def build_snipe_weapon_profile(values, weapon_stats=None):
     theme, key off the character's real gun) - firing cadence and per-shot
     typing are decided by THIS profile's "SR" weapon field once it's swapped
     in via get_weapon_profile_override. `weapon_stats` (the collected profile)
-    is unused: this is a full swap, not a correction."""
+    is otherwise unused: this is a full swap, not a correction - except the
+    burst gauge constant and pellet count, which describe the underlying MG
+    she never stops holding (BURST_ENERGY_FALLBACK's "Snipe 모드도 같은
+    기저 무기다") and would silently vanish if not carried across the swap."""
     beauty = values["beauty_full"]
     return {
         "weapon": "SR",
@@ -161,4 +164,6 @@ def build_snipe_weapon_profile(values, weapon_stats=None):
         "reload_time": SNIPE_RELOAD_TIME_SEC,
         "charge_time": float(beauty["description_value_01"]),
         "charge_damage_percent": float(beauty["description_value_03"]),
+        "burst_energy_pershot": weapon_stats["burst_energy_pershot"],
+        "pellets_per_shot": weapon_stats["pellets_per_shot"],
     }

@@ -5,6 +5,7 @@
   "reloadTime": 2.0,
   "chargeTime": 0.0,
   "chargeDamage": "100%",
+  "burstGen": "0.25%",
   "element": "Water",
   "burst": "3",
   "skills": [

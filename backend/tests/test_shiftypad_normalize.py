@@ -112,3 +112,14 @@ def test_split_count_survives_a_max_ammo_buff():
     # Ammunition therefore cannot change this constant.
     assert clip_reload_splits(_shot(8, 3300)) == 3
     assert clip_reload_splits(_shot(12, 3300)) == 3
+
+
+def test_normalized_output_carries_burst_gauge_energy():
+    """게이지는 타격 수 x 무기별 상수로 찬다(docs/measurements/burst-gauge-fill.md).
+
+    그 상수가 `shot_detail.burst_energy_pershot`에 처음부터 있었는데 정규화가
+    5필드만 뽑느라 엔진까지 닿지 않았다. dotgg의 `burstGen`과 같은 문자열 형태로
+    내보내, 두 출처를 읽는 코드가 하나로 유지되게 한다.
+    """
+    out = normalize_shiftypad(_bundle("anis-star"))
+    assert out["burstGen"] == "1.4%"    # anis-star: RL 14000

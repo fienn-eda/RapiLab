@@ -18,10 +18,12 @@ from app.collectible_effects import collectible_modifiers
 from app.models import UserNikkeState
 from app.roster import NikkeSpec
 from app.skill_rules.registry import (
+    BURST_ENERGY_FALLBACK,
     ENCODED_SLUGS,
     MODE_VARIANTS,
     VARIANT_BURST_TIERS,
     get_clip_reload_splits,
+    get_pellets_per_shot,
     get_skill_value_manifest,
     get_weapon_profile_override,
 )
@@ -35,8 +37,16 @@ def _percent(raw):
     return float(str(raw).rstrip("%"))
 
 
-def _weapon_stats(weapon_data):
+def _weapon_stats(weapon_data, slug):
     if any(field not in weapon_data for field in _WEAPON_STAT_FIELDS):
+        return None
+    # 타격당 버스트 게이지 에너지. 파일은 퍼센트 문자열("2.8%")로 싣는데 원본
+    # 단위(28000)가 산술의 단위이므로 되돌린다. dotgg 4개 파일에 이 키가 없어
+    # 폴백 테이블이 받는다 - 필수 필드로 만들면 그 유닛들이 조용히 제외된다.
+    burst_gen = weapon_data.get("burstGen")
+    burst_energy = (_percent(burst_gen) * 10_000 if burst_gen is not None
+                    else BURST_ENERGY_FALLBACK.get(slug))
+    if burst_energy is None:
         return None
     return {
         "weapon": weapon_data["weapon"],
@@ -45,6 +55,7 @@ def _weapon_stats(weapon_data):
         "reload_time": float(weapon_data["reloadTime"]),
         "charge_time": float(weapon_data["chargeTime"]),
         "charge_damage_percent": _percent(weapon_data["chargeDamage"]),
+        "burst_energy_pershot": burst_energy,
     }
 
 
@@ -80,7 +91,7 @@ def load_nikke_spec(
         weapon_data = load_weapon_data(manifest, slug, data_dir)
     except FileNotFoundError:
         return None
-    weapon_stats = _weapon_stats(weapon_data)
+    weapon_stats = _weapon_stats(weapon_data, slug)
     if weapon_stats is None:
         return None
     try:
@@ -111,6 +122,11 @@ def load_nikke_spec(
         splits = get_clip_reload_splits(slug)
         if splits > 1:
             weapon_stats = {**weapon_stats, "reload_time": weapon_stats["reload_time"] * splits}
+        # 산탄은 방아쇠 한 번에 여러 펠릿이 나가고 게이지는 펠릿마다 찬다 - 클립
+        # 재장전 카운트와 같은 이유로 모드 오버라이드 전에 둔다: 이 값은 유닛을
+        # 수집한 그 무기를 가리키고, 오버라이드는 그 무기 자체를 통째로 바꾼다.
+        weapon_stats = {**weapon_stats,
+                        "pellets_per_shot": get_pellets_per_shot(slug, weapon_stats["weapon"])}
         # A unit whose weapon does not fire at its class's rate carries its own,
         # because the file these stats come from has no rate field at all - see
         # attack_rate.ROUNDS_PER_MINUTE. Before the mode override for the same

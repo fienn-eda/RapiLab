@@ -103,11 +103,15 @@ def test_burst_nuke_is_6000():
 
 
 def test_snipe_profile_is_static_sr_charge_weapon():
-    assert build_snipe_weapon_profile(CRYSTAL_WAVE_VALUES) == {
+    # burst_energy_pershot/pellets_per_shot must survive the swap - they
+    # describe the MG she never stops holding, not the SR profile below.
+    collected = {"burst_energy_pershot": 500.0, "pellets_per_shot": 1}
+    assert build_snipe_weapon_profile(CRYSTAL_WAVE_VALUES, collected) == {
         "weapon": "SR", "damage_percent": 62.13, "max_ammo": 15,
         "reload_time": 2.5,  # Step 1 answer: no reload value in the skill
         # text - MG base reload, Fienn's ruling 2026-07-19.
         "charge_time": 1.0, "charge_damage_percent": 250.0,
+        "burst_energy_pershot": 500.0, "pellets_per_shot": 1,
     }
 
 
