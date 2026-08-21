@@ -12,7 +12,7 @@ HEAT_EMISSION = {
     "description_value_01": "100",    # bullets removed % (not modeled)
     "description_value_02": "50",     # self Reload Ratio down % (not modeled)
     "description_value_03": "2",      # self HP regen %/sec (not modeled)
-    "description_value_04": "38.96",  # Burst Gauge fill speed % (not modeled)
+    "description_value_04": "38.96",  # squad Burst Gauge fill speed %
     "description_value_05": "48.4",   # squad Pierce Damage % (continuous)
 }
 PLOT_SPOILER = {
@@ -167,6 +167,16 @@ def test_heat_emission_reactivates_after_the_next_full_burst_end():
     # duration is heat_emission_seconds (the doubled reload), so a check long
     # after activation reads 0 and would test nothing.
     assert round(registry.total_for("pierce_damage_up", ALLY, now=50.0), 4) == 0.484
+
+
+def test_heat_emission_grants_squad_gauge_fill_speed():
+    """"Affects all allies" - the same squad Pierce Damage bullet's sibling,
+    riding the same Heat Emission window (`heat_emission_duration`)."""
+    ctx = make_context()
+    ctx.burst_used_this_cycle.add("grave")
+    registry = EffectRegistry()
+    fire_trigger("full_burst_end", {"grave": build()}, ctx, registry, time=15.0)
+    assert round(registry.total_for("burst_gauge_fill_speed_percent", ALLY, now=15.0), 4) == 0.3896
 
 
 def test_overheat_per_shot_rules_structure():

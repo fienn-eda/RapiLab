@@ -52,7 +52,7 @@ def quantize(seconds):
 
 
 def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
-               ammo_rounds_by_slug=None, bonus_fills=()):
+               ammo_rounds_by_slug=None, bonus_fills=(), speed_multiplier_at=None):
     """풀 버스트가 끝난 뒤 게이지가 다시 가득 차기까지 걸리는 시간, 사이클마다.
 
     `shots_by_slug`는 `{슬러그: [(시각, 톡톡이 여부), ...]}`. 대미지 경로와
@@ -77,6 +77,13 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     카운터를 공유**한다(문턱은 원마다 다르다) - 원마다 따로 세면 아군 발수를
     소스 수만큼 중복 계상한다. 한 샷이 자기 문턱을 여러 번 넘을 수 있다(주머니
     발 하나가 수백 라운드를 회계하면).
+
+    `speed_multiplier_at`(옵션, `(슬러그, 시각) -> 배율`)은 타격당 에너지에
+    곱하는 샷별 배율이다 - 「버스트 게이지 충전 속도」 스탯(아니스: 스타·
+    그레이브·마나)의 스코프가 squad(모든 슬러그가 같은 값)와 self(그 슬러그만)
+    둘 다 있고, 값이 전투 도중 켜지고 꺼지므로(그레이브의 Heat Emission, 마나의
+    Metal σ) 창 전체에 쓰는 스칼라 하나로는 이 셋을 같은 자리에서 표현할 수
+    없다. 안 주면 전부 1.0(오늘과 동일).
 
     **세는 단위는 샷 레코드 하나, 즉 방아쇠 하나다.** 실측이 정한 단위는 방아쇠가
     아니라 **타격**이고(measurements/burst-gauge-fill.md), 둘이 갈리는 자리가 둘
@@ -114,6 +121,7 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
         if stats.get("burst_energy_pershot")
     }
     ammo_rounds_by_slug = ammo_rounds_by_slug or {}
+    speed_multiplier_at = speed_multiplier_at or (lambda slug, time: 1.0)
     merged = sorted(
         (time, slug, is_tap, rounds)
         for slug, shots in shots_by_slug.items()
@@ -138,7 +146,7 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
             if time >= fight_duration:
                 break
             base, charged = per_hit.get(slug, (0.0, 0.0))
-            gauge += base if is_tap else charged
+            gauge += (base if is_tap else charged) * speed_multiplier_at(slug, time)
             if bonus_fills:
                 before = ally_rounds
                 ally_rounds += rounds

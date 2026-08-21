@@ -55,13 +55,17 @@ Modeled (DPS-relevant):
   her 10 ticks span exactly the same 10s the Full Burst window that opens at
   her burst covers).
 
+Metal sigma's Burst Gauge filling speed (self, +70.4% at lv10) rides the same
+grant/spend/restore lifecycle as the status flag: up while Metal sigma is up,
+closed at Full Burst entry by `EffectRegistry.truncate_open_ended` (the window
+until the NEXT Full Burst entry is not known when it is granted, so a fixed
+duration cannot express it - see `build_metal_sigma_rules`).
+
 Not modeled / deferred:
 - Metal gamma's heal-after-10-normal-attacks (2.04% of caster's Max HP to all
   allies) and its ally-resurrect (revives the highest-ATK incapacitated ally
   at 96% HP): both HP/survivability mechanics tied to ally-KO tracking, which
   this engine doesn't model at all.
-- Metal sigma's Burst Gauge filling speed buff (70.4%): gauge charge time is
-  a fixed simulation input, not a stat the engine consumes.
 (Metal sigma's Charge Time -0.18 sec on "1 ally with the longest basic Charge
 Time" was deferred for three successive reasons, all now retired. "Charge speed
 isn't a damage stat" expired with Phase S; "narrow subsets aren't expressible"
@@ -77,8 +81,9 @@ from app.skill_rules._helpers import buff_rule
 from app.squad_engine import SkillRule, has_status, own_burst_fired_this_cycle
 
 # "Metal σ", the status her Skill 2 spends at Full Burst entry and re-earns at
-# Full Burst end. Tracked as a flag rather than an Effect: its own payload is
-# Burst Gauge filling speed, which the engine does not consume.
+# Full Burst end. Tracked as a flag - `spend_sigma`'s condition gates on it -
+# alongside its own payload, a `burst_gauge_fill_speed_percent` Effect that
+# rides the same grant/spend timeline (see `build_metal_sigma_rules`).
 METAL_SIGMA_STATUS = "metal_sigma"
 
 
@@ -111,18 +116,25 @@ def build_metal_sigma_rules(values):
     own burst inside that window. See the module docstring for the in-game
     sequence this reproduces."""
     sigma = values["metal_sigma"]
+    gauge_fill_speed = float(sigma["description_value_01"]) / 100
     attack_damage = float(sigma["description_value_02"]) / 100
     duration = float(sigma["description_value_03"])
     atk = float(sigma["description_value_04"]) / 100
 
     def grant_sigma(context, caster_slug, time, registry):
-        # The status itself. Its own payload - Burst Gauge filling speed +70.4% -
-        # is not a stat the engine consumes, so only the flag is kept.
         context.set_status(caster_slug, METAL_SIGMA_STATUS)
+        # The status's own payload: self Burst Gauge filling speed, open-ended
+        # until `spend_sigma` closes it - the window until the next Full Burst
+        # entry isn't known here, so a fixed duration can't express it.
+        registry.add(
+            Effect("burst_gauge_fill_speed_percent", gauge_fill_speed, "self", None, caster_slug),
+            applied_at=time,
+        )
 
     def spend_sigma(context, caster_slug, time, registry):
         registry.add(Effect("attack_damage_up", attack_damage, "self", duration, caster_slug), applied_at=time)
         registry.add(Effect("atk_percent", atk, "self", duration, caster_slug), applied_at=time)
+        registry.truncate_open_ended("burst_gauge_fill_speed_percent", caster_slug, time)
         context.clear_status(caster_slug, METAL_SIGMA_STATUS)  # "Removes Metal σ."
 
     return [

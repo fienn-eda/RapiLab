@@ -2536,7 +2536,9 @@ def _simulate_raid_once(
         gauge_shots_by_slug,
         [e["time"] for e in events if e["type"] == "full_burst_end"],
         weapon_stats=weapon_stats, fight_duration=fight_duration,
-        ammo_rounds_by_slug=ammo_rounds_by_slug, bonus_fills=gauge_fills)
+        ammo_rounds_by_slug=ammo_rounds_by_slug, bonus_fills=gauge_fills,
+        speed_multiplier_at=lambda slug, time: 1.0 + registry.total_for(
+            "burst_gauge_fill_speed_percent", target_for(slug), time))
     result["gauge_charge_times"] = resolved_gauge
     # 쿨은 돌았는데 게이지가 안 차서 기다린 사이클 수(**버충 밀림**). 간격이
     # 게이지와 같으면 게이지가 정한 것이고, 더 길면 쿨다운이 정한 것이다.

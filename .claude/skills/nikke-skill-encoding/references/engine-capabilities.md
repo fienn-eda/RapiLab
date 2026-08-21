@@ -1565,13 +1565,32 @@ value never reaches `calculate_damage`, so it does NOT change simulated damage.
 model: `shield_amount` and anything HP/heal/DEF/survivability. Defer these;
 if a Nikke's contribution is mostly these, say so — a thin encoding is honest.
 
-`burst_gauge_fill_speed_percent` used to sit in that group with the reason "gauge
-charge time is a fixed sim input". **That reason expired on 2026-08-21**: gauge
-fill is now computed per deck from the deck's own shot timeline
-(`burst_gauge.fill_times`, fed back through `simulate_raid`'s fixed point), so
-the bigger model exists. The stat is still inert TODAY because nothing multiplies
-the accumulated energy by it yet — but that is a missing WIRE, not a missing
-concept, so record the bullet rather than writing the unit off.
+**`burst_gauge_fill_speed_percent` is NOW consumed (2026-08-22)**, closing the
+gap the 2026-08-21 gauge-as-deck-property change opened: gauge fill is computed
+per deck from the deck's own shot timeline (`burst_gauge.fill_times`, fed back
+through `simulate_raid`'s fixed point), and `fill_times`'s `speed_multiplier_at`
+argument — `(slug, time) -> multiplier`, per-SHOT rather than a single scalar —
+is what reads this stat. `raid_simulator` wires it as
+`lambda slug, time: 1.0 + registry.total_for("burst_gauge_fill_speed_percent",
+target_for(slug), time)`, so ordinary `registry.add`/`total_for` semantics
+apply: scope decides who benefits (`"squad"` reaches every seat, `"self"` only
+the caster), and duration/`truncate_open_ended` decide the window, exactly like
+any other stat. The per-shot callable (not a value sampled once) is what makes
+scope AND mid-fight toggling both expressible in the same place — a scalar
+computed once at t=0 cannot represent a buff that is not up for the whole fight.
+Consumers: `anis_star.py` (squad, permanent from battle start, +6% at lv10),
+`grave.py` (squad, windowed to Heat Emission's `heat_emission_duration`, +38.96%
+at lv10), `mana.py` (self, an open-ended Effect granted with Metal σ and closed
+by `truncate_open_ended` when she spends it at Full Burst entry — the window
+until the NEXT entry isn't known when it's granted, so no fixed duration can
+express it — +70.4% at lv10). **Not every carrier of this stat is wired**:
+`neon_vision_eye.py`'s Firepower Charge scales it off the Firepower Gauge's
+live AMOUNT (+5% per point, up to +500%), and that module deliberately does not
+track the gauge as a live quantity — it measured the gauge inert for damage
+(2026-08-14) and replaced it with a fixed burst-period constant instead, so no
+number exists in that encoding to read at a Full Burst end. See the module
+docstring and `gauge-effect-census.md` before building a live Firepower Gauge
+resource to close it.
 
 **"Ally ammo threshold -> Burst Gauge %" fills are NOW consumed (2026-08-22)**,
 a second charge source alongside weapon hits: `burst_gauge.fill_times`'s

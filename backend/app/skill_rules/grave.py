@@ -35,11 +35,10 @@ Modeled (DPS-relevant):
   a safety net for condition (2), which in practice never arrives before
   condition (1) already closed the buff out. Also modeled: the forced double
   reload itself (`build_grave_weapon_mode_schedule`), the segment that spends
-  it. Her own HP regen and the Burst Gauge fill-speed bonus are not modeled.
-  The gauge bonus is a missing WIRE rather than a missing model: gauge fill is
-  computed per deck (`burst_gauge.fill_times`), but nothing scales the energy
-  by `burst_gauge_fill_speed_percent` yet. See `anis_star.py`'s
-  `grant_gauge_fill_speed`, which registers the same stat.
+  it; and the same window's squad Burst Gauge filling speed (+38.96% at lv10),
+  which rides `heat_emission_duration` alongside the Pierce Damage buff and
+  feeds `burst_gauge.fill_times` rather than the damage formula. Her own HP
+  regen is not modeled (survival).
 
 - Overheat (skills[1]), a normal-attack-count escalation on self. Per Fienn
   (verified in-game), the three tiers split into two permanence regimes:
@@ -178,6 +177,7 @@ def build_grave_rules(values):
     squad_pierce = float(plot_spoiler["description_value_04"]) / 100
     squad_ammo_rounds = float(plot_spoiler["description_value_05"])
     heat_emission_pierce = float(heat_emission["description_value_05"]) / 100
+    heat_emission_gauge_fill_speed = float(heat_emission["description_value_04"]) / 100
     unlimited_ammo = unlimited_ammo_percent(values)
     heat_emission_duration = heat_emission_seconds(values)
 
@@ -232,6 +232,11 @@ def build_grave_rules(values):
         registry.add(
             Effect("pierce_damage_up", heat_emission_pierce, "squad",
                    heat_emission_duration, caster_slug),
+            applied_at=time,
+        )
+        registry.add(
+            Effect("burst_gauge_fill_speed_percent", heat_emission_gauge_fill_speed,
+                   "squad", heat_emission_duration, caster_slug),
             applied_at=time,
         )
 

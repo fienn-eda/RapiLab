@@ -31,6 +31,7 @@ MANA_VALUES = {
 }
 
 MANA = {"slug": "mana", "element": "Wind"}
+ALLY = {"slug": "ally", "element": "Iron"}
 
 
 def make_context():
@@ -128,6 +129,24 @@ def test_metal_sigma_buffs_last_ten_seconds():
     fire_trigger("battle_start", {"mana": rules}, ctx, reg, 0.0)
     _run_cycle(ctx, rules, reg, time=5.0, mana_bursts=True)
     assert reg.total_for("attack_damage_up", MANA, now=15.1) == 0.0
+
+
+def test_metal_sigma_gauge_fill_speed_is_self_scoped_and_toggles_with_the_status():
+    """Metal σ's own payload - Burst Gauge filling speed +70.4%, "Affects
+    self" - rides the same battle_start / full_burst_enter (spend) /
+    full_burst_end (restore) lifecycle as the status flag. Closed at the
+    spend by `truncate_open_ended` rather than a fixed duration, because the
+    window until the NEXT Full Burst entry is not known when it is granted."""
+    ctx = make_context()
+    rules = build_metal_sigma_rules(MANA_VALUES)
+    reg = EffectRegistry()
+    fire_trigger("battle_start", {"mana": rules}, ctx, reg, 0.0)
+    assert round(reg.total_for("burst_gauge_fill_speed_percent", MANA, now=0.0), 4) == 0.704
+    assert reg.total_for("burst_gauge_fill_speed_percent", ALLY, now=0.0) == 0.0  # self only
+
+    _run_cycle(ctx, rules, reg, time=5.0, mana_bursts=True)  # spent at 5.0, restored at 15.0
+    assert reg.total_for("burst_gauge_fill_speed_percent", MANA, now=5.0) == 0.0
+    assert round(reg.total_for("burst_gauge_fill_speed_percent", MANA, now=15.0), 4) == 0.704
 
 
 def test_fatal_error_self_buff_triggers_on_own_burst_activate():

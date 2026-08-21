@@ -5,7 +5,9 @@ Modeled (DPS-relevant):
   ATK + squad burst-cooldown reduction; with a Burst-1 ally -> Everyone's Star)
   and its full-charge additional damage (120.13% of final ATK on every Full
   Charge -> a per-shot nuke, since an RL's every shot is a full charge; see
-  `build_starfall_full_charge_nuke_rules`).
+  `build_starfall_full_charge_nuke_rules`). Also the squad Burst Gauge filling
+  speed (+6% at lv10, `grant_gauge_fill_speed`), which feeds
+  `burst_gauge.fill_times` rather than the damage formula.
 - Stardust (skills[1]): squad ATK % of caster's ATK while My Own Star; squad
   Projectile Explosion Damage (the skill says "self + allies with lower DEF";
   she's a Defender so ~everyone qualifies -> squad approx); squad Attack Damage.
@@ -49,10 +51,9 @@ Star Anis also grants the squad Max HP +15.02% of her own while in Everyone's
 Star - modeled, because `flat_max_hp` feeds every "ATK ▲ X% of Max HP"
 conversion in the deck (Maiden, Cinderella, Maxwell, Laplace: Ultimate Hero).
 
-Not modeled: Starfall's Burst Gauge filling speed (inert stat) and the
-Everyone's Star "Re-enters Burst / Stage" branch (no multi-stage burst
-re-entry); the burst's Explosion Radius (inert) and DEF, and her heals
-(survival).
+Not modeled: the Everyone's Star "Re-enters Burst / Stage" branch (no
+multi-stage burst re-entry); the burst's Explosion Radius (inert) and DEF, and
+her heals (survival).
 
 She reads 0.946x of her recorded raid damage, up from 0.627x over four
 corrections. Everything below is the audit trail, kept because the WAY the last
@@ -163,17 +164,7 @@ def build_starfall_rules(values: dict) -> list[SkillRule]:
     gauge_fill_speed = float(values["description_value_05"]) / 100
 
     def grant_gauge_fill_speed(context, caster_slug, time, registry):
-        # INERT: nothing multiplies gauge energy by
-        # `burst_gauge_fill_speed_percent`, so this does not move damage.
-        #
-        # A missing WIRE, not a missing model. Gauge fill IS modelled - it is
-        # computed per deck from the deck's own shot timeline
-        # (`burst_gauge.fill_times`, iterated to a fixed point in
-        # `simulate_raid`), and `BossProfile.gauge_charge_time` is only that
-        # loop's seed. Applying this stat means scaling the energy each hit
-        # contributes; the plan for it is
-        # docs/superpowers/plans/2026-08-21-burst-gauge-as-deck-property.md.
-        # Registered so it starts counting the day that wire lands.
+        # 스쿼드 전체의 타격당 게이지 에너지에 곱해진다(burst_gauge.fill_times).
         if context.has_status(caster_slug, "Starfall Gauge Buff Granted"):
             return
         context.set_status(caster_slug, "Starfall Gauge Buff Granted")

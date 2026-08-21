@@ -1,6 +1,9 @@
 import pytest
 
+from app.deck_search import BossProfile, deck_is_valid, evaluate_deck, feasible_orderings
 from app.effects import EffectRegistry
+from app.models import UserNikkeState
+from app.skill_rules import registry as skill_rule_registry
 from app.skill_rules.anis_star import (
     build_shooting_stars_scheduled_nukes,
     build_star_anis_burst_rules,
@@ -9,6 +12,7 @@ from app.skill_rules.anis_star import (
     build_stardust_rules,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
+from app.user_roster import load_roster
 
 # Real skill level 10 values pulled from api.dotgg.gg for anis-star's Starfall skill.
 LEVEL_10_VALUES = {
@@ -354,3 +358,50 @@ def test_starfall_takes_neither_the_core_bonus_nor_projectile_explosion():
 
     assert pulse.damage_type == "attack"
     assert getattr(pulse, "core_eligible", None) in (None, False)
+
+
+# --- 게이지 충전 속도 (squad 스코프) -----------------------------------------
+
+def _nikke(slug):
+    return UserNikkeState.model_validate({
+        "character_slug": slug, "level": 200, "core_level": 0, "hp": 1_000_000.0,
+        "atk": 60_000.0, "def_": 3_000.0,
+        "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10}})
+
+
+def _deck_with_anis():
+    slugs = ["anis-star", "nayuta", "cinderella-crystal-wave-mg", "cinderella", "modernia"]
+    specs, excluded = load_roster([_nikke(s) for s in slugs])
+    assert not excluded, excluded
+    return next(o for o in feasible_orderings(specs)
+                if {u.slug for u in o} == set(slugs) and deck_is_valid(o))
+
+
+def _boss():
+    return BossProfile(element="Iron", fight_duration=180.0)
+
+
+def test_starfall_gauge_buff_shortens_the_computed_gauge(monkeypatch):
+    """아니스의 「버스트 게이지 충전 속도 6% 상승」은 스쿼드 전체의 타격당
+    에너지에 곱해진다(Fienn 확인 2026-08-21: 덱의 5인 모두의 충전량을 올린다).
+
+    같은 5인 덱을 두 번 채점해 대조한다 - 다른 B1 유닛으로 바꾸는 것은 대조가
+    아니다: 게이지는 유닛별이 아니라 스쿼드가 공유하는 값 하나라, 그 유닛
+    자신의 타격당 에너지가 다르면 배율과 섞여 어느 쪽이 차이를 냈는지 못
+    가른다. 대신 그녀의 게이지 버프 규칙 하나만 빼서, 나머지는 전부 바이트
+    단위로 같은 발사 타임라인을 유지한다.
+    """
+    deck, boss = _deck_with_anis(), _boss()
+    with_buff = evaluate_deck(deck, boss)
+
+    original = skill_rule_registry.build_starfall_rules
+
+    def without_gauge_buff(values):
+        return [rule for rule in original(values)
+                if rule.action.__name__ != "grant_gauge_fill_speed"]
+
+    monkeypatch.setattr(skill_rule_registry, "build_starfall_rules", without_gauge_buff)
+    without_buff = evaluate_deck(deck, boss)
+
+    assert min(with_buff["gauge_charge_times"].values()) < \
+        min(without_buff["gauge_charge_times"].values())

@@ -60,9 +60,21 @@ Not modeled / deferred:
   1" reads either as a one-shot +1 or as +1 per tick across the 10 sec, and the
   bullet names no interval. Both readings were simulated; both give 1, 4, 7 -
   an ambiguity that cannot change any number is not a blocker.
-- Explosion Radius +200% (not a damage multiplier), Burst Gauge filling speed
-  (not DPS), and all of Healthy Body's survivability (invulnerability, debuff
-  immunity, incoming-healing) are skipped.
+- Explosion Radius +200% (not a damage multiplier) and all of Healthy Body's
+  survivability (invulnerability, debuff immunity, incoming-healing) are
+  skipped.
+- Firepower Charge's self Burst Gauge filling speed ("when Full Burst ends
+  while Firepower Gauge is active", +5% per point of Firepower Gauge charge,
+  up to +500%) is deferred, unlike the other three carriers of this stat
+  (`anis_star.py`, `grave.py`, `mana.py`). It scales off the Firepower Gauge's
+  actual AMOUNT, and this module deliberately does not simulate that as a
+  live quantity - the arithmetic above found the gauge inert for damage
+  (2026-08-14) and replaced it with a fixed 1st/4th/7th burst period, so no
+  gauge value exists anywhere in this encoding to read at a Full Burst end.
+  Building one now would mean reconstructing the live gauge this module
+  proved unnecessary, on no in-game reading of the amount over time to
+  calibrate a swing this large (up to 5x) against - see
+  `.superpowers/sdd/2026-08-21-burst-gauge-as-deck-property/gauge-effect-census.md`.
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 from app.squad_engine import SkillRule

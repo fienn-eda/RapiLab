@@ -208,3 +208,48 @@ def test_ally_rounds_carry_across_cycles_not_reset_per_window():
     result = fill_times(shots, [10.0, 20.0], weapon_stats=stats, fight_duration=100.0,
                         ammo_rounds_by_slug=rounds, bonus_fills=fills)
     assert result == {1: 11.0, 2: 1.0}
+
+
+# --- 게이지 충전 속도 배율 (speed_multiplier_at) -----------------------------
+# 아니스: 스타·그레이브·마나가 등록하는 `burst_gauge_fill_speed_percent`를
+# 실제로 곱한다. 스칼라 하나가 아니라 (슬러그, 시각) -> 배율 콜백인 이유:
+# 스코프가 스쿼드(아니스·그레이브)와 self(마나) 둘 다 있고, 값이 전투 도중
+# 켜지고 꺼진다(그레이브의 Heat Emission, 마나의 Metal σ)ㅡ창 전체에 쓰는
+# 상수 하나로는 이 셋을 같은 자리에서 표현할 수 없다.
+
+
+def test_speed_multiplier_shortens_the_fill():
+    """+50% 배율이면 같은 무기가 게이지를 더 적은 발로 채운다 - 발 하나가
+    GAUGE_FULL의 1/3이면 배율 없이 3발, +50%면 2발째에 채운다."""
+    stats = {"u": _weapon(GAUGE_FULL / 3)}
+    shots = {"u": [(10.0 + i, False) for i in range(1, 5)]}
+    assert fill_times(shots, [10.0], weapon_stats=stats,
+                      fight_duration=100.0) == {1: 3.0}
+    assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
+                      speed_multiplier_at=lambda slug, time: 1.5) == {1: 2.0}
+
+
+def test_speed_multiplier_can_vary_by_time():
+    """마나의 Metal σ처럼 배율이 창 도중에 꺼질 수 있다 - 뒤쪽 절반만 배율이
+    붙으면 그 구간의 몫만 빨리 찬다."""
+    stats = {"u": _weapon(GAUGE_FULL / 4)}
+    shots = {"u": [(11.0, False), (12.0, False), (13.0, False), (14.0, False)]}
+    assert fill_times(shots, [10.0], weapon_stats=stats,
+                      fight_duration=100.0) == {1: 4.0}
+    # 13초부터 배율 2배: 세 번째 발(13초)이 1/4 x 2 = 1/2를 더해 앞 두 발의
+    # 1/2와 합쳐 정확히 채운다 - 네 번째 발이 필요 없다.
+    assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
+                      speed_multiplier_at=lambda slug, time: 2.0 if time >= 13.0 else 1.0
+                      ) == {1: 3.0}
+
+
+def test_speed_multiplier_can_vary_by_slug():
+    """self 스코프(마나)와 squad 스코프(아니스·그레이브)를 같은 콜백 하나로
+    가른다 - 슬러그별로 다른 값을 돌려줄 수 있어야 한다."""
+    stats = {"a": _weapon(GAUGE_FULL), "b": _weapon(GAUGE_FULL)}
+    shots = {"a": [(11.0, False)], "b": [(12.0, False)]}
+    # a만 배율 1(=그대로), b는 0 - a의 한 발이 그 자리에서 다 채우고, b의 발은
+    # 안 세어져 다음 사이클로도 안 넘어간다(이월 없음).
+    only_a = fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
+                        speed_multiplier_at=lambda slug, time: 1.0 if slug == "a" else 0.0)
+    assert only_a == {1: 1.0}
