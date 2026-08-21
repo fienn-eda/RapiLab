@@ -245,11 +245,18 @@ def test_speed_multiplier_can_vary_by_time():
 
 def test_speed_multiplier_can_vary_by_slug():
     """self 스코프(마나)와 squad 스코프(아니스·그레이브)를 같은 콜백 하나로
-    가른다 - 슬러그별로 다른 값을 돌려줄 수 있어야 한다."""
+    가른다 - 슬러그별로 다른 값을 돌려줄 수 있어야 한다.
+
+    리뷰 Important 2: 배율 0인 슬러그를 **먼저** 쏘게 한다. 배율 1인 슬러그가
+    먼저면 그 한 발로 게이지가 다 차서 `break`하고 배율 0인 슬러그의 발은
+    아예 안 평가된다 - slug를 통째로 무시하는 구현도 통과하는 항진명제였다
+    (2026-08-22 리뷰에서 지적, 두 구현을 실제로 돌려 `{1: 1.0}`으로 구분 못
+    함을 확인). b(배율 0)가 먼저면: 배율을 슬러그별로 제대로 가르는 구현은
+    b의 발을 0으로 세어 안 차고 a(배율 1)의 발에서 채워 사이클 **2.0**초 -
+    slug를 무시해 모두에게 a의 배율(1.0)을 주는 구현은 b의 발부터 이미 다
+    채워 **1.0**초로 갈린다."""
     stats = {"a": _weapon(GAUGE_FULL), "b": _weapon(GAUGE_FULL)}
-    shots = {"a": [(11.0, False)], "b": [(12.0, False)]}
-    # a만 배율 1(=그대로), b는 0 - a의 한 발이 그 자리에서 다 채우고, b의 발은
-    # 안 세어져 다음 사이클로도 안 넘어간다(이월 없음).
-    only_a = fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
-                        speed_multiplier_at=lambda slug, time: 1.0 if slug == "a" else 0.0)
-    assert only_a == {1: 1.0}
+    shots = {"b": [(11.0, False)], "a": [(12.0, False)]}
+    per_slug = fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
+                          speed_multiplier_at=lambda slug, time: 1.0 if slug == "a" else 0.0)
+    assert per_slug == {1: 2.0}

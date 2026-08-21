@@ -171,12 +171,23 @@ def test_heat_emission_reactivates_after_the_next_full_burst_end():
 
 def test_heat_emission_grants_squad_gauge_fill_speed():
     """"Affects all allies" - the same squad Pierce Damage bullet's sibling,
-    riding the same Heat Emission window (`heat_emission_duration`)."""
+    riding the same Heat Emission window (`heat_emission_duration`). Checked
+    at the window's boundary too (review Important 2 self-audit): the value-
+    only assertion alone would pass even if the gauge Effect were registered
+    with the wrong (e.g. permanent) duration, since it only reads the instant
+    of grant - mirrors `test_heat_emission_expires_well_before_grave_bursts_again`'s
+    boundary for the sibling Pierce Damage buff."""
     ctx = make_context()
     ctx.burst_used_this_cycle.add("grave")
     registry = EffectRegistry()
+    duration = heat_emission_seconds({
+        "heat_emission": HEAT_EMISSION,
+        "plot_spoiler": PLOT_SPOILER,
+        "caster_weapon_stats": CASTER_WEAPON_STATS,
+    })
     fire_trigger("full_burst_end", {"grave": build()}, ctx, registry, time=15.0)
     assert round(registry.total_for("burst_gauge_fill_speed_percent", ALLY, now=15.0), 4) == 0.3896
+    assert registry.total_for("burst_gauge_fill_speed_percent", ALLY, now=15.0 + duration + 0.01) == 0.0
 
 
 def test_overheat_per_shot_rules_structure():

@@ -1578,6 +1578,12 @@ the caster), and duration/`truncate_open_ended` decide the window, exactly like
 any other stat. The per-shot callable (not a value sampled once) is what makes
 scope AND mid-fight toggling both expressible in the same place — a scalar
 computed once at t=0 cannot represent a buff that is not up for the whole fight.
+**Only multiplies weapon-hit energy, not `bonus_fills`** (the "ally ammo
+threshold → Burst Gauge %" jumps below) — those are a separately-added term,
+not a multiplied one. Whether this stat is ALSO meant to speed up a skill's
+own flat gauge grant (e.g. Little Mermaid's Bubble Order) is unmeasured;
+today it doesn't, which is the conservative default until a measurement says
+otherwise.
 Consumers: `anis_star.py` (squad, permanent from battle start, +6% at lv10),
 `grave.py` (squad, windowed to Heat Emission's `heat_emission_duration`, +38.96%
 at lv10), `mana.py` (self, an open-ended Effect granted with Metal σ and closed
@@ -1586,11 +1592,16 @@ until the NEXT entry isn't known when it's granted, so no fixed duration can
 express it — +70.4% at lv10). **Not every carrier of this stat is wired**:
 `neon_vision_eye.py`'s Firepower Charge scales it off the Firepower Gauge's
 live AMOUNT (+5% per point, up to +500%), and that module deliberately does not
-track the gauge as a live quantity — it measured the gauge inert for damage
-(2026-08-14) and replaced it with a fixed burst-period constant instead, so no
-number exists in that encoding to read at a Full Burst end. See the module
-docstring and `gauge-effect-census.md` before building a live Firepower Gauge
-resource to close it.
+carry the gauge as a live quantity — it measured the gauge inert for DAMAGE
+(2026-08-14) and replaced it with a fixed burst-period constant instead. That
+finding still stands; this is a different question, and it is a deferral of
+SIZE, not of knowledge — the trajectory (battle-start 100, +2/normal, +45 on
+window end, -100 on a qualifying burst) is already measurement-verified (the
+same arithmetic reproduces the in-game 1st/4th/7th reading across six decks).
+What's missing is a `ResourceSpec` to carry that trajectory as a live value
+readable at each Full Burst end, tracked as an open gap in `docs/engine-gaps.md`
+("네온: 비전 아이의 게이지 충전 속도"). See the module docstring and
+`gauge-effect-census.md` before building it.
 
 **"Ally ammo threshold -> Burst Gauge %" fills are NOW consumed (2026-08-22)**,
 a second charge source alongside weapon hits: `burst_gauge.fill_times`'s

@@ -67,13 +67,17 @@ Not modeled / deferred:
   while Firepower Gauge is active", +5% per point of Firepower Gauge charge,
   up to +500%) is deferred, unlike the other three carriers of this stat
   (`anis_star.py`, `grave.py`, `mana.py`). It scales off the Firepower Gauge's
-  actual AMOUNT, and this module deliberately does not simulate that as a
-  live quantity - the arithmetic above found the gauge inert for damage
-  (2026-08-14) and replaced it with a fixed 1st/4th/7th burst period, so no
-  gauge value exists anywhere in this encoding to read at a Full Burst end.
-  Building one now would mean reconstructing the live gauge this module
-  proved unnecessary, on no in-game reading of the amount over time to
-  calibrate a swing this large (up to 5x) against - see
+  actual AMOUNT, and this module deliberately does not carry that as a live
+  quantity - the arithmetic above found the gauge inert for DAMAGE
+  (2026-08-14) and replaced it with a fixed 1st/4th/7th burst period. That
+  finding still stands; this is a different question. **This is a deferral of
+  SIZE, not of knowledge** - the trajectory itself (battle-start 100, +2 per
+  normal attack, +45 on Firepower Charge end, -100 on a qualifying burst) is
+  already measurement-verified (the same arithmetic reproduces Fienn's
+  in-game 1st/4th/7th reading across six decks, above). What's missing is a
+  `ResourceSpec` to carry that trajectory as a live value readable at each
+  Full Burst end, not missing information about what the value would be. See
+  `docs/engine-gaps.md`'s "네온: 비전 아이의 게이지 충전 속도" row and
   `.superpowers/sdd/2026-08-21-burst-gauge-as-deck-property/gauge-effect-census.md`.
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule

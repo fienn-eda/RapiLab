@@ -2532,13 +2532,16 @@ def _simulate_raid_once(
         )
     # 이 패스의 발사 타임라인이 정한 게이지. 다음 패스가 사이클을 이 값으로 다시
     # 짜고, 값이 안 바뀌면 고정점이다.
+    # target_for(slug)를 채움 루프 밖에서 한 번만 만든다 - 슬러그당 값은 시각과
+    # 무관해 안 바뀌는데, 람다 안에서 부르면 세는 샷마다 새 dict를 만든다.
+    gauge_targets = {m["slug"]: target_for(m["slug"]) for m in deck}
     resolved_gauge = burst_gauge.fill_times(
         gauge_shots_by_slug,
         [e["time"] for e in events if e["type"] == "full_burst_end"],
         weapon_stats=weapon_stats, fight_duration=fight_duration,
         ammo_rounds_by_slug=ammo_rounds_by_slug, bonus_fills=gauge_fills,
         speed_multiplier_at=lambda slug, time: 1.0 + registry.total_for(
-            "burst_gauge_fill_speed_percent", target_for(slug), time))
+            "burst_gauge_fill_speed_percent", gauge_targets[slug], time))
     result["gauge_charge_times"] = resolved_gauge
     # 쿨은 돌았는데 게이지가 안 차서 기다린 사이클 수(**버충 밀림**). 간격이
     # 게이지와 같으면 게이지가 정한 것이고, 더 길면 쿨다운이 정한 것이다.
