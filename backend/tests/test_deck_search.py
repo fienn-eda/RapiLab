@@ -662,6 +662,7 @@ def test_a_summary_reports_how_many_cycles_the_gauge_held_up():
     from app import deck_search
     result = {
         "total_damage": 1.0, "damage_log": [], "gauge_bound_cycles": 2,
+        "gauge_delay_seconds": 4.3,
         "events": [{"type": "burst", "tier": 1, "time": 0.0, "gauge_bound": True},
                    {"type": "full_burst_end", "time": 10.0},
                    {"type": "full_burst_end", "time": 25.0},
@@ -672,6 +673,7 @@ def test_a_summary_reports_how_many_cycles_the_gauge_held_up():
         [FakeUnit("a", 1), FakeUnit("b", 2), FakeUnit("c", 3)], result)
 
     assert summary["gauge_bound_cycles"] == 2
+    assert summary["gauge_delay_seconds"] == 4.3
     assert summary["total_cycles"] == 3
 
 

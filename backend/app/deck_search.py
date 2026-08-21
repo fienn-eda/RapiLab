@@ -712,7 +712,10 @@ def _summarize(ordered_deck, result):
         # 분모는 이 전투가 완주한 사이클 전부이고, 분자는 그중 첫 사이클을 뺀
         # 나머지에서만 나온다 - 첫 사이클엔 돌고 있던 쿨다운이 없어 밀릴 것이
         # 없다(`raid_simulator`의 계수 참조).
+        # 개수와 시간을 둘 다 싣는다 - 개수만으로는 4.3초 밀린 덱과 11.6초 밀린
+        # 덱이 똑같이 「11/14」로 읽힌다.
         "gauge_bound_cycles": result.get("gauge_bound_cycles", 0),
+        "gauge_delay_seconds": result.get("gauge_delay_seconds", 0.0),
         "total_cycles": sum(1 for e in result.get("events", ())
                             if e["type"] == "full_burst_end"),
         "result": result,

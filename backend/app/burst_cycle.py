@@ -143,10 +143,12 @@ def simulate_burst_cycle(
     이 스케줄러는 값이 어디서 왔는지 모른다. raid_simulator가 고정점까지
     반복하며 이 표를 갱신한다.
 
-    각 "burst" 이벤트는 `gauge_bound`를 달고 나온다 - 그 사이클의 발동 시각을
-    **게이지가 정했는가**(쿨다운보다 늦게 준비됐는가)다. 등호는 거짓이다.
+    각 "burst" 이벤트는 `gauge_bound`와 `gauge_delay`를 달고 나온다 - 그 사이클의
+    발동 시각을 **게이지가 정했는가**(쿨다운보다 늦게 준비됐는가)와 **몇 초나
+    늦었는가**다. 등호는 거짓이고 밀리지 않은 사이클의 지연은 0이다.
     이 자리에서만 알 수 있어서 여기서 싣는다: 이벤트 로그의 시각만으로는
-    게이지와 쿨다운이 같은 사이클을 게이지가 이긴 사이클과 구별할 수 없다.
+    게이지와 쿨다운이 같은 사이클을 게이지가 이긴 사이클과 구별할 수 없고,
+    쿨다운이 언제 준비됐는지가 로그에 없어 지연의 크기도 되유도할 수 없다.
     """
     gap = 0.0 if mode == "auto" else 0.1
     last_used_at = {member["slug"]: float("-inf") for member in deck}
@@ -194,14 +196,26 @@ def simulate_burst_cycle(
             events.append({"type": "full_burst_missed", "time": gauge_ready})
             break
 
-        fire_time = max(gauge_ready, *tier_ready_time.values())
-        # 게이지가 이 사이클을 **밀었는가** - 쿨다운은 전부 돌았는데 게이지가 아직
-        # 안 차서 기다린 사이클(Fienn의 용어로 **버충 밀림**). 등호는 밀림이
-        # 아니다: 두 시각이 같으면 게이지가 없었어도 같은 때 터졌으므로 아무것도
-        # 밀리지 않았다. `max()`를 고르는 이 자리가 어느 쪽이 이겼는지 아는
-        # 유일한 자리라 여기서 선언한다 - 나중에 실현된 간격에서 되유도하면
-        # 그 동점을 다시 가려낼 수 없다.
-        gauge_bound = gauge_ready > max(tier_ready_time.values())
+        cooldown_ready = max(tier_ready_time.values())
+        fire_time = max(gauge_ready, cooldown_ready)
+        # 게이지가 이 사이클을 **밀었는가**, 그리고 **얼마나** - 쿨다운은 전부
+        # 돌았는데 게이지가 안 차서 기다린 사이클과 그 시간(Fienn의 용어로
+        # **버충 밀림**). 등호는 밀림이 아니다: 두 시각이 같으면 게이지가 없었어도
+        # 같은 때 터졌으므로 아무것도 밀리지 않았다. `max()`를 고르는 이 자리가
+        # 어느 쪽이 얼마나 이겼는지 아는 유일한 자리라 여기서 선언한다 - 나중에
+        # 실현된 간격에서 되유도하면 그 동점을 다시 가려낼 수 없다.
+        #
+        # 개수와 시간을 **둘 다** 싣는 이유: 둘은 서로를 못 대신한다. 실측 덱 1과
+        # 덱 3은 똑같이 14사이클 중 11이 밀리는데 합계가 4.3초 대 11.6초이고,
+        # Fienn의 판독은 그 둘을 「안 밀림」과 「밀림」으로 가른다.
+        gauge_bound = gauge_ready > cooldown_ready
+        # 안 밀었으면 0이다 - 「쿨다운이 게이지를 몇 초 이겼는가」는 밀림이 아니라
+        # 합계에 들어갈 자리가 없다. 첫 사이클도 0이다: 돌고 있던 쿨다운이 없어
+        # (`cooldown_ready`가 -inf) 무엇에 대해 밀렸는지 말할 수 없고, 빼면
+        # 무한대가 나와 합계를 통째로 오염시킨다. 개수가 첫 사이클을 빼는 것과
+        # 같은 이유로 같은 사이클이 빠진다.
+        gauge_delay = (gauge_ready - cooldown_ready
+                       if gauge_bound and cooldown_ready > float("-inf") else 0.0)
 
         if fire_time >= fight_duration:
             break
@@ -220,10 +234,12 @@ def simulate_burst_cycle(
                              fire_count, stunned_until) <= fire_time
             ]
             chosen = eligible[0]
-            # `gauge_bound`는 사이클의 성질이라 그 사이클의 세 버스트가 모두
-            # 같은 값을 단다 - 셋이 함께 밀린 것이지 하나만 밀린 것이 아니다.
+            # `gauge_bound`/`gauge_delay`는 사이클의 성질이라 그 사이클의 세
+            # 버스트가 모두 같은 값을 단다 - 셋이 함께 밀린 것이지 하나만 밀린
+            # 것이 아니다.
             events.append({"type": "burst", "tier": tier, "slug": chosen["slug"],
-                           "time": fire_time, "gauge_bound": gauge_bound})
+                           "time": fire_time, "gauge_bound": gauge_bound,
+                           "gauge_delay": gauge_delay})
             last_used_at[chosen["slug"]] = fire_time
             last_fired_at[chosen["slug"]] = fire_time
             fire_count[chosen["slug"]] += 1

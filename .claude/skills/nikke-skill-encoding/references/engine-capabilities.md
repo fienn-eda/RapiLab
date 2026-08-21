@@ -1712,22 +1712,36 @@ and a tie pushed nothing — that cycle would have fired at the same instant wit
 no gauge at all. The old count re-derived it from that gap with `>=` and so
 counted ties; do not reintroduce a timestamp-derived version.
 
-`raid_simulator` only COUNTS the declarations, into `result["gauge_bound_cycles"]`,
-and `deck_search._summarize` carries it plus `total_cycles` (completed
+The same event also carries `gauge_delay` — **how many seconds** the gauge pushed
+that cycle (`gauge_ready - cooldown_ready`), 0.0 when it did not push. It is
+declared for the same reason the boolean is: the event log has no record of when
+the cooldowns were ready, so the size cannot be re-derived downstream either.
+Two values are pinned to 0.0 deliberately — a cycle the cooldown won (a negative
+"delay" is not a push, and summing it would cancel out real ones) and the OPENING
+cycle (no cooldown is running, so `cooldown_ready` is `-inf` and the difference is
+infinite, which would poison the sum).
+
+`raid_simulator` only COUNTS and SUMS the declarations, into
+`result["gauge_bound_cycles"]` and `result["gauge_delay_seconds"]`, and
+`deck_search._summarize` carries both plus `total_cycles` (completed
 `full_burst_end` events) out to `DeckRecommendation` for the screen. **The opening
-cycle is excluded from the count**: no cooldown is running yet, so the gauge is
-its only start condition and every deck would carry a constant 1. Both fields are
+cycle is excluded from both**: no cooldown is running yet, so the gauge is its
+only start condition and every deck would carry a constant 1. All three fields are
 DIAGNOSTIC — nothing in the engine reads them back, and they do not move damage.
 
-Two things this count is not. It is not "cycles where the gauge is the
-bottleneck" (that includes ties). And it is not a MAGNITUDE: a cycle pushed 0.06 s
-counts the same as one pushed 1.8 s, so a high count does not by itself mean a
-deck is slow. Measured on Fienn's five decks (2026-08-22): deck 1 reports 11/14
-bound yet the pushes total 4.30 s of a 180 s fight, while deck 3 reports the same
-11/14 for 11.61 s. **Exact ties do not occur in real decks** — the gauge is
-quantized to a 0.1 s grid while cooldown ready times are not, and the closest
-approach across all five decks was −0.02 s — so switching `>=` to `>` changed
-none of their numbers.
+Two things the COUNT is not. It is not "cycles where the gauge is the bottleneck"
+(that includes ties). And **it is not the discriminating value — the magnitude
+is.** Measured on Fienn's five decks (2026-08-22): deck 1 reports 11/14 bound yet
+the pushes total 4.30 s of a 180 s fight, while deck 3 reports the same 11/14 for
+11.61 s — and his in-game readings call deck 1 "not pushed" and deck 3 "pushed".
+The count alone cannot tell those two decks apart, which is why the screen leads
+with the seconds (`버충 밀림 +4.3초 · 14 사이클 중 11`) and why both fields ship.
+No threshold is applied anywhere; showing the size lets a reader set their own.
+
+**Exact ties do not occur in real decks** — the gauge is quantized to a 0.1 s grid
+while cooldown ready times are not, and the closest approach across all five decks
+was −0.02 s — so switching `>=` to `>` changed none of their numbers. The tie rule
+is still the correct one; it is simply not what made the old number look wrong.
 
 **`damage_to_parts_up` and `damage_to_interruption_parts_up` are inert too**, and
 deliberately so. `calculate_damage` still TAKES `damage_to_parts_up` but leaves

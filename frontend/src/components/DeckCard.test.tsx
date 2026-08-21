@@ -249,29 +249,67 @@ describe('DeckCard 보스 설정', () => {
 })
 
 describe('DeckCard 버충 밀림', () => {
-  // 게이지가 덱 속성이 된 뒤로 이 숫자가 「이 편성이 실전에서 밀리는가」를 말하는
+  // 게이지가 덱 속성이 된 뒤로 이 줄이 「이 편성이 실전에서 밀리는가」를 말하는
   // 유일한 자리다. 총딜만 보면 밀린 **결과**는 보여도 밀렸다는 **사실**은 안 보인다.
-  it('밀린 사이클이 있으면 그 수를 분모와 함께 말한다', () => {
+  // 시간이 앞인 이유는 그것이 판별하는 값이기 때문이다.
+  it('밀린 시간을 앞에, 사이클 수를 뒤에 말한다', () => {
     render(
-      <DeckCard label="덱 1" deck={{ ...DECK, gauge_bound_cycles: 11, total_cycles: 14 }} />,
+      <DeckCard
+        label="덱 1"
+        deck={{ ...DECK, gauge_delay_seconds: 4.3, gauge_bound_cycles: 11, total_cycles: 14 }}
+      />,
     )
 
-    expect(screen.getByText(/버충 밀림 11\/14 사이클/)).toBeInTheDocument()
+    expect(screen.getByText(/버충 밀림 \+4\.3초 · 14 사이클 중 11/)).toBeInTheDocument()
+  })
+
+  // **이 테스트가 이 변경의 요점이다.** 사이클 수가 같은 두 덱을 화면이 실제로
+  // 가르는지 본다 - 실측 덱 1(4.30초, 판독 「안 밀림」)과 덱 3(11.61초, 판독
+  // 「밀림」)은 둘 다 14사이클 중 11이 밀린다. 개수만 그리던 구현은 두 카드에
+  // 같은 문구를 띄우므로 여기서 빨개진다.
+  it('같은 11/14라도 밀린 시간이 다르면 다르게 말한다', () => {
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{ ...DECK, gauge_delay_seconds: 4.3, gauge_bound_cycles: 11, total_cycles: 14 }}
+      />,
+    )
+    render(
+      <DeckCard
+        label="덱 3"
+        deck={{
+          ...DECK,
+          deck: ['f', 'g', 'h', 'i', 'j'],
+          gauge_delay_seconds: 11.61,
+          gauge_bound_cycles: 11,
+          total_cycles: 14,
+        }}
+      />,
+    )
+
+    const lines = screen.getAllByText(/버충 밀림/)
+    expect(lines).toHaveLength(2)
+    expect(lines[0].textContent).toContain('+4.3초')
+    expect(lines[1].textContent).toContain('+11.6초')
+    expect(lines[0].textContent).not.toEqual(lines[1].textContent)
   })
 
   // 0이면 아무것도 안 그린다 - 대부분의 덱이 0이라 「없음」을 그리면 카드마다
   // 붙는 잡음이 된다.
   it('밀린 사이클이 0이면 줄 자체를 안 그린다', () => {
     render(
-      <DeckCard label="덱 1" deck={{ ...DECK, gauge_bound_cycles: 0, total_cycles: 14 }} />,
+      <DeckCard
+        label="덱 1"
+        deck={{ ...DECK, gauge_delay_seconds: 0, gauge_bound_cycles: 0, total_cycles: 14 }}
+      />,
     )
 
     expect(screen.queryByText(/버충 밀림/)).not.toBeInTheDocument()
   })
 
-  // 옛 SavedRun에는 이 필드가 아예 없다(partial_charge_full_rounds와 같은 자리).
-  // `undefined > 0`은 거짓이라 줄이 안 그려지는 것이 맞고, 분모 자리에 undefined가
-  // 새어 나오는 일도 없어야 한다.
+  // 옛 SavedRun에는 이 필드들이 아예 없다(partial_charge_full_rounds와 같은 자리).
+  // `undefined > 0`은 거짓이라 줄이 안 그려지는 것이 맞고, 초 자리에 undefined가
+  // 새어 나와 `.toFixed`로 터지는 일도 없어야 한다.
   it('옛 저장본처럼 필드가 없어도 안 터지고 줄을 안 그린다', () => {
     render(<DeckCard label="덱 1" deck={DECK} />)
 

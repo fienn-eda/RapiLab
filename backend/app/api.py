@@ -243,10 +243,16 @@ class DeckRecommendation(BaseModel):
     # 딕셔너리다. hold_burst_slugs와 같은 성격의 필드로, 덱 목록만으로는 재현할 수
     # 없는 편성 지시다: 좌석은 버스트 순서와 다른 축이라 덱 순서에 안 담긴다.
     seating: dict[str, SeatingEntry] = {}
-    # 쿨타임은 돌았는데 게이지가 안 차서 버스트를 못 쓴 사이클 수와, 이 전투가
-    # 완주한 사이클 수. 게이지가 덱 속성이 된 뒤로 이 둘이 「이 편성이 실전에서
-    # 밀리는가」를 말하는 유일한 자리다 - 총딜만 보면 밀린 결과는 보여도 밀렸다는
-    # 사실은 안 보인다. 첫 사이클은 분자에서 빠진다(돌고 있던 쿨다운이 없다).
+    # 쿨타임은 돌았는데 게이지가 안 차서 버스트가 밀린 **총 시간**과 그런 사이클
+    # **수**, 그리고 이 전투가 완주한 사이클 수. 게이지가 덱 속성이 된 뒤로 이
+    # 셋이 「이 편성이 실전에서 밀리는가」를 말하는 유일한 자리다 - 총딜만 보면
+    # 밀린 결과는 보여도 밀렸다는 사실은 안 보인다.
+    #
+    # **시간과 개수는 서로를 못 대신한다.** 실측 덱 1과 덱 3은 똑같이 14사이클 중
+    # 11이 밀리는데 합계가 4.3초 대 11.6초이고, 판독은 그 둘을 「안 밀림」과
+    # 「밀림」으로 가른다. 판별하는 값은 시간이라 화면도 시간을 앞에 둔다.
+    # 첫 사이클은 둘 다에서 빠진다(돌고 있던 쿨다운이 없어 밀릴 것이 없다).
+    gauge_delay_seconds: float = 0.0
     gauge_bound_cycles: int = 0
     total_cycles: int = 0
 
@@ -539,6 +545,7 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
                 partial_charge_slugs=r["partial_charge_slugs"],
                 partial_charge_full_rounds=r["partial_charge_full_rounds"],
                 seating=seating_view(r["seating"]),
+                gauge_delay_seconds=r["gauge_delay_seconds"],
                 gauge_bound_cycles=r["gauge_bound_cycles"],
                 total_cycles=r["total_cycles"],
             )
@@ -589,6 +596,7 @@ def _to_recs(decks, pinned_by_deck=None):
             partial_charge_slugs=d["partial_charge_slugs"],
             partial_charge_full_rounds=d["partial_charge_full_rounds"],
             seating=seating_view(d["seating"]),
+            gauge_delay_seconds=d["gauge_delay_seconds"],
             gauge_bound_cycles=d["gauge_bound_cycles"],
             total_cycles=d["total_cycles"],
             pinned_slugs=pinned,
@@ -725,6 +733,7 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
             partial_charge_slugs=d["partial_charge_slugs"],
             partial_charge_full_rounds=d["partial_charge_full_rounds"],
             seating=seating_view(d["seating"]),
+            gauge_delay_seconds=d["gauge_delay_seconds"],
             gauge_bound_cycles=d["gauge_bound_cycles"],
             total_cycles=d["total_cycles"]) for d in out["decks"]],
         combined_total_damage=out["combined_total_damage"],

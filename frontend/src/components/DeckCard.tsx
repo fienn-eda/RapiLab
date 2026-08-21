@@ -100,12 +100,16 @@ export function DeckCard({
           )
         })}
       </ol>
-      {/* 0이면 아무것도 안 그린다 — 대부분의 덱이 0이라 「없음」을 그리면 잡음이
+      {/* 시간이 앞이다 — 판별하는 값이 시간이기 때문이다. 같은 「11/14」가 4.3초일
+          수도 11.6초일 수도 있고, 그 둘은 사람에게 「안 밀림」과 「밀림」으로 갈린다.
+          문턱은 두지 않는다: 시간을 보여주면 사람이 스스로 정한다.
+          0이면 아무것도 안 그린다 — 대부분의 덱이 0이라 「없음」을 그리면 잡음이
           된다. 옛 SavedRun에는 필드가 아예 없고, 그때도 이 비교가 거짓이다. */}
       {(deck.gauge_bound_cycles ?? 0) > 0 && (
-        <p className="deck-results__gauge-bound" title={HELP.results.gaugeBoundTitle}>
+        <p className="deck-results__gauge-bound" title={HELP.results.gaugeDelayTitle}>
           <span aria-hidden="true">🔋</span>{' '}
-          버충 밀림 {deck.gauge_bound_cycles}/{deck.total_cycles} 사이클
+          버충 밀림 +{(deck.gauge_delay_seconds ?? 0).toFixed(1)}초 ·{' '}
+          {deck.total_cycles} 사이클 중 {deck.gauge_bound_cycles}
         </p>
       )}
       {deck.hold_burst_slugs.length > 0 && (

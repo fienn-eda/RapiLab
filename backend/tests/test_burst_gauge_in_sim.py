@@ -6,6 +6,8 @@
 표 자체의 산술(키·값·이월·톡톡이)은 `tests/test_burst_gauge.py`에 있다. 여기
 있는 것은 그 표가 **시뮬레이터의 사이클을 실제로 정하는가**다.
 """
+import math
+
 import pytest
 
 from app.burst_cycle import FULL_BURST_OPEN_DELAY
@@ -168,6 +170,10 @@ def test_the_opening_cycle_is_not_counted_as_gauge_bound():
 
     assert tier1[0]["gauge_bound"] is True
     assert result["gauge_bound_cycles"] == 0
+    # 첫 사이클엔 돌고 있던 쿨다운이 없어 그 차이가 **무한대**다. 그대로 실으면
+    # 합계가 통째로 inf가 되므로 스케줄러가 그 자리에서 0으로 못박는다.
+    assert tier1[0]["gauge_delay"] == 0.0
+    assert result["gauge_delay_seconds"] == 0.0
 
 
 def test_a_deck_that_barely_charges_reports_its_cycles_as_gauge_bound():
@@ -183,6 +189,10 @@ def test_a_deck_that_barely_charges_reports_its_cycles_as_gauge_bound():
 
     assert [e["gauge_bound"] for e in tier1] == [True] * (len(tier1) - 1) + [False]
     assert result["gauge_bound_cycles"] == len(tier1) - 2
+    # 게이지가 20초대인데 쿨다운이 20초라, 밀린 사이클마다 초 단위로 민다.
+    # 합계는 유한하고(첫 사이클의 -inf가 안 샜다는 뜻) 사이클 수보다 크다.
+    assert math.isfinite(result["gauge_delay_seconds"])
+    assert result["gauge_delay_seconds"] > result["gauge_bound_cycles"]
 
 
 def test_a_deck_that_cannot_charge_gets_a_longer_gauge_than_one_that_can():

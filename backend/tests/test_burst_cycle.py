@@ -134,6 +134,43 @@ def test_a_cycle_the_gauge_and_the_cooldown_open_together_is_not_gauge_bound():
     second = _tier1_bursts(events)[1]
     assert second["time"] == gauge_ready, "동점이면 발동 시각은 어느 쪽으로 봐도 같다"
     assert second["gauge_bound"] is False
+    # 밀리지 않았으므로 지연도 0이다 - 음수(「쿨다운이 몇 초 이겼는가」)를 실으면
+    # 합계에서 진짜 밀림을 상쇄해 없애 버린다.
+    assert second["gauge_delay"] == 0.0
+
+
+def test_gauge_delay_separates_two_decks_that_are_bound_the_same_number_of_cycles():
+    """**개수는 크기를 말하지 않는다.** 이 변경의 요점이고, 개수만 보는 픽스처로는
+    옛 구현도 통과하므로 한 테스트 안에서 둘을 갈라야 한다.
+
+    쿨다운만 다른 두 덱을 쓴다. 게이지가 사이클을 정하는 한 사이클 길이는
+    `게이지 + 창`이라 **쿨다운과 무관**하고, 그래서 두 덱의 사이클 수도 밀린
+    사이클 수도 같다. 밀린 **시간**만 `창 + 게이지 - 쿨다운`으로 갈린다:
+    쿨다운 1초짜리는 사이클마다 14초씩, 14초짜리는 1초씩 민다.
+
+    실측에서 이것이 덱 1(11사이클·4.3초, 판독 「안 밀림」)과 덱 3(11사이클·
+    11.6초, 판독 「밀림」)을 가르는 축이다.
+    """
+    gauge = 5.0
+    per_cycle = FULL_BURST_OPEN_DELAY + FULL_BURST_DURATION + gauge
+
+    def bound_and_delay(cooldown):
+        deck = [{"slug": f"u{tier}", "burst_tier": tier, "cooldown": cooldown}
+                for tier in (1, 2, 3)]
+        after_opening = _tier1_bursts(simulate_burst_cycle(
+            deck, gauge_charge_time=gauge, fight_duration=60.0, mode="auto"))[1:]
+        return (sum(1 for e in after_opening if e["gauge_bound"]),
+                sum(e["gauge_delay"] for e in after_opening),
+                len(after_opening))
+
+    short_cd = bound_and_delay(1.0)
+    long_cd = bound_and_delay(14.0)
+
+    assert short_cd[2] == long_cd[2] > 0, "사이클 수가 같아야 비교가 성립한다"
+    assert short_cd[0] == long_cd[0] == short_cd[2], "밀린 사이클 수도 같다"
+    assert short_cd[1] > long_cd[1], "그런데 밀린 시간은 다르다 - 이것이 판별한다"
+    assert long_cd[1] == pytest.approx(long_cd[2] * (per_cycle - 14.0))
+    assert short_cd[1] == pytest.approx(short_cd[2] * (per_cycle - 1.0))
 
 
 def test_missing_a_burst_tier_entirely_is_reported_as_missed():

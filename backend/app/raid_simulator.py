@@ -2589,9 +2589,15 @@ def _simulate_raid_once(
     # 유일한 시작 조건이므로, 세면 모든 덱에 상수 1이 붙는다. 그 사이클의 게이지는
     # 덱이 넣은 타격이 아니라 보스의 기본값이기도 하다(`gauge_charge_times`의
     # 키가 1부터인 것과 같은 이유).
+    #
+    # 개수와 나란히 **밀린 총 시간**도 싣는다. 개수만으로는 못 가르기 때문이다:
+    # 실측 덱 1과 덱 3은 똑같이 14사이클 중 11이 밀리는데 합계가 4.30초 대
+    # 11.61초이고, Fienn의 판독은 그 둘을 「안 밀림」과 「밀림」으로 가른다.
+    # 이쪽도 스케줄러가 선언한 것을 더하기만 한다.
     tier1_bursts = [e for e in events if e["type"] == "burst" and e["tier"] == 1]
     result["gauge_bound_cycles"] = sum(
         1 for e in tier1_bursts[1:] if e["gauge_bound"])
+    result["gauge_delay_seconds"] = sum(e["gauge_delay"] for e in tier1_bursts[1:])
     return (result,
             _resolve_conditional_fb_deltas(
                 context, events, conditional_full_burst_deltas),
