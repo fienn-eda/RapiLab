@@ -1,7 +1,11 @@
 import pytest
 
 from app.effects import EffectRegistry
-from app.skill_rules.maxwell_ordinary_mechanic import build_maxwell_ordinary_mechanic_rules
+from app.skill_rules.maxwell_ordinary_mechanic import (
+    build_maxwell_ordinary_mechanic_rules,
+    build_output_switching_gauge_fills,
+)
+from app.skill_rules.registry import get_gauge_fills
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Real skill level 10 values from ShiftyPad (data/shiftypad/maxwell-ordinary-mechanic.json).
@@ -187,3 +191,16 @@ def test_squad_atk_uses_her_live_max_hp_including_her_own_max_hp_stacks():
     # squad ATK = 라이브 Max HP(=1.30 x base)의 1% = 6500 (정적이면 5000)
     expected = CASTER_MAX_HP * 1.30 * 0.01
     assert round(registry.total_for("flat_atk", ALLY, now=5.0), 2) == round(expected, 2)
+
+
+def test_output_switching_fills_the_gauge_on_her_own_full_charge():
+    """원문: "Activates when performing a Full Charge attack. Affects all
+    allies. Fills Burst Gauge by {description_value_07}%".
+
+    슬롯 03이 전 레벨에서 07과 값이 같아 어느 쪽을 읽어도 오늘은 통과한다 -
+    원문이 이름을 대는 슬롯이 07이므로 07을 읽는다.
+    """
+    expected = [{"every_own_full_charge": "maxwell-ordinary-mechanic",
+                 "fraction": pytest.approx(0.0715)}]
+    assert build_output_switching_gauge_fills(values()) == expected
+    assert get_gauge_fills("maxwell-ordinary-mechanic", values()) == expected

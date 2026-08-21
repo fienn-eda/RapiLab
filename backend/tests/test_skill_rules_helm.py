@@ -4,8 +4,10 @@ from app.skill_rules.helm import (
     build_aegis_cannon_rules,
     build_fire_away_per_shot_rules,
     build_fire_away_rules,
+    build_frontline_command_gauge_fills,
     build_frontline_command_per_shot_rules,
 )
+from app.skill_rules.registry import get_gauge_fills
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Base ("skills") level-10 values - slug "helm", the Nikke without her Favorite
@@ -39,6 +41,8 @@ AEGIS_CANNON_VALUES = {
 FRONTLINE_COMMAND_SIG = {
     "description_value_01": "14.64",
     "description_value_02": "5",
+    "description_value_03": "0.59",   # deferred: full-charge Max HP recovery
+    "description_value_04": "14.31",  # full-charge squad Burst Gauge fill %
 }
 
 FIRE_AWAY_SIG = {
@@ -167,3 +171,23 @@ def test_aegis_cannon_grants_self_charge_damage_for_ten_rounds():
     assert grant.value == 1.584
     assert grant.shots == 10
     assert grant.scope == "self"
+
+
+def test_frontline_command_fills_the_gauge_on_her_own_full_charge():
+    """애장품 원문: "Activates when attacking with Full Charge. Affects all
+    allies. ... Fills Burst Gauge by {description_value_04}%".
+
+    슬롯 03(0.59)은 같은 불릿의 Max HP 회복이라 실수로 집기 쉬운 이웃이다 -
+    값이 스물네 배 작아 게이지가 사실상 안 차는 쪽으로 조용히 틀린다.
+    """
+    fills = build_frontline_command_gauge_fills(FRONTLINE_COMMAND_SIG, "helm-signature")
+    assert fills == [{"every_own_full_charge": "helm-signature", "fraction": 0.1431}]
+
+
+def test_only_the_favorite_item_build_has_the_gauge_fill():
+    """게이지 불릿은 dollskills에만 있다 - 기본 배열의 Frontline Command는 크리
+    확률 줄에서 끝난다. 슬러그가 아니라 **레지스트리 등록**이 그 구분을 진다."""
+    assert get_gauge_fills("helm", {"frontline_command": FRONTLINE_COMMAND_VALUES}) is None
+    assert get_gauge_fills(
+        "helm-signature", {"frontline_command": FRONTLINE_COMMAND_SIG}) == [
+        {"every_own_full_charge": "helm-signature", "fraction": 0.1431}]

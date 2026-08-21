@@ -32,7 +32,7 @@ WITHOUT_GRANTER = ["liter", "volume", "crown", MIHARA, "helm-signature"]
 # 같은 모양이고 캐리만 에이다다. 그녀로 재는 것은 부호가 게이지 2.0~6.0초 전
 # 구간에서 안 바뀌기 때문이고(+4~5.4% 대 -3~4.5%), 미하라 쪽은 그 구간 안에서
 # 뒤집혀 인과가 아니라 로테이션 속도를 재게 된다
-# (`test_holding_mihara_COSTS_at_this_decks_computed_gauge` 참고).
+# (`test_holding_mihara_IS_A_WASH_at_this_decks_computed_gauge` 참고).
 ADA = "ada-wong"
 WITH_GRANTER_ADA = ["miranda-signature", "liter", "crown", ADA, "helm-signature"]
 WITHOUT_GRANTER_ADA = ["liter", "volume", "crown", ADA, "helm-signature"]
@@ -201,27 +201,28 @@ def test_the_adds_gate_is_the_encounters_call_not_the_decks():
         frozenset(), frozenset({MIHARA})]
 
 
-def test_holding_mihara_COSTS_at_this_decks_computed_gauge():
-    """살릴 버프가 있는데도 미하라의 홀드는 이 편성에서 **순손해**다 - 지금 엔진의
-    판정을 그대로 적는다. 2026-08-21 이전에는 +2.15%였고, 게이지가 상수 2.4초에서
-    이 덱이 계산한 3.1~4.4초(중앙값 3.8)로 늘면서 뒤집혔다.
+def test_holding_mihara_IS_A_WASH_at_this_decks_computed_gauge():
+    """미하라의 홀드는 이 편성에서 **거의 정확히 본전**이다 - 지금 엔진의 판정을
+    그대로 적는다. 값이 두 번 움직였고 **둘 다 게이지 때문**이다: 상수 2.4초이던
+    2026-08-21 이전에 +2.15%, 게이지가 덱의 성질이 되며 이 덱이 3.1~4.4초(중앙값
+    3.8)를 계산해 **-4.9%**, 그리고 헬름(애장품)의 「풀차지마다 아군 전체 게이지
+    14.31% 충전」이 배선되며 중앙값 2.4초(1.6~3.0)로 내려와 **+0.05%**
+    (2026-08-22). 세 번째는 앞 판본의 독스트링이 예고한 복귀 그대로다.
 
     부호가 게이지의 함수라는 것은 옛 엔진에서 상수만 올려 확인했다 - 2.4에서
     +2.15%, 2.8에서 +3.41%, **3.2에서 -2.61%**, 6.0에서 -7.61%. 홀드가 버리는
-    평타(-109M)는 그대로인데 살린 라운드 버프가 갚아 주던 것이 +140M에서
-    +27.5M로 줄어드는 것이 메커니즘이다.
+    평타는 그대로인데 살린 라운드 버프가 갚아 주는 양이 로테이션이 느려질수록
+    줄어드는 것이 메커니즘이다.
 
-    ⚠ **이 값은 확정된 게 아니다.** 헬름(애장품)의 「풀차지 공격 시 아군 전체에게
-    버스트 게이지 14.31% 충전」이 아직 엔진에 없고(`skill_rules/helm.py`에 게이지
-    코드 0건), 그것이 붙으면 이 덱의 게이지가 전환점(3.0초) 쪽으로 내려가 부호가
-    돌아올 수 있다. 그때 이 테스트가 걸리면 회귀가 아니라 **그 불릿이 도착한
-    것**이니, 실측(docs/measurements/burst-gauge-fill.md)과 대조해 값을 갱신하라.
+    ⚠ **이 덱으로 홀드의 인과를 재지 마라.** 전환점 바로 위에 앉아 있어서 게이지를
+    건드리는 어떤 변경이든 부호를 뒤집는다 - 그건 홀드가 무엇을 하는지가 아니라
+    로테이션 속도를 재는 것이다. 인과는
+    `test_holding_ada_pays_ONLY_in_a_deck_that_can_preserve_her_buff`가 잰다.
     """
     ordering = _ordering(WITH_GRANTER, MIHARA)
     plain = evaluate_deck(ordering, BOSS)
     held = evaluate_deck(ordering, BOSS, hold_fire={MIHARA})
-    assert held["total_damage"] < plain["total_damage"]
-    assert held["total_damage"] / plain["total_damage"] == pytest.approx(0.951, abs=0.01)
+    assert held["total_damage"] / plain["total_damage"] == pytest.approx(1.0005, abs=0.0005)
 
 
 def test_holding_a_transforming_unit_that_never_declared_its_release_is_refused():

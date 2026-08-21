@@ -349,3 +349,82 @@ def test_a_skill_hit_from_a_unit_with_no_gauge_data_charges_nothing():
     stats = {"u": {"weapon": "AR"}}
     assert fill_times({"u": []}, [10.0], weapon_stats=stats, fight_duration=100.0,
                       skill_hits_by_slug={"u": [(11.0, 99)]}) == {}
+
+
+# --- 자기 풀차지 트리거 채움원 (bonus_fills) --------------------------------
+# 두 번째 트리거 종류: 「자신이 풀차지로 공격할 때마다 아군 전체 게이지 X%」
+# (헬름 애장품 Frontline Command 14.31%, 매치스 맥스웰 Output Switching
+# Sequence 7.15%). 아군 소모탄 문턱과 같은 개념 - 어떤 트리거에 게이지의 X%를
+# 얹는다 - 이라 같은 `bonus_fills` 목록에 산다.
+
+
+def test_own_full_charge_grants_a_flat_squad_fill_once():
+    """「풀차지마다 아군 전체 게이지 X%」는 팀 게이지에 **한 번** 들어간다.
+
+    게이지는 스쿼드 하나의 값이므로 「Affects all allies」가 5배를 뜻하지 않는다.
+    5배로 세면 헬름 한 명이 풀차지 두 발로 게이지를 채워, 실측(풀차지 3발로
+    완료)과 정면으로 어긋난다.
+    """
+    stats = {"a": _weapon(50_000, charge_damage_percent=100.0),
+             "b": _weapon(50_000, charge_damage_percent=100.0)}
+    # a가 풀차지 4발. 무기만이면 200,000이고, 발마다 +15%(75,000)면 4발째에
+    # 정확히 500,000이 된다.
+    got = fill_times(
+        {"a": [(11.0, False), (12.0, False), (13.0, False), (14.0, False)],
+         "b": []},
+        [10.0], weapon_stats=stats, fight_duration=60.0,
+        bonus_fills=[{"every_own_full_charge": "a", "fraction": 0.15}])
+    assert got == {1: pytest.approx(4.0)}
+    # 5배로 세는 구현은 2발째(2 x 50,000 + 2 x 375,000)에 이미 넘어 2.0이 된다.
+
+
+def test_only_the_units_own_full_charge_shots_trigger_the_fill():
+    """원문이 「Full Charge attack」이고 시전자는 그 유닛이다 - 톡톡이(부분
+    차지)도, 그 유닛의 스킬이 만든 타격도, **다른 좌석의** 풀차지도 트리거가
+    아니다.
+
+    무기 에너지를 무시할 만큼 작게 둬 이 축만 본다. 트리거를 넓게 잡는 세 가지
+    잘못된 구현이 각각 여기서 걸린다: 톡톡이에도 얹으면 a의 2발로, 슬러그를
+    안 보면 b의 2발로, 스킬 타격에도 얹으면 a의 2행으로 각각 0.6 x 2 = 1.2배가
+    쌓여 표에 실린다.
+    """
+    stats = {"a": _weapon(1.0), "b": _weapon(1.0)}
+    shots = {"a": [(11.0, True), (12.0, True)], "b": [(13.0, False), (14.0, False)]}
+    hits = {"a": [(15.0, 1), (16.0, 1)]}
+    assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=60.0,
+                      skill_hits_by_slug=hits,
+                      bonus_fills=[{"every_own_full_charge": "a", "fraction": 0.6}]) == {}
+
+
+def test_own_full_charge_fill_is_not_scaled_by_the_fill_speed_multiplier():
+    """아군 소모탄 문턱 점프와 **같은 이유로** 배율이 안 걸린다 - 곱해지는 항이
+    아니라 별개로 더해지는 항이고, 스킬이 주는 플랫 충전에 「버스트 게이지 충전
+    속도」가 걸리는지는 미측정이다. 두 종류가 다르게 굴면 그 자체가 설명 못 할
+    불일치다.
+
+    배율을 얹는 구현은 3배가 걸려 첫 발에서 채워 1.0초가 된다.
+    """
+    stats = {"a": _weapon(0.0)}
+    shots = {"a": [(11.0, False), (12.0, False), (13.0, False)]}
+    fills = [{"every_own_full_charge": "a", "fraction": 0.34}]
+    assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=60.0,
+                      bonus_fills=fills,
+                      speed_multiplier_at=lambda slug, time: 3.0) == {1: pytest.approx(3.0)}
+
+
+def test_the_two_trigger_kinds_coexist_in_one_list():
+    """한 덱에 두 종류가 같이 앉을 수 있다(인어공주 + 헬름 애장품). 종류를
+    구분하지 않고 `every_ally_rounds`를 모든 원소에서 읽는 구현은 KeyError로
+    죽고, 반대로 새 종류만 읽는 구현은 문턱 점프를 잃는다.
+    """
+    stats = {"a": _weapon(0.0), "b": _weapon(0.0)}
+    shots = {"a": [(11.0, False), (13.0, False)], "b": [(12.0, False), (14.0, False)]}
+    rounds = {"a": [100.0, 100.0], "b": [100.0, 100.0]}
+    fills = [
+        {"every_ally_rounds": 200.0, "fraction": 0.3},    # 12.0과 14.0에 각 0.3
+        {"every_own_full_charge": "a", "fraction": 0.2},  # 11.0과 13.0에 각 0.2
+    ]
+    # 11.0: 0.2 · 12.0: 0.5 · 13.0: 0.7 · 14.0: 1.0 -> 14.0에 정확히 가득 찬다.
+    assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=60.0,
+                      ammo_rounds_by_slug=rounds,
+                      bonus_fills=fills) == {1: pytest.approx(4.0)}

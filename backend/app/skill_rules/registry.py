@@ -242,6 +242,7 @@ from app.skill_rules.laplace_ultimate_hero import (
 from app.skill_rules.maxwell_ordinary_mechanic import (
     build_matis_uberbuster_weapon_mode_schedule,
     build_maxwell_ordinary_mechanic_rules,
+    build_output_switching_gauge_fills,
 )
 from app.skill_rules.dorothy_serendipity import (
     build_dorothy_serendipity_rules,
@@ -269,6 +270,7 @@ from app.skill_rules.helm import (
     build_aegis_cannon_rules,
     build_fire_away_per_shot_rules,
     build_fire_away_rules,
+    build_frontline_command_gauge_fills,
     build_frontline_command_per_shot_rules,
 )
 from app.skill_rules.helm_aquamarine import (
@@ -1027,15 +1029,26 @@ _SCHEDULED_NUKE_BUILDERS = {
         sv, slug="rapi-red-hood-b1", stage3_requirement_cut=False),
 }
 
-# A Nikke whose skill fills the squad's burst gauge each time allies' total
-# ammo expended crosses a threshold (see burst_gauge.fill_times's
-# `bonus_fills`). Same counting channel as _SCHEDULED_NUKE_BUILDERS' squad-wide
-# ammo consumers - `_AMMO_ROUNDS_PER_SHOT` decides what one shot books toward
-# it. Beauty-Full is shared by both Crystal Wave mode slugs.
+# A Nikke whose skill fills the squad's burst gauge on a trigger of its own
+# (see burst_gauge.fill_times's `bonus_fills`, where the element's key names
+# the trigger kind). Two kinds today:
+#
+# - allies' total ammo expended crossing a threshold. Same counting channel as
+#   _SCHEDULED_NUKE_BUILDERS' squad-wide ammo consumers - `_AMMO_ROUNDS_PER_SHOT`
+#   decides what one shot books toward it. Beauty-Full is shared by both Crystal
+#   Wave mode slugs.
+# - the unit's OWN Full Charge attack, which is why those builders are told
+#   which seat they sit in.
 _GAUGE_FILL_BUILDERS = {
     "little-mermaid": lambda sv: build_bubble_order_gauge_fills(sv),  # Bubble Order, every 400
     "cinderella-crystal-wave-mg": lambda sv: build_beauty_full_gauge_fills(sv),  # Beauty-Full, every 200
     "cinderella-crystal-wave-snipe": lambda sv: build_beauty_full_gauge_fills(sv),
+    # Frontline Command, 14.31% per own Full Charge - Favorite Item only; base
+    # Helm's copy of the skill has no gauge bullet.
+    "helm-signature": lambda sv: build_frontline_command_gauge_fills(
+        sv["frontline_command"], "helm-signature"),
+    # Output Switching Sequence, 7.15% per own Full Charge.
+    "maxwell-ordinary-mechanic": lambda sv: build_output_switching_gauge_fills(sv),
 }
 
 # Units the "hold fire through your own Full Burst" tactic is played on, with
@@ -1851,9 +1864,11 @@ def get_scheduled_nukes(slug, skill_values):
 
 
 def get_gauge_fills(slug, skill_values):
-    """List of {"every_ally_rounds", "fraction"} specs for a Nikke whose skill
-    fills the squad's burst gauge each time allies' total ammo expended
-    crosses a threshold, or None for the vast majority without one."""
+    """List of `bonus_fills` specs for a Nikke whose skill fills the squad's
+    burst gauge on a trigger of its own, or None for the vast majority without
+    one. The element's key names the trigger - `every_ally_rounds` (allies'
+    total ammo expended crossing a threshold) or `every_own_full_charge` (a
+    full-charge shot from her own weapon)."""
     builder = _GAUGE_FILL_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
 

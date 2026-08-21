@@ -1578,12 +1578,13 @@ the caster), and duration/`truncate_open_ended` decide the window, exactly like
 any other stat. The per-shot callable (not a value sampled once) is what makes
 scope AND mid-fight toggling both expressible in the same place — a scalar
 computed once at t=0 cannot represent a buff that is not up for the whole fight.
-**Only multiplies weapon-hit energy, not `bonus_fills`** (the "ally ammo
-threshold → Burst Gauge %" jumps below) — those are a separately-added term,
-not a multiplied one. Whether this stat is ALSO meant to speed up a skill's
-own flat gauge grant (e.g. Little Mermaid's Bubble Order) is unmeasured;
+**Only multiplies weapon-hit energy, not `bonus_fills`** (the flat skill-granted
+fills below) — those are a separately-added term, not a multiplied one, and this
+holds for BOTH trigger kinds. Whether this stat is ALSO meant to speed up a
+skill's own flat gauge grant (e.g. Little Mermaid's Bubble Order) is unmeasured;
 today it doesn't, which is the conservative default until a measurement says
-otherwise.
+otherwise. Keep the two kinds identical here — a difference between them would
+be an inconsistency nothing could explain.
 Consumers: `anis_star.py` (squad, permanent from battle start, +6% at lv10),
 `grave.py` (squad, windowed to Heat Emission's `heat_emission_duration`, +38.96%
 at lv10), `mana.py` (self, an open-ended Effect granted with Metal σ and closed
@@ -1603,10 +1604,29 @@ readable at each Full Burst end, tracked as an open gap in `docs/engine-gaps.md`
 ("네온: 비전 아이의 게이지 충전 속도"). See the module docstring and
 `gauge-effect-census.md` before building it.
 
-**"Ally ammo threshold -> Burst Gauge %" fills are NOW consumed (2026-08-22)**,
-a second charge source alongside weapon hits: `burst_gauge.fill_times`'s
-`bonus_fills` argument, a list of `{"every_ally_rounds": N, "fraction": X}`.
-Each time the squad's shared "ally ammo expended" counter — the same channel
+**Flat "Fills Burst Gauge by X%" grants are NOW consumed (2026-08-22)**, a second
+charge source alongside weapon hits: `burst_gauge.fill_times`'s `bonus_fills`
+argument. It is a list of specs, and **the key an element carries names its
+trigger kind** — there is no separate `"kind"` field, so a new trigger is a new
+key rather than a new argument. Two kinds exist:
+
+- `{"every_ally_rounds": N, "fraction": X}` — allies' cumulative ammo expended
+  crossing a multiple of N (detailed below).
+- `{"every_own_full_charge": slug, "fraction": X}` — that seat's own weapon
+  firing a Full Charge shot. **Once per shot, on the squad's single gauge:**
+  the skill text's "Affects all allies" means the team gauge gets it, NOT that
+  five seats each get it. Multiplying by 5 would let Helm fill the gauge in two
+  full charges, against the measured three. The trigger is the shot's kind, so
+  a tap-fire (partial-charge) shot does NOT count — the text says "Full Charge
+  attack" — and neither does a hit her SKILL produced (`skill_hits_by_slug`),
+  since no weapon fired it. Consumers: `helm.build_frontline_command_gauge_fills`
+  (Frontline Command, +14.31%, **Favorite Item only** — base Helm's copy of the
+  skill has no gauge bullet at all, which is why the builder is told its slug)
+  and `maxwell_ordinary_mechanic.build_output_switching_gauge_fills` (Output
+  Switching Sequence, +7.15%).
+
+The ally-ammo kind in detail. Each time the squad's shared counter — the same
+channel
 Bubble Barrage reads (`context.shot_ammo_rounds`, `_AMMO_ROUNDS_PER_SHOT` for
 who books more than 1 round/shot) — crosses a multiple of N, the gauge jumps
 +X% of `GAUGE_FULL` at that instant: all-or-nothing, not a rate. **Every fill
@@ -1625,12 +1645,19 @@ rounds against a ~3.4s window at the deck's fire rate) resetting to zero per
 window nearly doubles the computed steady-state charge time versus the correct
 carried-over count (~5.5s vs ~2.4–2.7s,
 `scripts/quantify_ally_rounds_accounting.py`).
-Wire a Nikke's fill spec via `_GAUGE_FILL_BUILDERS` / `get_gauge_fills`
-in `skill_rules/registry.py`; `roster.assemble_simulation_inputs` collects
-every seated unit's fills into one flat `gauge_fills` list that `simulate_raid`
-forwards to `fill_times`. Consumers: `little_mermaid`'s Bubble Order (every
-400 rounds, +37%), `cinderella_crystal_wave`'s Beauty-Full (every 200 rounds,
-+12%, shared by both mode slugs since Beauty-Full is common to MG and Snipe).
+Consumers: `little_mermaid`'s Bubble Order (every 400 rounds, +37%),
+`cinderella_crystal_wave`'s Beauty-Full (every 200 rounds, +12%, shared by both
+mode slugs since Beauty-Full is common to MG and Snipe).
+
+Wire a Nikke's fill spec of EITHER kind via `_GAUGE_FILL_BUILDERS` /
+`get_gauge_fills` in `skill_rules/registry.py`; `roster.assemble_simulation_inputs`
+collects every seated unit's fills into one flat `gauge_fills` list that
+`simulate_raid` forwards to `fill_times`. **The census of explicit gauge fills is
+done** (`.superpowers/sdd/2026-08-21-burst-gauge-as-deck-property/
+gauge-effect-census.md`, all 104 encoded slugs read end to end): 7 slugs carry
+one, 5 are wired, and the 2 that are not are `rosanna` / `rosanna-signature`,
+whose trigger ("when a Nikke is incapacitated") this sim never reaches. That is
+gap #15, not a gauge gap — the capability exists; the trigger does not.
 
 **Hits a SKILL produces NOW charge the gauge too (2026-08-22)** — riders
 ("additional damage" on the unit's own hit), drones, Auto Fire, periodic knocks.

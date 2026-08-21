@@ -22,6 +22,12 @@ Modeled (DPS-relevant):
     above) for 15 sec, via max_hp_scaled_atk_rule.
   - Overcurrent: self ATK +30% continuously, cumulative up to 5 stages (+150%),
     one stage per burst - modeled as a per-cycle escalating self buff.
+- Output Switching Sequence (skills[1]), on a DIFFERENT trigger - "Activates
+  when performing a Full Charge attack. Affects all allies. Fills Burst Gauge
+  by 7.15%": the squad's gauge, once per full-charge shot she fires, via
+  `build_output_switching_gauge_fills` and `burst_gauge.fill_times`'s
+  `every_own_full_charge`. Frequent, and it gets more so - the Matis
+  UberBuster's charge time drops from 3 sec to 0.4 as Overcurrent stages up.
 - Matis Uberbuster (skills[2], her burst): all allies Attack Damage +25% for
   10 sec (squad), plus the weapon transform itself - one charged shot from the
   Matis UberBuster per own burst (350% of final ATK, 300% Full Charge Damage,
@@ -36,8 +42,6 @@ Modeled (DPS-relevant):
   seconds would have bought.
 
 Not modeled / deferred:
-- Output Switching Sequence's "Fills Burst Gauge by 7.15% per Full Charge": burst
-  gauge fill speed is not consumed by the engine (fixed sim input).
 - Her registry burst percent stays None: the transform IS her burst damage, so
   there is no "X% as Burst Skill damage" nuke to register alongside it.
 """
@@ -121,6 +125,19 @@ def build_maxwell_ordinary_mechanic_rules(values, caster_max_hp):
         # Maxwell's Pierce Shot shape).
         round_buff_rule("own_burst_activate", [("has_pierce", 1.0, "self")], shots=1),
     ]
+
+
+def build_output_switching_gauge_fills(values):
+    """Output Switching Sequence's "Fills Burst Gauge by X%" on every Full
+    Charge attack - the squad's gauge, once per full-charge shot she fires.
+
+    Slot 07 is the one the skill text names for this bullet. Slot 03 carries the
+    identical number at every level, so reading it would produce the right value
+    today for the wrong reason.
+    """
+    s2 = values["output_switching_sequence"]
+    return [{"every_own_full_charge": SLUG,
+             "fraction": float(s2["description_value_07"]) / 100}]
 
 
 def _overcurrent_charge_times(values):

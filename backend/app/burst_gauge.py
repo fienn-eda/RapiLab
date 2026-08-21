@@ -81,12 +81,21 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     **그 유닛의 무기가 쏜 샷**에만 붙으므로 여기 있는 타격은 배율을 안 받고,
     탄약을 안 쓰므로 아군 누적 소모탄 카운터에 0을 기여한다.
 
-    `bonus_fills`는 무기 타격과 다른 채움원 - 「아군 누적 소모탄이 N발에 닿을
-    때마다 게이지 X%」(인어공주 Bubble Order, 신데렐라: 크리스탈 웨이브 Beauty-
-    Full) - 목록이다. 각 원소는 `{"every_ally_rounds", "fraction"}`. 소모탄
-    카운터는 `ammo_rounds_by_slug`(`shots_by_slug`와 나란한 {슬러그: [발당
-    라운드, ...]} - 탄약 주머니를 쓰는 아군은 한 발이 수백 라운드를 회계한다)가
-    센다. **이 카운터는 전투 시작부터 절대 안 빈다** - 원문이 "total ammo
+    `bonus_fills`는 무기 타격과 다른 채움원 - 「어떤 트리거에 게이지의 X%를
+    얹는다」 - 목록이다. 원소가 **어느 키를 갖는가**가 트리거 종류를 말한다.
+
+    - `{"every_ally_rounds": N, "fraction": X}` - 아군 누적 소모탄이 N발에 닿을
+      때마다(인어공주 Bubble Order, 신데렐라: 크리스탈 웨이브 Beauty-Full).
+    - `{"every_own_full_charge": 슬러그, "fraction": X}` - 그 좌석의 무기가
+      풀차지 샷을 쏠 때마다(헬름 애장품 Frontline Command, 매치스 맥스웰
+      Output Switching Sequence). 원문이 "Full Charge attack"이라 톡톡이(부분
+      차지)와 스킬이 만든 타격은 트리거가 아니고, 원문의 "Affects all allies"는
+      **스쿼드 게이지에 한 번** 들어간다는 뜻이지 좌석 수만큼이 아니다 - 5를
+      곱하면 헬름 한 명이 풀차지 두 발로 게이지를 채워 실측(3발)과 어긋난다.
+
+    아래는 아군 소모탄 종류의 회계다. 소모탄 카운터는
+    `ammo_rounds_by_slug`(`shots_by_slug`와 나란한 {슬러그: [발당 라운드, ...]} -
+    탄약 주머니를 쓰는 아군은 한 발이 수백 라운드를 회계한다)가 센다. **이 카운터는 전투 시작부터 절대 안 빈다** - 원문이 "total ammo
     expended by allies"이고, `little_mermaid.build_bubble_barrage_scheduled_nukes`의
     기존 구현도 전 전투 타임라인을 병합해 같은 방식으로 센다. 게이지 자체는
     버스트로 비워지지만(그래서 무기 타격 에너지는 사이클마다 0에서 다시 쌓는다)
@@ -106,8 +115,8 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     그레이브·마나)의 스코프가 squad(모든 슬러그가 같은 값)와 self(그 슬러그만)
     둘 다 있고, 값이 전투 도중 켜지고 꺼지므로(그레이브의 Heat Emission, 마나의
     Metal σ) 창 전체에 쓰는 스칼라 하나로는 이 셋을 같은 자리에서 표현할 수
-    없다. 안 주면 전부 1.0(오늘과 동일). **`bonus_fills`(아군 소모탄 문턱 점프)엔
-    안 걸린다** - 곱해지는 항이 아니라 별개로 더해지는 항이라서다(아래 루프).
+    없다. 안 주면 전부 1.0(오늘과 동일). **`bonus_fills`엔 안 걸린다 - 두 종류
+    다** - 곱해지는 항이 아니라 별개로 더해지는 항이라서다(아래 루프).
     무기 타격에 이 배율이 걸리는 것은 실측(아니스: 스타의 원문 "버스트 게이지
     충전 속도")이 확정하지만, 같은 배율이 스킬이 주는 플랫 충전(예: 인어공주
     Bubble Order)에도 걸리는지는 **미측정**이다 - 지금은 안 걸리는 쪽으로 두고,
@@ -165,9 +174,13 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
            for slug, hits in (skill_hits_by_slug or {}).items()
            for time, count in hits]
     )
+    # 트리거 종류로 미리 갈라 둔다 - 샷마다 두 종류를 다시 판별하지 않고,
+    # 아군 소모탄 원이 없는 덱은 아래 누적합도 아예 안 만든다.
+    ally_round_fills = [f for f in bonus_fills if "every_ally_rounds" in f]
+    full_charge_fills = [f for f in bonus_fills if "every_own_full_charge" in f]
     # 아군 누적 소모탄의 위상: 각 창의 시작(`end`) 이전에 이미 쌓인 라운드 수.
     # `merged`가 시각순이라 이분 탐색 + 누적합으로 창마다 다시 훑지 않고 구한다.
-    if bonus_fills:
+    if ally_round_fills:
         ally_round_times = [m[0] for m in merged]
         ally_round_prefix = [0.0]
         for m in merged:
@@ -175,7 +188,7 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     out = {}
     for cycle_index, end in enumerate(full_burst_ends):
         gauge = 0.0
-        if bonus_fills:
+        if ally_round_fills:
             ally_rounds = ally_round_prefix[bisect.bisect_left(ally_round_times, end)]
         for time, slug, kind, hits, rounds in merged:
             if time < end:
@@ -187,14 +200,21 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
             # 스킬 타격도 기본값이다.
             energy = charged if kind == "charged" else base
             gauge += energy * hits * speed_multiplier_at(slug, time)
-            if bonus_fills:
+            if ally_round_fills:
                 before = ally_rounds
                 ally_rounds += rounds
-                for fill in bonus_fills:
+                for fill in ally_round_fills:
                     threshold = fill["every_ally_rounds"]
                     crossings = int(ally_rounds // threshold) - int(before // threshold)
                     if crossings:
                         gauge += crossings * fill["fraction"] * GAUGE_FULL
+            if kind == "charged":
+                # 「자신이 풀차지로 공격할 때마다」 - 그 좌석의 무기가 쏜 풀차지
+                # 샷 하나에 한 번. 「아군 전체」는 스쿼드 게이지에 한 번 들어가는
+                # 것이지 좌석 수만큼이 아니다.
+                for fill in full_charge_fills:
+                    if slug == fill["every_own_full_charge"]:
+                        gauge += fill["fraction"] * GAUGE_FULL
             if gauge >= GAUGE_FULL:
                 out[cycle_index + 1] = quantize(time - end)
                 break

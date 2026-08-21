@@ -38,7 +38,10 @@ Modeled (DPS-relevant):
 Not modeled / deferred:
 - Frenzy's original "when a Nikke is incapacitated" trigger, and the Favorite
   Item's 400% nuke on that same trigger - the sim never downs an ally.
-- The Burst Gauge fill (36.54%) - gauge charge time is a fixed sim input.
+- Capo dei Capi's Burst Gauge fill (36.54%), on that same incapacitated
+  trigger. The engine CAN express a flat squad-gauge fill
+  (`burst_gauge.fill_times`'s `bonus_fills`), so this is not an engine gap -
+  it is a trigger this sim never reaches, and wiring it would move no number.
 - Concealment's untargetability and the enemy buff-strip - no engine concept.
 """
 from app.effects import ResourceSpec

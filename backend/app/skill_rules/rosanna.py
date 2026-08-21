@@ -29,7 +29,10 @@ Not modeled / deferred:
   Nikke is incapacitated". The sim never downs an ally, so the trigger can never
   fire. Her Favorite Item build adds a second, shot-counted source for the same
   buff, which IS encoded there.
-- The Burst Gauge fill (36.54%) - gauge charge time is a fixed sim input.
+- Capo dei Capi's Burst Gauge fill (36.54%), which rides that same "when a Nikke
+  is incapacitated" trigger. The engine CAN express a flat squad-gauge fill
+  (`burst_gauge.fill_times`'s `bonus_fills`), so this is not an engine gap -
+  it is a trigger this sim never reaches, and wiring it would move no number.
 - Concealment's own effect (untargetable) and the "removes 5 buff(s) from the 2
   highest-ATK enemies, once per battle" bullet - neither is a damage concept the
   engine represents (there is no enemy-buff model at all).
