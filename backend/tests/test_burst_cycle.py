@@ -660,9 +660,9 @@ def test_gauge_charge_overrides_change_named_cycles_only():
     )
     starts = [e["time"] for e in events if e["type"] == "full_burst_start"]
     gaps = [round(b - a, 6) for a, b in zip(starts, starts[1:])]
-    # 사이클 1의 게이지가 5.0이므로 사이클 1 -> 2의 간격만 길다.
-    assert gaps[0] == pytest.approx(FULL_BURST_DURATION + 2.4 + 0.2)
-    assert gaps[1] == pytest.approx(FULL_BURST_DURATION + 5.0 + 0.2)
+    # 사이클 1의 게이지가 5.0이므로 사이클 0의 풀버스트 종료 -> 사이클 1 버스트의 간격만 길다.
+    assert gaps[0] == pytest.approx(FULL_BURST_DURATION + 5.0 + 0.2)
+    assert gaps[1] == pytest.approx(FULL_BURST_DURATION + 2.4 + 0.2)
     assert gaps[2] == pytest.approx(FULL_BURST_DURATION + 2.4 + 0.2)
 
 

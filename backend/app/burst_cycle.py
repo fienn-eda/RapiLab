@@ -163,10 +163,7 @@ def simulate_burst_cycle(
         on_battle_start(0.0)
 
     while True:
-        gauge_ready = time + (
-            (gauge_charge_overrides or {}).get(cycle_index - 1, gauge_charge_time)
-            if cycle_index > 0 else gauge_charge_time
-        )
+        gauge_ready = time + (gauge_charge_overrides or {}).get(cycle_index, gauge_charge_time)
 
         if any(not members_by_tier[tier] for tier in (1, 2, 3)):
             events.append({"type": "full_burst_missed", "time": gauge_ready})
