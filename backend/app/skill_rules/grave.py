@@ -35,8 +35,11 @@ Modeled (DPS-relevant):
   a safety net for condition (2), which in practice never arrives before
   condition (1) already closed the buff out. Also modeled: the forced double
   reload itself (`build_grave_weapon_mode_schedule`), the segment that spends
-  it. Her own HP regen and the Burst Gauge fill-speed bonus (gauge_charge_time
-  is a fixed sim input, not consumed) are not modeled.
+  it. Her own HP regen and the Burst Gauge fill-speed bonus are not modeled.
+  The gauge bonus is a missing WIRE rather than a missing model: gauge fill is
+  computed per deck (`burst_gauge.fill_times`), but nothing scales the energy
+  by `burst_gauge_fill_speed_percent` yet. See `anis_star.py`'s
+  `grant_gauge_fill_speed`, which registers the same stat.
 
 - Overheat (skills[1]), a normal-attack-count escalation on self. Per Fienn
   (verified in-game), the three tiers split into two permanence regimes:

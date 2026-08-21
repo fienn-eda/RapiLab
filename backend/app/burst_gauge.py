@@ -53,8 +53,18 @@ def quantize(seconds):
 def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration):
     """풀 버스트가 끝난 뒤 게이지가 다시 가득 차기까지 걸리는 시간, 사이클마다.
 
-    `shots_by_slug`는 `{슬러그: [(시각, 톡톡이 여부), ...]}`. 대미지가 아니라
-    **타격**을 세므로 코어히트도 크리티컬도 적 DEF도 여기 안 들어온다.
+    `shots_by_slug`는 `{슬러그: [(시각, 톡톡이 여부), ...]}`. 대미지 경로와
+    직교한다 - 코어히트도 크리티컬도 ATK도 적 DEF도 여기 안 들어온다.
+
+    **세는 단위는 샷 레코드 하나, 즉 방아쇠 하나다.** 실측이 정한 단위는 방아쇠가
+    아니라 **타격**이고(measurements/burst-gauge-fill.md), 둘이 갈리는 자리가 둘
+    있다. 산탄은 `energy_per_hit`이 `pellets_per_shot`을 곱해 맞춘다.
+    **관통은 아직 안 맞춘다** - 「관통으로 n개 객체를 타격하면 게이지도 n배」가
+    실측에 있지만 여기서는 방아쇠 하나가 곱해지지 않은 채 한 번 세어진다.
+    보류인 이유: 엔진의 관통 2인스턴스는 `pierce_hits_body_behind_core`에
+    게이트돼 있고 게이지를 잰 인카운터는 그 값이 거짓이라(코어도 못 맞히는
+    환경) 실측 덱들에서 관통은 애초에 발동하지 않았다. 지금 배선하면 측정되지
+    않은 상호작용 위에 짓는 것이다. `docs/engine-gaps.md` 참조.
 
     키는 `full_burst_ends`의 인덱스에 **+1**이다. 풀 버스트 k의 종료에서 잰
     채움이 지배하는 것은 사이클 k+1이기 때문이다 - `burst_cycle`의
