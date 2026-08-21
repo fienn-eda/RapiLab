@@ -337,3 +337,15 @@ def test_skill_hits_do_not_spend_ammunition():
     assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
                       bonus_fills=fills,
                       skill_hits_by_slug=hits) == {1: pytest.approx(4.0)}
+
+
+def test_a_skill_hit_from_a_unit_with_no_gauge_data_charges_nothing():
+    """스킬 타격도 무기 타격과 **같은 관용**을 받는다 - 게이지값이 없는 프로필의
+    타격은 0으로 센다. 실제 유닛은 값이 없으면 `load_roster`가 제외하므로 여기
+    오지 않지만, 스킬 타격은 `damage_log`에서 유도되는 새 입력 경로라 그 관용이
+    이쪽에도 있다는 것을 못박는다. `per_hit`에 없는 슬러그를 KeyError로 죽는
+    구현이 여기서 걸린다.
+    """
+    stats = {"u": {"weapon": "AR"}}
+    assert fill_times({"u": []}, [10.0], weapon_stats=stats, fight_duration=100.0,
+                      skill_hits_by_slug={"u": [(11.0, 99)]}) == {}

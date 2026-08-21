@@ -1675,10 +1675,32 @@ needs the declaration**: `snow_white_heavy_arms`, whose Auto Fire volley is
 it. Sakura: Bloom in Summer folds ten hits the same way but is typed
 `sustained`, so the DoT exclusion already covers her. Damage sources that fold
 by TIME rather than by count are untouched: burst-source N-hit volleys and
-`dynamic_hit_count_nuke` are all recorded at the cast, and dropping them from the
-derivation was measured (2026-08-22) to change neither the gauge table nor total
-damage on any of the five measured decks — the gauge has always filled before the
-cast that spends it, so the loop breaks before it reaches those rows.
+`dynamic_hit_count_nuke` are all recorded at the cast.
+
+**Whether a cast-time row can charge the very fill that scheduled it depends on
+the TIER, and only tier 3 is safe.** `fill_times` has no "inside a Full Burst
+window" test — it only skips rows before the PREVIOUS window's end — so a row is
+excluded solely because the loop already broke on a full gauge. A tier-3 cast
+lands `end + gauge + 0.2` (two tier gaps), comfortably after the fill at
+`end + gauge`, so its rows are never reached. **Tier 1 and 2 are not:** they fire
+at `end + quantized_gauge` and `+0.1`, and `quantize` ROUNDS, so on a cycle whose
+grid value rounded DOWN the cast sits up to 0.05 s BEFORE the true fill — inside
+the accumulation window of the fill that scheduled it. At a fixed point the error
+is zero (both times quantize to the same grid point), but a mid-iteration pass
+where the cast's energy covers the shortfall can settle on a false fixed point
+lower than the true one, and that error is not bounded by the grid.
+
+Measured over the 400-deck convergence sample (2026-08-22), dropping every row at
+a tier-1/2 cast time — `burst`, `dynamic_hit_count_nuke`, AND the
+`own_burst_activate` `instant_nuke` rows that land at the same instant:
+**3 of 400 decks change, and 2 of those 3 are decks that already fail to converge
+in BOTH variants** (they are in the stalled list, so their value is a 32-pass
+oscillation rather than a fixed point). Exactly **one converged deck** moves: two
+cycles shift by one grid step in opposite directions, worth **+0.051%** damage.
+This is an OPEN item, not a settled deferral, and NO guard is wired — see
+`docs/engine-gaps.md`. The five hand-measured decks cannot see this path at all:
+their tier-1/2 seats carry no burst-cast damage rows, so "identical on all five"
+was a fact about those rosters, not about the model.
 
 **`damage_to_parts_up` and `damage_to_interruption_parts_up` are inert too**, and
 deliberately so. `calculate_damage` still TAKES `damage_to_parts_up` but leaves

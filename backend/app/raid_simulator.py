@@ -274,6 +274,11 @@ def core_eligible(source, damage_type):
         return True
     return source == "normal_attack" and damage_type not in NON_CORE_DAMAGE_TYPES
 
+# A `burst_anchored_buffs` duration meaning "hold until this unit's next own
+# burst" (a state a burst enters and only the next burst clears), as opposed to
+# a fixed number of seconds.
+UNTIL_NEXT_OWN_BURST = "until_next_own_burst"
+
 
 def _gauge_skill_hits(damage_log):
     """{슬러그: [(시각, 타격 수), ...]} - 무기가 쏘지 않은, 게이지를 채우는 타격.
@@ -306,12 +311,6 @@ def _gauge_skill_hits(damage_log):
         hits.setdefault(entry["slug"], []).append(
             (entry["time"], entry.get("gauge_hits", 1)))
     return hits
-
-
-# A `burst_anchored_buffs` duration meaning "hold until this unit's next own
-# burst" (a state a burst enters and only the next burst clears), as opposed to
-# a fixed number of seconds.
-UNTIL_NEXT_OWN_BURST = "until_next_own_burst"
 
 
 def _expected_crit_positions(times, threshold, crit_rate_at):
@@ -2578,14 +2577,25 @@ def _simulate_raid_once(
     # target_for(slug)를 채움 루프 밖에서 한 번만 만든다 - 슬러그당 값은 시각과
     # 무관해 안 바뀌는데, 람다 안에서 부르면 세는 샷마다 새 dict를 만든다.
     gauge_targets = {m["slug"]: target_for(m["slug"]) for m in deck}
+
+    def gauge_fill_speed_at(slug, time):
+        # 덱에 없는 슬러그는 배율 없이 센다. `fill_times`의 `per_hit`이 모르는
+        # 슬러그에 이미 같은 관용을 베푼다 - 「로그의 슬러그는 언제나 시전자
+        # 본인의 좌석」은 근거지 보장이 아니라서, 여기만 KeyError로 죽는 쪽을
+        # 남겨 둘 이유가 없다.
+        target = gauge_targets.get(slug)
+        if target is None:
+            return 1.0
+        return 1.0 + registry.total_for(
+            "burst_gauge_fill_speed_percent", target, time)
+
     resolved_gauge = burst_gauge.fill_times(
         gauge_shots_by_slug,
         [e["time"] for e in events if e["type"] == "full_burst_end"],
         weapon_stats=weapon_stats, fight_duration=fight_duration,
         ammo_rounds_by_slug=ammo_rounds_by_slug, bonus_fills=gauge_fills,
         skill_hits_by_slug=_gauge_skill_hits(damage_log),
-        speed_multiplier_at=lambda slug, time: 1.0 + registry.total_for(
-            "burst_gauge_fill_speed_percent", gauge_targets[slug], time))
+        speed_multiplier_at=gauge_fill_speed_at)
     result["gauge_charge_times"] = resolved_gauge
     # 쿨은 돌았는데 게이지가 안 차서 기다린 사이클 수(**버충 밀림**). 간격이
     # 게이지와 같으면 게이지가 정한 것이고, 더 길면 쿨다운이 정한 것이다.
