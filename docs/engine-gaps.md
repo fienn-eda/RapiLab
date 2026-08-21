@@ -1898,7 +1898,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | ~~—~~ | ~~**플랫 발수 장탄 버프**~~ ("최대 장탄 수 ▲ N발" — 퍼센트가 아니라 라운드 수) | 3 (Tove·Grave·Noir, 전부 스쿼드 스코프) | **해소 (2026-08-02)** — 신규 스탯 `max_ammo_rounds`. 수신자의 기본 탄창 대비로 환산해 기존 배율에 합류시키므로 `attack_rate` 핫패스 무변경 | 스탯 배선 |
 | ~~22~~ | ~~풀 버스트 길이가 전역 상수다~~ (`FULL_BURST_DURATION = 10.0`) | 2 직접(Isabel −5초 · Modernia +5초) + **간접**(Arcana의 게이트 · Dorothy: Serendipity · Arcana: Fortune Mate) | **완료 (2026-08-05)** — 풀 버스트 창 길이가 그 사이클을 연 Burst 3에서 읽힌다(`FULL_BURST_DURATION_DELTA` + `burst_cycle`), 그리고 `SkillRule`에 트리거 자신의 시각을 아는 `time_condition`(`own_burst_status_active`)이 생겼다. 소비자: Isabel·Modernia(직접, 자기 FB 길이) · Arcana(간접, 「수레바퀴 상태로 FB 종료」 게이트가 이제 FB를 실제로 줄이는 Burst 3 뒤에서만 열린다 — 오늘은 Isabel뿐) · Dorothy: Serendipity(간접, Radiant Wings의 FB 지속 버프가 실제 창 길이를 따라간다) · Arcana: Fortune Mate(간접, Making Memories를 open-ended+truncate로 재모델해 창 길이를 묻지 않게 하고, 같은 상태가 게이팅하는 두 스택 카운터의 채움 창도 실제 풀 버스트 종료를 따라가게 함). **Soda: Twinkling Bunny의 FB +2/3초는 별도 사유로 계속 보류** — 그녀의 확장은 FB 스케줄이 고정된 뒤에야 쌓이는 자원(Golden Chip)에 종속돼 순환이라, `docs/roadmap.md` To-Do에 별도 티켓 | 타이밍 |
 | — | ~~hit rate~~ (탄착군 → 코어히트율 확률) | 15(11 엔진 능력 해소·재인코딩 대기, 4 잔여 사유변경) | **해소 (2026-08-07)** — `accuracy.core_hit_rate`, opt-in(`core_diameter_px`), 캘리브레이션 불변 | 스탯 배선 |
-| — | Burst Gauge fill speed (딜/타이밍 아님) | 미집계 | **구현 안 함** (defer 유지) | 범위 밖 |
+| — | **버스트 게이지 충전** (「딜/타이밍 아님」은 틀린 판정이었다) | **전원** — 사이클 간격의 하한을 정하므로 모든 덱에 문다 | **미착수, 규칙은 확정 (2026-08-21).** 채움은 **타격 수 × 무기별 상수**이고 대미지와 무관하다(코어 히트조차 무관). 상수는 데이터에 이미 있다 — `shot_detail.burst_energy_pershot`(무기군별 500~29,000, **56배 차이**) × `shot_count`, 풀차지면 × `full_charge_burst_energy/10000`. 게이지 총량 **500,000**(UI 160px)을 단독편성 6유닛이 독립적으로 확정. 엔진은 세 필드를 **한 번도 안 읽는다**. 오늘의 `BossProfile.gauge_charge_time = 2.4` 상수는 실측 덱2·3에서 **실제의 절반**이고, 상수를 올리는 것으로는 안 고쳐진다(2.4→6.0에서 5덱 순위가 한 번도 안 바뀜 — 덱마다 다른 값이어야 한다). 상세·원본 판독: `docs/measurements/burst-gauge-fill.md` | 타이밍 |
 | — | ~~연사가 무기군 상수~~(유닛별 `shot_detail.rate_of_fire` 미사용) | 1 (질: 발렌타인, 평타 4.8배) | **해소 (2026-08-15)** — `attack_rate.ROUNDS_PER_MINUTE` + `rounds_per_second`(60fps 격자) + `weapon_stats["rate_of_fire"]`. 캘리 불변(그녀가 로스터에 없다), 값어치는 `scripts/audit_rate_of_fire.py`가 다음 유닛을 잡는 것. 클래스 상수 넷은 격자 유도로 재현됨 | 발사 타임라인 |
 | — | ~~차지 무기의 유닛별 `rate_of_fire` 미사용~~ | 5 (31정 중 60발/분을 벗어나는 전부) | **해소 (2026-08-15)** — 케이던스가 아니라 **바닥값**이었다. `attack_rate.CHARGE_ROUNDS_PER_MINUTE` + `roster`의 `charge_interval_floor`. 그 다섯이 정확히 「멈춤 없음」 넷 + 신데렐라이고(우연 확률 0.16%), 옛 전역 `CHARGE_INTERVAL_FLOOR_SECONDS`(10/29)는 신데렐라의 180rpm=0.33333초를 한 발 짧게 읽은 것이었다. 기본값 60은 바닥값이 아니다(스칼렛이 그 값으로 0.7325초마다 쏜다) → 표에 없으면 바닥값 없음. 신데렐라 0.964x→0.980x, 나머지 24유닛 불변 | 발사 타임라인 |
 | — | ~~MG 정확도 예열~~(탄창 앞 29발 코어 손실) | 미집계(실기록 MG 5유닛 전부에 문다) | **해소 (2026-08-15)** — `accuracy.SPREAD_CONVERGENCE` + `ShotRecord.magazine_index`. 합계 1.044x→1.042x · MG 1.176x→1.164x · 다른 무기군 불변. 남은 MG 과대는 `p_조준`(갭 #21)이다 | 발사 타임라인 |
@@ -3449,9 +3449,14 @@ Fienn이 2026-08-03에 맥스웰로 실측해 **배율이 변형된 무기에도
   Effect로 등록하고 `tests/test_hit_rate_bullets_are_encoded.py`가 수집 데이터와
   모듈을 대조해 틈이 다시 벌어지면 실패한다. (여기 "15슬러그 중 11은 아직 재인코딩
   전"이라고 적혀 있던 것은 착륙 당일의 상태가 굳은 것이다.)
-- **Burst Gauge fill speed** (여전히 미소비): 엔진의 딜 공식/타이밍에 들어가는
-  개념이 아니라 배선해도 inert. 이런 게 유닛 가치의 대부분이면 얇은 인코딩이 정직한 답.
-  (`engine-capabilities.md`의 "Stats the engine does NOT consume".)
+- ~~**Burst Gauge fill speed**: 엔진의 딜 공식/타이밍에 들어가는 개념이 아니라
+  배선해도 inert~~ → **판정이 틀렸다 (2026-08-21).** 게이지는 사이클 간격의
+  **하한**이고, 그 하한은 이미 `BossProfile.gauge_charge_time`으로 타이밍에
+  들어가 있다 — 상수라서 안 보였을 뿐이다. 채움 규칙은 실측으로 확정됐고
+  (**타격 수 × 무기별 상수**, 총량 500,000), 상수는 `shot_detail`에 이미 있다.
+  「딜 개념이 아니다」는 맞았지만 「타이밍 개념도 아니다」가 틀렸고, 그래서 이
+  항목은 이 절(만들지 않는 것)에 있으면 안 된다. 갭 표의 해당 행과
+  `docs/measurements/burst-gauge-fill.md` 참조.
 
 ---
 
