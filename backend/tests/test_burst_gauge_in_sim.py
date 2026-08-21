@@ -9,10 +9,12 @@
 import pytest
 
 from app.burst_cycle import FULL_BURST_OPEN_DELAY
+from app.burst_gauge import GAUGE_FULL, quantize
 from app.deck_search import (BossProfile, deck_is_valid, evaluate_deck,
                              feasible_orderings)
 from app.models import UserNikkeState
 from app.raid_simulator import simulate_raid
+from app.skill_rules._helpers import instant_nuke_pulse_rule
 from app.user_roster import load_roster
 
 # 직전 창 종료에서 다음 창 시작까지, 게이지 말고 붙는 것: manual 모드의 티어 간격
@@ -83,9 +85,9 @@ def _synthetic_deck(weapon, burst_energy):
     return deck, stats
 
 
-def _computed_gauge(deck_and_stats):
+def _synthetic_result(deck_and_stats, **extra):
     deck, weapon_stats = deck_and_stats
-    result = simulate_raid(
+    return simulate_raid(
         deck,
         {member["slug"]: [] for member in deck},
         burst_damage_percents={},
@@ -96,8 +98,12 @@ def _computed_gauge(deck_and_stats):
         fight_duration=180.0,
         mode="manual",
         weapon_stats=weapon_stats,
+        **extra,
     )
-    return result["gauge_charge_times"]
+
+
+def _computed_gauge(deck_and_stats, **extra):
+    return _synthetic_result(deck_and_stats, **extra)["gauge_charge_times"]
 
 
 def test_the_table_is_keyed_by_the_cycle_the_fill_leads_INTO(real_deck_and_boss):
@@ -174,3 +180,110 @@ def test_bottleneck_flips_from_cooldown_to_gauge_as_cdr_ramps(volume_deck):
     late = len(gaps)
     assert gaps[-1] == pytest.approx(computed[late] + CYCLE_OVERHEAD, abs=1e-6), (
         "정상상태에서는 게이지가 사이클을 정한다")
+
+
+# --- 스킬이 만드는 타격 ------------------------------------------------------
+# 라이더·드론·오토파이어·주기 타격은 `damage_log`에서 유도한다(`_gauge_skill_hits`).
+# 여기 있는 것은 그 유도가 **덱의 게이지를 실제로 움직이는가**다 - 로그에 키만
+# 실리고 `fill_times`가 안 읽으면 조용히 1타로 세어진다.
+
+
+def _per_shot_pulse(deck, percent=100.0, **pulse_kwargs):
+    """덱의 첫 좌석이 자기 평타마다 스킬 타격 하나를 만든다."""
+    return {deck[0]["slug"]: [
+        (1, "every", [instant_nuke_pulse_rule("per_shot", percent, **pulse_kwargs)])]}
+
+
+def test_skill_hits_charge_the_gauge_and_the_declared_count_multiplies():
+    """선언한 타격 수가 `record` -> `damage_log` -> `fill_times`까지 흐르는가.
+
+    같은 덱·같은 펄스에 개수만 1과 8로 갈라 **게이지가 갈리는지** 본다. 로그 행에
+    키만 싣고 `fill_times`가 안 읽는 구현은 두 게이지가 같아져 여기서 걸린다
+    (스펙에만 넣고 조용히 1로 세는 것이 이 배선의 유일한 실패 모드다).
+    """
+    deck_and_stats = _synthetic_deck("MG", burst_energy=500)
+    deck, _ = deck_and_stats
+    one = _computed_gauge(deck_and_stats, per_shot_rules=_per_shot_pulse(deck))
+    eight = _computed_gauge(deck_and_stats,
+                            per_shot_rules=_per_shot_pulse(deck, gauge_hits=8))
+    assert one and eight
+    assert min(eight.values()) < min(one.values())
+
+    logged = {entry["gauge_hits"]
+              for entry in _synthetic_result(
+                  deck_and_stats,
+                  per_shot_rules=_per_shot_pulse(deck, gauge_hits=8))["damage_log"]
+              if entry["source"] == "per_shot_nuke"}
+    assert logged == {8}
+
+
+def test_a_dot_tick_charges_nothing_but_a_distributed_hit_charges():
+    """`GAUGE_INERT_DAMAGE_TYPES`가 실제로 갈라내는가 - **양쪽으로** 본다.
+
+    `sustained`(초당 DoT)는 아무 영향이 없어야 하고 `distributed`(광역으로
+    분산된 개별 타격)는 게이지를 앞당겨야 한다. 한쪽만 보면 「스킬 타격을 통째로
+    안 세는」 구현도, 「아무것도 안 거르는」 구현도 통과한다.
+    """
+    deck_and_stats = _synthetic_deck("MG", burst_energy=500)
+    deck, _ = deck_and_stats
+    plain = _computed_gauge(deck_and_stats)
+    dot = _computed_gauge(deck_and_stats,
+                          per_shot_rules=_per_shot_pulse(deck, damage_type="sustained"))
+    spread = _computed_gauge(deck_and_stats,
+                             per_shot_rules=_per_shot_pulse(deck, damage_type="distributed"))
+    assert plain and dot and spread
+    assert dot == plain
+    assert min(spread.values()) < min(plain.values())
+
+
+def test_normal_attacks_are_not_counted_a_second_time_from_the_log():
+    """평타는 `gauge_shots_by_slug`가 이미 세고 풀차지 여부까지 싣는다.
+    `damage_log`에서 유도할 때 그 행을 안 빼면 평타가 **두 번** 세어진다.
+
+    타격당 GAUGE_FULL/4라 창 종료 뒤 **4번째** 평타에서 정확히 차야 한다.
+    두 번 세는 구현은 2번째에서 차서 값이 갈린다. (룰이 없는 덱이라 로그가
+    전부 평타이고, `core_hittable`이 거짓이라 관통 2행 분할도 없다.)
+    """
+    deck_and_stats = _synthetic_deck("AR", burst_energy=GAUGE_FULL / 4)
+    result = _synthetic_result(deck_and_stats)
+    assert {entry["source"] for entry in result["damage_log"]} == {"normal_attack"}
+    end = next(e["time"] for e in result["events"] if e["type"] == "full_burst_end")
+    after = sorted(entry["time"] for entry in result["damage_log"]
+                   if entry["time"] >= end)
+    assert result["gauge_charge_times"][1] == pytest.approx(quantize(after[3] - end))
+
+
+def test_heavy_arms_auto_fire_volley_declares_its_folded_hits():
+    """접힌 볼리가 개수를 **기록하는 자리에서** 선언한다 - 오늘 그런 유닛은
+    헤비암즈 하나뿐이다. 「장전된 탄약 수만큼 순차로」가 한 인스턴스에 값으로
+    접혀 있어 행을 세면 5타·15타가 각각 1타로 세어진다.
+
+    `damage_type == "sequential"`을 판별자로 쓰지 않는다는 것도 여기서 지킨다:
+    개수는 로그 행이 **싣고 있어야** 하고, 타입에서 되읽는 것이 아니다.
+    """
+    from app.skill_rules.registry import (get_per_shot_rules,
+                                          get_weapon_mode_schedules)
+    from tests.test_skill_rules_snow_white_heavy_arms import (SWHA_VALUES,
+                                                              SWHA_WEAPON_STATS,
+                                                              _swha_sim_deck)
+
+    slug = "snow-white-heavy-arms"
+    deck = _swha_sim_deck()
+    result = simulate_raid(
+        deck=deck, rules_by_slug={}, burst_damage_percents={},
+        base_stats={m["slug"]: {"atk": 10_000.0} for m in deck},
+        enemy_def=0.0, gauge_charge_time=5.0, fight_duration=30.0, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={slug: {**SWHA_WEAPON_STATS, "burst_energy_pershot": 28_000}},
+        weapon_mode_schedules={slug: get_weapon_mode_schedules(slug, SWHA_VALUES)},
+        per_shot_rules={slug: get_per_shot_rules(slug, SWHA_VALUES)},
+    )
+    volleys = [entry for entry in result["damage_log"]
+               if entry["damage_type"] == "sequential"]
+    assert volleys, "오토파이어 볼리가 나와야 한다"
+    # 기본 케이던스는 장탄 5, Fully Active 창 안은 5 + ▲10 = 15.
+    assert sorted({entry["gauge_hits"] for entry in volleys}) == [5, 15]
+    # 같은 샷의 「모든 적」 추가타는 접히지 않은 1타다 - 볼리만 개수를 갖는다.
+    sweeps = [entry for entry in result["damage_log"]
+              if entry["source"] == "per_shot_nuke" and entry["damage_type"] == "attack"]
+    assert sweeps and {entry["gauge_hits"] for entry in sweeps} == {1}

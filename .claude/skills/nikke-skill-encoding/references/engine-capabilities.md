@@ -1632,6 +1632,54 @@ forwards to `fill_times`. Consumers: `little_mermaid`'s Bubble Order (every
 400 rounds, +37%), `cinderella_crystal_wave`'s Beauty-Full (every 200 rounds,
 +12%, shared by both mode slugs since Beauty-Full is common to MG and Snipe).
 
+**Hits a SKILL produces NOW charge the gauge too (2026-08-22)** — riders
+("additional damage" on the unit's own hit), drones, Auto Fire, periodic knocks.
+The third and last charge source, and **nothing is declared per unit**: one hit
+is worth `burst_energy_pershot x pellets` of the CASTER'S OWN WEAPON, whoever or
+whatever threw it. Three units confirm that independently (Helm's favorite-item
+rider 1.000x, Liberalio's 5-hit rider 1.015x/1.035x, Heavy Arms' Auto Fire
+1.015x — `docs/measurements/burst-gauge-fill.md`, sections 「정정」 and
+「증분만으로 한 전수 검산」). The full-charge multiplier rides only shots the
+unit's own WEAPON fired, so a skill hit never takes it; skill hits spend no
+ammunition, so they book 0 rounds into the shared ally-ammo counter; the fill-
+speed multiplier above DOES apply to them (the stat's text is "Burst Gauge
+charge speed", not "weapon hits charge faster").
+
+**Which hits count is DERIVED, not listed** (`raid_simulator._gauge_skill_hits`,
+feeding `fill_times`'s `skill_hits_by_slug`): every `damage_log` row except
+(a) `source == "normal_attack"`, which `gauge_shots_by_slug` already counts with
+its full-charge flag, and (b) rows whose `damage_type` is in
+`burst_gauge.GAUGE_INERT_DAMAGE_TYPES` (today `{"sustained"}` — per-second DoT,
+not a projectile; **unmeasured**, and named separately from
+`NON_CORE_DAMAGE_TYPES` so a later reading flips one without the other).
+`distributed` DOES charge — those are individual hits spread over an area, not
+a DoT. Deriving beats a table because a newly-encoded unit is picked up with no
+declaration at all, and because `damage_log`'s `slug` is always the CASTER's own
+roster slug (drones and summons included), so `weapon_stats[slug]` is already
+the right energy. That DoT exclusion currently costs nothing either way
+(measured 2026-08-22): emptying the constant so DoT ticks DO charge leaves the
+gauge table and total damage bit-identical on all five measured decks, because
+those ticks are anchored on Full Burst entry or on a burst cast and so land
+INSIDE the window, which never charges.
+
+**A folded volley must DECLARE its hit count.** Some builders express "attacks
+sequentially N times" as ONE instance at `N x per_hit`, and counting log rows
+would then count it once. Pass `gauge_hits=N` to `instant_nuke_pulse_rule` (it
+rides `Pulse.gauge_hits` -> `record(gauge_hits=...)` -> the log row); the default
+is 1, so every other call site is unchanged, and damage never reads it. **Do NOT
+infer the count from `damage_type == "sequential"`** — that value says which
+Damage-Up bucket applies, not how many hits landed, and it would break silently
+the day a unit types a genuine single hit that way. **Today exactly one unit
+needs the declaration**: `snow_white_heavy_arms`, whose Auto Fire volley is
+`base_ammo` (5) outside her Fully Active segment and `boosted_ammo` (15) inside
+it. Sakura: Bloom in Summer folds ten hits the same way but is typed
+`sustained`, so the DoT exclusion already covers her. Damage sources that fold
+by TIME rather than by count are untouched: burst-source N-hit volleys and
+`dynamic_hit_count_nuke` are all recorded at the cast, and dropping them from the
+derivation was measured (2026-08-22) to change neither the gauge table nor total
+damage on any of the five measured decks — the gauge has always filled before the
+cast that spends it, so the loop breaks before it reaches those rows.
+
 **`damage_to_parts_up` and `damage_to_interruption_parts_up` are inert too**, and
 deliberately so. `calculate_damage` still TAKES `damage_to_parts_up` but leaves
 it out of the damage-up bucket on purpose: it raises damage dealt to PARTS, and

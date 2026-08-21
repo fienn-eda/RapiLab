@@ -43,6 +43,14 @@ class Pulse:
     # type (e.g. "as Distributed Damage") - passed through to record() so the
     # type-gated Damage-Up buckets apply. Other pulse stats ignore it.
     damage_type: str = "attack"
+    # How many separate HITS this one pulse folds into its percent. A volley
+    # whose text says "attacks sequentially as many times as the loaded ammo"
+    # is emitted as one instance at N x the per-hit percent, so counting log
+    # rows would count it once - and the burst gauge fills per hit
+    # (burst_gauge.fill_times). Damage does not read this: folding is what the
+    # percent already expresses. 1 = the pulse is one hit, so every existing
+    # caller is unchanged.
+    gauge_hits: int = 1
 
 
 @dataclass

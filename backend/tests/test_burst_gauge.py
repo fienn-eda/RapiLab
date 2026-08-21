@@ -260,3 +260,80 @@ def test_speed_multiplier_can_vary_by_slug():
     per_slug = fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
                           speed_multiplier_at=lambda slug, time: 1.0 if slug == "a" else 0.0)
     assert per_slug == {1: 2.0}
+
+
+# --- 스킬이 만드는 타격 (skill_hits_by_slug) --------------------------------
+# 라이더·드론·오토파이어·주기 타격은 무기가 쏜 샷이 아니지만 게이지를 채운다.
+# 값은 유닛별 표가 아니라 **그 유닛 무기의 기본값** 하나다(실측 세 유닛이
+# 독립적으로 확인, docs/measurements/burst-gauge-fill.md 「정정」).
+
+
+def test_skill_hits_fill_the_gauge_at_the_units_base_energy():
+    """스킬이 만드는 타격도 게이지를 채운다 - 그 유닛 무기의 기본값으로.
+
+    라이더든 드론이든 오토파이어든 값은 하나다(실측 세 유닛 독립 확인,
+    docs/measurements/burst-gauge-fill.md 「정정」). 풀차지 배율은 무기가 쏜
+    샷에만 붙으므로 스킬 타격은 배율을 안 받는다.
+    """
+    stats = {"a": {"burst_energy_pershot": 100_000, "charge_damage_percent": 250.0}}
+    # 무기 샷 둘(각 100,000) + 스킬 타격 셋(각 100,000) = 500,000 = 가득
+    got = fill_times(
+        {"a": [(11.0, True), (12.0, True)]}, [10.0],
+        weapon_stats=stats, fight_duration=60.0,
+        skill_hits_by_slug={"a": [(13.0, 3)]})
+    assert got == {1: pytest.approx(3.0)}
+
+
+def test_skill_hit_count_multiplies():
+    """접힌 볼리 한 행이 N타로 세어진다. 헤비암즈의 오토파이어가 그 모양이다."""
+    stats = {"a": {"burst_energy_pershot": 100_000, "charge_damage_percent": 250.0}}
+    one = fill_times({"a": []}, [10.0], weapon_stats=stats, fight_duration=60.0,
+                     skill_hits_by_slug={"a": [(11.0, 1), (12.0, 5)]})
+    # 11.0에 1타(100,000)뿐이면 아직 부족하고, 12.0의 5타로 넘긴다.
+    assert one == {1: pytest.approx(2.0)}
+
+
+def test_skill_hits_never_take_the_charge_multiplier():
+    """풀차지 배율은 **그 유닛의 무기가 쏜 샷**에만 붙는다. 스킬 타격에도 걸면
+    차지 무기를 든 유닛의 게이지가 배율만큼 빨라진다.
+
+    위의 두 테스트는 이것을 못 가른다 - 배율이 붙어도 같은 발에서 채워져 값이
+    같다. 여기서는 배율(2.5배)이 붙는 구현이 **첫 타격에서** 채워 1.0초가 되고,
+    기본값으로 세는 구현만 3.0초가 나온다.
+    """
+    stats = {"a": {"burst_energy_pershot": 100_000, "charge_damage_percent": 250.0}}
+    hits = {"a": [(11.0, 2), (12.0, 2), (13.0, 1)]}
+    assert fill_times({"a": []}, [10.0], weapon_stats=stats, fight_duration=60.0,
+                      skill_hits_by_slug=hits) == {1: pytest.approx(3.0)}
+
+
+def test_skill_hits_take_the_gauge_fill_speed_multiplier():
+    """「버스트 게이지 충전 속도」가 무기 타격만 빠르게 한다고 볼 근거가 없다 -
+    스킬 타격에도 같은 배율이 걸린다(컨트롤러 결정 D6).
+
+    배율을 스킬 타격에 안 거는 구현은 배율을 줘도 3타격을 다 써서 두 단언이
+    같은 3.0초가 된다.
+    """
+    stats = {"a": {"burst_energy_pershot": 200_000, "charge_damage_percent": 250.0}}
+    hits = {"a": [(11.0, 1), (12.0, 1), (13.0, 1)]}
+    assert fill_times({"a": []}, [10.0], weapon_stats=stats, fight_duration=60.0,
+                      skill_hits_by_slug=hits) == {1: pytest.approx(3.0)}
+    assert fill_times({"a": []}, [10.0], weapon_stats=stats, fight_duration=60.0,
+                      skill_hits_by_slug=hits,
+                      speed_multiplier_at=lambda slug, time: 1.5) == {1: pytest.approx(2.0)}
+
+
+def test_skill_hits_do_not_spend_ammunition():
+    """스킬 타격은 탄약을 안 쓰므로 아군 누적 소모탄 카운터에 **0을 기여**한다.
+    발당 1라운드로 합류시키면 문턱이 실제보다 일찍 당겨져 게이지가 빨리 찬다.
+
+    무기 에너지를 0으로 둬 이 축만 본다: 문턱은 무기 샷 4발(누적 4라운드)에서
+    넘어야 한다. 스킬 타격이 라운드를 내면 12.5초에 이미 넘어 2.5초로 갈린다.
+    """
+    stats = {"u": _weapon(0.0)}
+    shots = {"u": [(11.0, False), (12.0, False), (13.0, False), (14.0, False)]}
+    hits = {"u": [(11.5, 1), (12.5, 1), (13.5, 1)]}
+    fills = [{"every_ally_rounds": 4.0, "fraction": 1.0}]
+    assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
+                      bonus_fills=fills,
+                      skill_hits_by_slug=hits) == {1: pytest.approx(4.0)}

@@ -1910,7 +1910,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | ~~—~~ | ~~**플랫 발수 장탄 버프**~~ ("최대 장탄 수 ▲ N발" — 퍼센트가 아니라 라운드 수) | 3 (Tove·Grave·Noir, 전부 스쿼드 스코프) | **해소 (2026-08-02)** — 신규 스탯 `max_ammo_rounds`. 수신자의 기본 탄창 대비로 환산해 기존 배율에 합류시키므로 `attack_rate` 핫패스 무변경 | 스탯 배선 |
 | ~~22~~ | ~~풀 버스트 길이가 전역 상수다~~ (`FULL_BURST_DURATION = 10.0`) | 2 직접(Isabel −5초 · Modernia +5초) + **간접**(Arcana의 게이트 · Dorothy: Serendipity · Arcana: Fortune Mate) | **완료 (2026-08-05)** — 풀 버스트 창 길이가 그 사이클을 연 Burst 3에서 읽힌다(`FULL_BURST_DURATION_DELTA` + `burst_cycle`), 그리고 `SkillRule`에 트리거 자신의 시각을 아는 `time_condition`(`own_burst_status_active`)이 생겼다. 소비자: Isabel·Modernia(직접, 자기 FB 길이) · Arcana(간접, 「수레바퀴 상태로 FB 종료」 게이트가 이제 FB를 실제로 줄이는 Burst 3 뒤에서만 열린다 — 오늘은 Isabel뿐) · Dorothy: Serendipity(간접, Radiant Wings의 FB 지속 버프가 실제 창 길이를 따라간다) · Arcana: Fortune Mate(간접, Making Memories를 open-ended+truncate로 재모델해 창 길이를 묻지 않게 하고, 같은 상태가 게이팅하는 두 스택 카운터의 채움 창도 실제 풀 버스트 종료를 따라가게 함). **Soda: Twinkling Bunny의 FB +2/3초는 별도 사유로 계속 보류** — 그녀의 확장은 FB 스케줄이 고정된 뒤에야 쌓이는 자원(Golden Chip)에 종속돼 순환이라, `docs/roadmap.md` To-Do에 별도 티켓 | 타이밍 |
 | — | ~~hit rate~~ (탄착군 → 코어히트율 확률) | 15(11 엔진 능력 해소·재인코딩 대기, 4 잔여 사유변경) | **해소 (2026-08-07)** — `accuracy.core_hit_rate`, opt-in(`core_diameter_px`), 캘리브레이션 불변 | 스탯 배선 |
-| — | **버스트 게이지 충전** (「딜/타이밍 아님」은 틀린 판정이었다) | **전원** — 사이클 간격의 하한을 정하므로 모든 덱에 문다 | **미착수, 규칙은 확정 (2026-08-21).** 채움은 **타격 수 × 무기별 상수**이고 대미지와 무관하다(코어 히트조차 무관). 상수는 데이터에 이미 있다 — `shot_detail.burst_energy_pershot`(무기군별 500~29,000, **56배 차이**) × `shot_count`, 풀차지면 × `full_charge_burst_energy/10000`. 게이지 총량 **500,000**(UI 160px)을 단독편성 6유닛이 독립적으로 확정. 엔진은 세 필드를 **한 번도 안 읽는다**. 오늘의 `BossProfile.gauge_charge_time = 2.4` 상수는 실측 덱2·3에서 **실제의 절반**이고, 상수를 올리는 것으로는 안 고쳐진다(2.4→6.0에서 5덱 순위가 한 번도 안 바뀜 — 덱마다 다른 값이어야 한다). 상세·원본 판독: `docs/measurements/burst-gauge-fill.md` | 타이밍 |
+| — | ~~**버스트 게이지 충전**~~ (「딜/타이밍 아님」은 틀린 판정이었다) | **전원** — 사이클 간격의 하한을 정하므로 모든 덱에 문다 | **해소 (2026-08-22).** 게이지가 보스 상수(`BossProfile.gauge_charge_time = 2.4`)가 아니라 **덱의 성질**이 됐다: `burst_gauge.fill_times`가 그 덱의 발사 타임라인에서 사이클마다 채움 시간을 계산하고, `simulate_raid`의 고정점이 그것을 **세 번째 수렴축**으로 푼다(게이지 → 사이클 길이 → 재장전 위치 → 게이지). 채움은 **타격 수 × 그 유닛의 무기 상수**이고 대미지와 무관하다(코어 히트조차 무관) — 상수는 `shot_detail.burst_energy_pershot` × `shot_count`, 풀차지면 × `full_charge_burst_energy/10000`이고, 총량 **500,000**은 단독편성 6유닛이 독립적으로 확정했다. **채움원 셋이 전부 배선됐다**: 무기 타격(풀차지/톡톡이 구분) · 아군 누적 소모탄 문턱 점프(`bonus_fills`, 인어공주·신데렐라: CW) · **스킬이 만드는 타격**(라이더·드론·오토파이어·주기 타격, `damage_log`에서 유도 — 유닛별 표 없음). 충전 속도 스탯(`burst_gauge_fill_speed_percent`)도 샷별 배율로 소비된다. 실측 5덱 대조: 덱3이 판독(3.5·3.1·2.85·2.7·2.55초) 대비 **+15.6% 느림 → −6.8% 빠름**으로, 첫 사이클은 3.5초로 일치. **남는 보류 둘**: 관통 배수(아래 「만들지 않는 것」) · DoT 틱(10슬러그, 미측정, 같은 절). 상세·원본 판독: `docs/measurements/burst-gauge-fill.md` | 타이밍 |
 | — | **네온: 비전 아이의 게이지 충전 속도 — 라이브 Firepower Gauge 필요** (Task 6이 새로 연 갭, `burst_gauge_fill_speed_percent`) | 1 (neon-vision-eye) | **미착수 (2026-08-22).** `burst_gauge_fill_speed_percent`(게이지 충전 속도 ▲5%/point, 최대 ▲500%, 「풀버스트 종료 시 5초간」)가 이제 세 유닛(아니스: 스타·그레이브·마나)에서 소비되지만 그녀 것만 못 건다 — 값이 **라이브 Firepower Gauge 수치**에 비례하는데 이 모듈은 그 게이지를 산 자원으로 안 둔다(2026-08-14: 딜 경로엔 inert라 고정 버스트 주기 상수로 대체, 이 자체는 여전히 옳다 — 위 「Pattern B 해체」 참조). **아는 게 없어서가 아니라 크기의 보류다**: 궤적(개전 100·평타당 +2·창 종료 +45·소모 100)은 이미 실측 검증됐다(같은 절, 1·4·7 재현). 없는 건 그걸 실어 나를 `ResourceSpec` 하나뿐 — 만들면 게이지 수치를 `full_burst_end`에서 읽어 이 스탯에 먹이는 일이다 | 타이밍 |
 | — | ~~연사가 무기군 상수~~(유닛별 `shot_detail.rate_of_fire` 미사용) | 1 (질: 발렌타인, 평타 4.8배) | **해소 (2026-08-15)** — `attack_rate.ROUNDS_PER_MINUTE` + `rounds_per_second`(60fps 격자) + `weapon_stats["rate_of_fire"]`. 캘리 불변(그녀가 로스터에 없다), 값어치는 `scripts/audit_rate_of_fire.py`가 다음 유닛을 잡는 것. 클래스 상수 넷은 격자 유도로 재현됨 | 발사 타임라인 |
 | — | ~~차지 무기의 유닛별 `rate_of_fire` 미사용~~ | 5 (31정 중 60발/분을 벗어나는 전부) | **해소 (2026-08-15)** — 케이던스가 아니라 **바닥값**이었다. `attack_rate.CHARGE_ROUNDS_PER_MINUTE` + `roster`의 `charge_interval_floor`. 그 다섯이 정확히 「멈춤 없음」 넷 + 신데렐라이고(우연 확률 0.16%), 옛 전역 `CHARGE_INTERVAL_FLOOR_SECONDS`(10/29)는 신데렐라의 180rpm=0.33333초를 한 발 짧게 읽은 것이었다. 기본값 60은 바닥값이 아니다(스칼렛이 그 값으로 0.7325초마다 쏜다) → 표에 없으면 바닥값 없음. 신데렐라 0.964x→0.980x, 나머지 24유닛 불변 | 발사 타임라인 |
@@ -3480,6 +3480,25 @@ Fienn이 2026-08-03에 맥스웰로 실측해 **배율이 변형된 무기에도
   관통이 애초에 발동하지 않았다 — 지금 배선하면 측정되지 않은 상호작용 위에
   짓는 것이라 보류한다. 여는 조건은 관통 보유자가 낀 덱을
   `pierce_hits_body_behind_core=True`인 보스에서 게이지 판독으로 재는 것.
+- **DoT 틱이 게이지를 안 채운다 (2026-08-22, 미측정 판단).** 스킬이 만드는
+  타격은 이제 게이지를 채우지만(`raid_simulator._gauge_skill_hits`),
+  `damage_type == "sustained"`로 기록된 것은 뺀다 —
+  `burst_gauge.GAUGE_INERT_DAMAGE_TYPES`. 그 타입을 쓰는 **10슬러그**
+  (`ark-ranger-black` · `bready` · `diesel-winter-sweets` ·
+  `guillotine-winter-slayer` · `jill-valentine` · `mana` · `mihara-bonding-chain` ·
+  `raven` · `rosanna-chic-ocean` · `sakura-bloom-in-summer`)는 전부 **초당 DoT**라
+  발사체가 아니고, 그래서 게임이 「타격」으로 세지 않을 가능성이 높다는 **판단**
+  이지 실측이 아니다. 같은 자리의 `distributed`(6슬러그)는 광역으로 분산된
+  **개별 타격**이라 DoT가 아니므로 **센다**. 여는 조건은 DoT를 가진 유닛 하나를
+  단독편성으로 세우고 게이지 바를 프레임 단위로 읽는 것 — 상수 한 줄이 뒤집힌다.
+  **`raid_simulator.NON_CORE_DAMAGE_TYPES`를 재사용하지 말 것**: 오늘 원소가
+  겹쳐 보여도 그쪽은 「코어를 맞힐 수 있는가」라는 다른 질문이다.
+  **우선순위는 낮다 — 오늘 이 보류가 붙들고 있는 것이 없다 (2026-08-22 측정).**
+  상수를 통째로 비워(= DoT도 채운다고 가정) 실측 5덱을 다시 돌리면 **게이지 표도
+  총딜도 다섯 덱 전부 소수점까지 동일**하다. DoT는 대개 풀 버스트 진입/버스트
+  캐스트에 걸려 틱이 창 **안**에 떨어지는데 게이지는 창 안에서 안 차기 때문이다.
+  즉 이 판단이 틀렸더라도 오늘의 추천 결과는 안 바뀐다 — 실측은 새 DoT 유닛이
+  **창 밖에서** 틱하기 시작할 때 필요해진다.
 
 ---
 

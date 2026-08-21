@@ -119,7 +119,7 @@ def cdr_pulse_rule(trigger, seconds, scope="squad"):
 
 
 def instant_nuke_pulse_rule(
-    trigger, percent, condition=None, damage_type="attack"
+    trigger, percent, condition=None, damage_type="attack", gauge_hits=1
 ):
     """"Deals X% of final ATK as damage" tied to a trigger OTHER than the
     caster's own burst (e.g. Brid: Silent Track's Ignition Sequence, on
@@ -140,13 +140,22 @@ def instant_nuke_pulse_rule(
 
     `damage_type`: the nuke's damage typing when its text names one (e.g.
     "as Distributed Damage" -> "distributed"), so the type-gated Damage-Up
-    buckets apply to it. Default "attack"."""
+    buckets apply to it. Default "attack".
+
+    `gauge_hits`: how many separate HITS this pulse's percent folds together,
+    for the burst gauge - which fills per hit, not per instance. Pass it
+    whenever the percent is `n * per_hit` (Snow White: Heavy Arms' Auto Fire
+    volley is `ammo * 105.59%`); leave it 1 when the pulse IS one hit.
+    Declared here rather than inferred from `damage_type`: the type says what
+    Damage-Up bucket applies, not how many hits landed, and reading a count out
+    of it would break silently the day another unit types a single hit the same
+    way."""
 
     def action(context, caster_slug, time, registry):
         registry.add_pulse(
             Pulse(
                 "instant_damage_percent", percent, "self", caster_slug,
-                damage_type,
+                damage_type, gauge_hits,
             )
         )
 

@@ -274,6 +274,40 @@ def core_eligible(source, damage_type):
         return True
     return source == "normal_attack" and damage_type not in NON_CORE_DAMAGE_TYPES
 
+
+def _gauge_skill_hits(damage_log):
+    """{슬러그: [(시각, 타격 수), ...]} - 무기가 쏘지 않은, 게이지를 채우는 타격.
+
+    라이더·드론·오토파이어·주기 타격은 전부 여기서 나온다. 63슬러그짜리 손 표를
+    쓰지 않는 이유는 `damage_log`가 이미 「누가 언제 몇 번 때렸는가」를 알기
+    때문이다 - 그리고 그 행의 `slug`는 언제나 시전자 본인의 로스터 슬러그라
+    (드론·소환수도 마찬가지) `weapon_stats[slug]`가 곧 에너지다. 새로 인코딩되는
+    유닛은 선언 없이 자동으로 여기 들어온다.
+
+    두 가지를 뺀다:
+
+    - 평타(`normal_attack`)는 `gauge_shots_by_slug`가 이미 세고 풀차지 여부까지
+      싣는다. 여기서 또 세면 평타가 두 번 세어진다.
+    - `burst_gauge.GAUGE_INERT_DAMAGE_TYPES`(초당 DoT)는 발사체가 아니라 타격이
+      아닐 가능성이 높다 - **미측정 판단**이고, 그 상수의 독스트링이 근거다.
+
+    관통으로 한 이벤트가 두 행이 되는 분기는 `is_normal_attack`에만 걸리므로
+    스킬 타격은 언제나 정확히 한 행이다 - 이중 계상이 없다.
+    """
+    hits = {}
+    for entry in damage_log:
+        if entry["source"] == "normal_attack":
+            continue
+        if entry["damage_type"] in burst_gauge.GAUGE_INERT_DAMAGE_TYPES:
+            continue
+        # 로그 행을 만드는 자리는 `_entries` 하나뿐이라 키는 언제나 있다. 그래도
+        # `.get`으로 읽는 것은 나중에 다른 경로가 행을 만들 때 `KeyError`보다
+        # 「1타로 센다」로 넘어가는 쪽이 맞기 때문이다.
+        hits.setdefault(entry["slug"], []).append(
+            (entry["time"], entry.get("gauge_hits", 1)))
+    return hits
+
+
 # A `burst_anchored_buffs` duration meaning "hold until this unit's next own
 # burst" (a state a burst enters and only the next burst clears), as opposed to
 # a fixed number of seconds.
@@ -1420,9 +1454,17 @@ def _simulate_raid_once(
         is_tap_fire=False,
         weapon=None,
         damage_type_gate=None,
+        gauge_hits=1,
     ):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
+            # How many separate HITS this one instance folds into its percent.
+            # The burst gauge fills per hit, so a volley recorded as one row at
+            # N x the per-hit percent has to say N here or the gauge counts it
+            # once (burst_gauge.fill_times). Damage ignores it - the folding is
+            # what `percent` already expresses. Declared at the recording site,
+            # never inferred from `damage_type`.
+            "gauge_hits": gauge_hits,
             "damage_type": damage_type, "extra_charge_bonus": extra_charge_bonus,
             "resource_gate": resource_gate, "extra_flat_atk": extra_flat_atk,
             # Whether `damage_type` actually applies to this instance, answered
@@ -1494,7 +1536,7 @@ def _simulate_raid_once(
         for pulse in registry.drain_pulses("instant_damage_percent"):
             record(
                 pulse.source_slug, pulse.value, time, "instant_nuke",
-                damage_type=pulse.damage_type,
+                damage_type=pulse.damage_type, gauge_hits=pulse.gauge_hits,
             )
 
     def on_battle_start(time):
@@ -2023,7 +2065,7 @@ def _simulate_raid_once(
                     for pulse in registry.drain_pulses("instant_damage_percent"):
                         record(
                             pulse.source_slug, pulse.value, shot_time, "per_shot_nuke",
-                            damage_type=pulse.damage_type,
+                            damage_type=pulse.damage_type, gauge_hits=pulse.gauge_hits,
                         )
             damage_type = rec.damage_type or normal_attack_type(slug, rec.weapon, shot_time)
             # A normal attack IS Full-Burst-Bonus eligible: its shot time is the
@@ -2493,6 +2535,7 @@ def _simulate_raid_once(
                 ) * weight,
                 "source": ev["source"],
                 "damage_type": damage_type,
+                "gauge_hits": ev["gauge_hits"],
             }
 
         pierces = (
@@ -2540,6 +2583,7 @@ def _simulate_raid_once(
         [e["time"] for e in events if e["type"] == "full_burst_end"],
         weapon_stats=weapon_stats, fight_duration=fight_duration,
         ammo_rounds_by_slug=ammo_rounds_by_slug, bonus_fills=gauge_fills,
+        skill_hits_by_slug=_gauge_skill_hits(damage_log),
         speed_multiplier_at=lambda slug, time: 1.0 + registry.total_for(
             "burst_gauge_fill_speed_percent", gauge_targets[slug], time))
     result["gauge_charge_times"] = resolved_gauge

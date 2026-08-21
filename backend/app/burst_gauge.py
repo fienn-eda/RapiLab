@@ -27,6 +27,19 @@ GAUGE_FULL = 500_000
 # 그 덱들은 기존 `FullBurstConvergenceWarning`이 잡는다.
 GAUGE_QUANTUM_SEC = 0.1
 
+# 이 대미지 타입으로 기록된 스킬 대미지는 게이지를 안 채운다. **미측정이다** -
+# `sustained`를 쓰는 열 슬러그(아크레인저: 블랙 · 브레디 · 디젤: 윈터 스위츠 ·
+# 길로틴: 윈터 슬레이어 · 질 발렌타인 · 마나 · 미하라: 본딩 체인 · 레이븐 ·
+# 로잔나: 시크 오션 · 사쿠라: 블룸 인 서머)는 전부 초당 DoT라 발사체가 아니고,
+# 그래서 「타격」이 아닐 가능성이 높다는 **판단**이다. 실측 하나가 이 집합을 한
+# 줄로 뒤집을 수 있어야 해서 자기 이름을 갖는다.
+#
+# `raid_simulator.NON_CORE_DAMAGE_TYPES`와 오늘 원소가 겹쳐 보이지만 그것은
+# 「코어를 맞힐 수 있는가」라는 **다른 질문**에 답한다. 재사용하면 한쪽이 바뀔 때
+# 다른 쪽이 조용히 뒤집힌다. `distributed`(광역으로 분산된 개별 타격)는 DoT가
+# 아니므로 여기 없다 - 채운다.
+GAUGE_INERT_DAMAGE_TYPES = frozenset({"sustained"})
+
 
 def energy_per_hit(weapon_stats, *, full_charge):
     """이 무기의 타격 하나가 넣는 게이지 에너지.
@@ -52,11 +65,21 @@ def quantize(seconds):
 
 
 def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
-               ammo_rounds_by_slug=None, bonus_fills=(), speed_multiplier_at=None):
+               ammo_rounds_by_slug=None, bonus_fills=(), speed_multiplier_at=None,
+               skill_hits_by_slug=None):
     """풀 버스트가 끝난 뒤 게이지가 다시 가득 차기까지 걸리는 시간, 사이클마다.
 
     `shots_by_slug`는 `{슬러그: [(시각, 톡톡이 여부), ...]}`. 대미지 경로와
     직교한다 - 코어히트도 크리티컬도 ATK도 적 DEF도 여기 안 들어온다.
+
+    `skill_hits_by_slug`(`{슬러그: [(시각, 타격 수), ...]}`)는 **무기가 쏘지
+    않은** 타격이다 - 라이더(자기 타격에 얹히는 추가 대미지)·드론·오토파이어·
+    주기 타격. 값은 유닛별 표가 아니라 **그 유닛 무기의 기본 에너지** 하나이고,
+    세 유닛이 독립적으로 그것을 준다(헬름의 애장품 추댐 1.000x · 리버렐리오의
+    5회 라이더 1.015x/1.035x · 헤비암즈의 오토파이어 1.015x; measurements/
+    burst-gauge-fill.md 「정정」·「증분만으로 한 전수 검산」). 풀차지 배율은
+    **그 유닛의 무기가 쏜 샷**에만 붙으므로 여기 있는 타격은 배율을 안 받고,
+    탄약을 안 쓰므로 아군 누적 소모탄 카운터에 0을 기여한다.
 
     `bonus_fills`는 무기 타격과 다른 채움원 - 「아군 누적 소모탄이 N발에 닿을
     때마다 게이지 X%」(인어공주 Bubble Order, 신데렐라: 크리스탈 웨이브 Beauty-
@@ -88,11 +111,14 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     무기 타격에 이 배율이 걸리는 것은 실측(아니스: 스타의 원문 "버스트 게이지
     충전 속도")이 확정하지만, 같은 배율이 스킬이 주는 플랫 충전(예: 인어공주
     Bubble Order)에도 걸리는지는 **미측정**이다 - 지금은 안 걸리는 쪽으로 두고,
-    다음 실측이 뒤집기 전까지는 이게 보수적인 기본값이다.
+    다음 실측이 뒤집기 전까지는 이게 보수적인 기본값이다. `skill_hits_by_slug`의
+    타격에는 **걸린다** - 스탯의 원문이 「버스트 게이지 충전 속도」이지 「무기
+    타격의 충전 속도」가 아니므로, 타격을 가려 걸 근거가 없다.
 
-    **세는 단위는 샷 레코드 하나, 즉 방아쇠 하나다.** 실측이 정한 단위는 방아쇠가
-    아니라 **타격**이고(measurements/burst-gauge-fill.md), 둘이 갈리는 자리가 둘
-    있다. 산탄은 `energy_per_hit`이 `pellets_per_shot`을 곱해 맞춘다.
+    **무기 쪽에서 세는 단위는 샷 레코드 하나, 즉 방아쇠 하나다.** 실측이 정한
+    단위는 방아쇠가 아니라 **타격**이고(measurements/burst-gauge-fill.md), 둘이
+    갈리는 자리가 둘 있다. 산탄은 `energy_per_hit`이 `pellets_per_shot`을 곱해
+    맞춘다.
     **관통은 아직 안 맞춘다** - 「관통으로 n개 객체를 타격하면 게이지도 n배」가
     실측에 있지만 여기서는 방아쇠 하나가 곱해지지 않은 채 한 번 세어진다.
     보류인 이유: 엔진의 관통 2인스턴스는 `pierce_hits_body_behind_core`에
@@ -127,11 +153,17 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     }
     ammo_rounds_by_slug = ammo_rounds_by_slug or {}
     speed_multiplier_at = speed_multiplier_at or (lambda slug, time: 1.0)
+    # (시각, 슬러그, 종류, 타격 수, 소모 라운드). `종류`는 어느 에너지를 쓰는지를
+    # **이름으로** 말한다 - 스킬 타격을 톡톡이 불리언에 태우면 값은 맞지만 읽는
+    # 사람이 「이건 부분 차지 샷이구나」로 틀린다.
     merged = sorted(
-        (time, slug, is_tap, rounds)
-        for slug, shots in shots_by_slug.items()
-        for (time, is_tap), rounds in zip(
-            shots, ammo_rounds_by_slug.get(slug) or [1.0] * len(shots))
+        [(time, slug, "tap" if is_tap else "charged", 1, rounds)
+         for slug, shots in shots_by_slug.items()
+         for (time, is_tap), rounds in zip(
+             shots, ammo_rounds_by_slug.get(slug) or [1.0] * len(shots))]
+        + [(time, slug, "skill", count, 0.0)
+           for slug, hits in (skill_hits_by_slug or {}).items()
+           for time, count in hits]
     )
     # 아군 누적 소모탄의 위상: 각 창의 시작(`end`) 이전에 이미 쌓인 라운드 수.
     # `merged`가 시각순이라 이분 탐색 + 누적합으로 창마다 다시 훑지 않고 구한다.
@@ -139,19 +171,22 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
         ally_round_times = [m[0] for m in merged]
         ally_round_prefix = [0.0]
         for m in merged:
-            ally_round_prefix.append(ally_round_prefix[-1] + m[3])
+            ally_round_prefix.append(ally_round_prefix[-1] + m[4])
     out = {}
     for cycle_index, end in enumerate(full_burst_ends):
         gauge = 0.0
         if bonus_fills:
             ally_rounds = ally_round_prefix[bisect.bisect_left(ally_round_times, end)]
-        for time, slug, is_tap, rounds in merged:
+        for time, slug, kind, hits, rounds in merged:
             if time < end:
                 continue
             if time >= fight_duration:
                 break
             base, charged = per_hit.get(slug, (0.0, 0.0))
-            gauge += (base if is_tap else charged) * speed_multiplier_at(slug, time)
+            # 풀차지 배율은 **그 유닛의 무기가 쏜** 샷에만 붙는다 - 톡톡이도
+            # 스킬 타격도 기본값이다.
+            energy = charged if kind == "charged" else base
+            gauge += energy * hits * speed_multiplier_at(slug, time)
             if bonus_fills:
                 before = ally_rounds
                 ally_rounds += rounds

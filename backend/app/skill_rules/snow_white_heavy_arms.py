@@ -259,15 +259,21 @@ def build_seven_dwarves_per_shot_rules(values):
     ])
     return [
         (1, "every", [charge_window_buffs]),
+        # The sequential volley is `ammo` SEPARATE hits folded into one pulse's
+        # percent, so it declares the count for the burst gauge - which fills
+        # per hit. Measured whole: a Fully Active full charge is 1 normal
+        # attack + 1 all-enemy sweep + 15 Auto Fire hits, and 21 + 16 x 10 px
+        # on a 176 px bar completes on the last one exactly (Fienn, 2026-08-22,
+        # docs/measurements/burst-gauge-fill.md).
         (1, "every_outside_segment",
          [instant_nuke_pulse_rule("per_shot", all_hit),
           instant_nuke_pulse_rule("per_shot", base_ammo * seq_hit,
-                                  damage_type="sequential")]),
+                                  damage_type="sequential", gauge_hits=base_ammo)]),
         (1, "every_during_segment",
          [sequential_up,
           instant_nuke_pulse_rule("per_shot", all_hit),
           instant_nuke_pulse_rule("per_shot", boosted_ammo * seq_hit,
-                                  damage_type="sequential")]),
+                                  damage_type="sequential", gauge_hits=boosted_ammo)]),
     ]
 
 
