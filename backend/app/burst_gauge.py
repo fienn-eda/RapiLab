@@ -26,7 +26,7 @@ def energy_per_hit(weapon_stats, *, full_charge):
     발이 합쳐 정확히 기본값 두 개였던 판독이다.
 
     차지 배율에 `charge_damage_percent`를 쓰는 것은 우연이 아니다 - 원본 데이터의
-    `full_charge_burst_energy`가 `full_charge_damage`와 **모든 유닛에서 값이 같다**.
+    `full_charge_burst_energy`가 `full_charge_damage`와 **차지 무기에서 값이 같다**.
     그 동일성은 `scripts/audit_burst_energy.py`가 지킨다.
     """
     energy = weapon_stats["burst_energy_pershot"] * weapon_stats.get("pellets_per_shot", 1)

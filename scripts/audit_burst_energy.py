@@ -32,7 +32,8 @@ def main():
         if not shot:
             continue
         slug = slug_of.get(detail["resource_id"])
-        if shot.get("full_charge_burst_energy") != shot.get("full_charge_damage"):
+        # 검사 #2: 차지 무기만 대상 (full_charge_burst_energy=0은 비차지 무기의 센티널)
+        if shot.get("full_charge_burst_energy") and shot.get("full_charge_burst_energy") != shot.get("full_charge_damage"):
             mismatched.append(f"{slug}: full_charge_burst_energy "
                               f"{shot['full_charge_burst_energy']} != "
                               f"full_charge_damage {shot['full_charge_damage']}")
