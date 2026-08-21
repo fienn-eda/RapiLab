@@ -5,10 +5,12 @@ deck search shows which mode a recommendation used via the slug itself.
 
 Snipe full-charge semantics (Fienn, 2026-07-19): like Velvet's ammo pouch, a
 full charge actually FIRES ONE round - the "expends 40 rounds" text is ammo
-ACCOUNTING for consumption-counting synergies, not magazine drain. The
-15-round magazine cycles on real shots. That accounting feeds skills we defer
-anyway (see below), so it appears only in this docstring and the
-little_mermaid cross-note.
+ACCOUNTING for consumption-counting synergies (`_AMMO_ROUNDS_PER_SHOT` in
+registry.py), not magazine drain. The 15-round magazine cycles on real shots.
+That accounting feeds two modeled consumers today: Little Mermaid's Bubble
+Barrage and this unit's own Beauty-Full gauge fill (both read the squad's
+"total ammo expended" counter this accelerates - see
+build_beauty_full_gauge_fills below).
 
 Modeled (DPS-relevant):
 - Beauty-Full (skills[0]): battle-start self Attack Damage +24% (shared by

@@ -190,3 +190,21 @@ def test_bonus_fill_defaults_to_one_round_per_shot_when_rounds_are_not_given():
     fills = [{"every_ally_rounds": 4.0, "fraction": 1.0}]
     assert fill_times(shots, [10.0], weapon_stats=stats,
                       fight_duration=100.0, bonus_fills=fills) == {1: 4.0}
+
+
+def test_ally_rounds_carry_across_cycles_not_reset_per_window():
+    """리뷰 Finding 2: 아군 누적 소모탄은 게임에서 전투 내내 안 비는 카운터다
+    (원문 "total ammo expended by allies") - Bubble Barrage의 기존 구현과 같은
+    회계. 창마다 0에서 다시 세면 이전 창에서 쌓인 라운드가 사라져 다음 창의
+    위상이 어긋난다."""
+    stats = {"u": _weapon(0.0)}
+    # 첫 창(10~20) 안에서 300발이 쌓이고, 둘째 창(20~)이 열린 뒤 100발이 더
+    # 온다 - 누적이면 둘째 창은 시작부터 이미 300발을 이어받아 이 한 발로 곧장
+    # 400 문턱을 넘는다. 창마다 리셋이면 둘째 창은 0부터 다시 세므로 100발로는
+    # 어림도 없다(이 표에는 실리지도 않는다).
+    shots = {"u": [(12.0, False), (21.0, False)]}
+    rounds = {"u": [300.0, 100.0]}
+    fills = [{"every_ally_rounds": 400.0, "fraction": 1.0}]
+    result = fill_times(shots, [10.0, 20.0], weapon_stats=stats, fight_duration=100.0,
+                        ammo_rounds_by_slug=rounds, bonus_fills=fills)
+    assert result == {1: 11.0, 2: 1.0}

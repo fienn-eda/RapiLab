@@ -6,6 +6,7 @@
 
 상수를 한곳에 두는 이유는 `paths.py`와 같다 - 흩어지면 같은 날 같은 방식으로 틀린다.
 """
+import bisect
 
 # 게이지를 가득 채우는 데 필요한 에너지. 단독편성 여섯 유닛이 독립적으로 이 값을
 # 준다(앨리스 5발 x 98,000 = 490,000 = 판독 156/160px; 블랑 250발 x 2,000 = 정확히
@@ -62,12 +63,20 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     Full) - 목록이다. 각 원소는 `{"every_ally_rounds", "fraction"}`. 소모탄
     카운터는 `ammo_rounds_by_slug`(`shots_by_slug`와 나란한 {슬러그: [발당
     라운드, ...]} - 탄약 주머니를 쓰는 아군은 한 발이 수백 라운드를 회계한다)가
-    센다. 이 카운터는 사이클마다 이 창의 시작(`end`)에서 **0부터 다시** 센다 -
-    무기 타격 게이지가 사이클마다 0에서 다시 차는 것과 같은 창-상대적 근사다.
-    여러 충전원이 있는 덱에서는 **모두가 같은 카운터를 공유**한다(문턱은
-    원마다 다르다) - 원마다 따로 세면 아군 발수를 소스 수만큼 중복 계상한다.
-    한 샷이 자기 문턱을 여러 번 넘을 수 있다(주머니 발 하나가 수백 라운드를
-    회계하면).
+    센다. **이 카운터는 전투 시작부터 절대 안 빈다** - 원문이 "total ammo
+    expended by allies"이고, `little_mermaid.build_bubble_barrage_scheduled_nukes`의
+    기존 구현도 전 전투 타임라인을 병합해 같은 방식으로 센다. 게이지 자체는
+    버스트로 비워지지만(그래서 무기 타격 에너지는 사이클마다 0에서 다시 쌓는다)
+    아군 소모탄 카운터는 버스트와 무관한 별개 값이라 안 빈다 - 창이 시작되는
+    시점의 **누적값**을 위상으로 이어받아야 그 창에서 처음 넘는 문턱까지의
+    거리가 맞다. 창마다 0에서 다시 세면(예전 근사) 문턱이 창 길이에 육박하는
+    덱(400발 문턱 vs 초당 ~118발인 덱2의 3.4초 창)에서 트리거가 거의 매번
+    창 하나를 다 써야 도착해, 실측보다 한참 느린 채움 시간이 나온다
+    (`scripts/quantify_ally_rounds_accounting.py`: 덱2 정상상태 ~5.5초(창-리셋)
+    vs ~2.4~2.7초(누적) - 거의 두 배). 여러 충전원이 있는 덱에서는 **모두가 같은
+    카운터를 공유**한다(문턱은 원마다 다르다) - 원마다 따로 세면 아군 발수를
+    소스 수만큼 중복 계상한다. 한 샷이 자기 문턱을 여러 번 넘을 수 있다(주머니
+    발 하나가 수백 라운드를 회계하면).
 
     **세는 단위는 샷 레코드 하나, 즉 방아쇠 하나다.** 실측이 정한 단위는 방아쇠가
     아니라 **타격**이고(measurements/burst-gauge-fill.md), 둘이 갈리는 자리가 둘
@@ -111,10 +120,18 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
         for (time, is_tap), rounds in zip(
             shots, ammo_rounds_by_slug.get(slug) or [1.0] * len(shots))
     )
+    # 아군 누적 소모탄의 위상: 각 창의 시작(`end`) 이전에 이미 쌓인 라운드 수.
+    # `merged`가 시각순이라 이분 탐색 + 누적합으로 창마다 다시 훑지 않고 구한다.
+    if bonus_fills:
+        ally_round_times = [m[0] for m in merged]
+        ally_round_prefix = [0.0]
+        for m in merged:
+            ally_round_prefix.append(ally_round_prefix[-1] + m[3])
     out = {}
     for cycle_index, end in enumerate(full_burst_ends):
         gauge = 0.0
-        ally_rounds = 0.0
+        if bonus_fills:
+            ally_rounds = ally_round_prefix[bisect.bisect_left(ally_round_times, end)]
         for time, slug, is_tap, rounds in merged:
             if time < end:
                 continue

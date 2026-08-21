@@ -1584,7 +1584,18 @@ in a deck shares ONE counter**: a shot's rounds are booked once regardless of
 how many gauge-fill sources are seated, so a deck with two such units doesn't
 double-count and charge faster than either alone. A single shot can cross its
 own threshold more than once (an ammo-pouch shot booking hundreds of rounds at
-once). Wire a Nikke's fill spec via `_GAUGE_FILL_BUILDERS` / `get_gauge_fills`
+once). **The counter never resets** (matches the skill text, "TOTAL ammo
+expended by allies", and `build_bubble_barrage_scheduled_nukes`'s own running
+`expended`) — a fresh gauge-charge window inherits whatever the counter already
+reads at the window's start, found by a `bisect` into the same time-sorted shot
+list `fill_times` already builds, rather than starting the count at zero per
+window. That distinction is load-bearing whenever a threshold is comparable to
+a charge window's length: on the measured deck 2 (Little Mermaid, every 400
+rounds against a ~3.4s window at the deck's fire rate) resetting to zero per
+window nearly doubles the computed steady-state charge time versus the correct
+carried-over count (~5.5s vs ~2.4–2.7s,
+`scripts/quantify_ally_rounds_accounting.py`).
+Wire a Nikke's fill spec via `_GAUGE_FILL_BUILDERS` / `get_gauge_fills`
 in `skill_rules/registry.py`; `roster.assemble_simulation_inputs` collects
 every seated unit's fills into one flat `gauge_fills` list that `simulate_raid`
 forwards to `fill_times`. Consumers: `little_mermaid`'s Bubble Order (every
