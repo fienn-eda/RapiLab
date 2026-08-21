@@ -1004,18 +1004,33 @@ resolved stage table back in as `full_burst_stage_overrides` until a pass
 reproduces its own input. Results carry
 `full_burst_passes = {"passes": N, "converged": bool}`.
 
-That loop now iterates a SECOND quantity to the same fixed point: the
-`flat_max_hp` written after the burst cycle, which the "ATK ▲ X% of Max HP"
-conversion needs and could not otherwise see (see `flat_max_hp` below). The pass
-count in `full_burst_passes` counts passes of the whole loop, so it covers both
-axes; a deck that needs neither still resolves in exactly one pass.
+That loop now iterates THREE quantities to the same fixed point. The pass count in
+`full_burst_passes` counts passes of the whole loop, so it covers all three axes.
 
-Two properties to preserve if you add a second consumer. **A deck with no such
-unit resolves in exactly one pass** - the resolver returns an empty dict and the
-loop exits, so cost and output are unchanged for everyone else; that invariant is
-what makes the feature free, and it is worth a test of its own. And **the pass
-count tracks FIGHT DURATION, not deck composition**, because each pass propagates
-the change one cycle further: a draining alternating deck needs 3 passes at 200s
+1. The full-burst stage table (shape 2 above).
+2. The `flat_max_hp` written after the burst cycle, which the "ATK ▲ X% of Max HP"
+   conversion needs and could not otherwise see (see `flat_max_hp` below).
+3. **The burst gauge fill time** (2026-08-22): gauge -> cycle length -> reload
+   phase -> gauge. See the `burst_gauge` sections below.
+
+**Axis 3 broke the invariant that made axes 1 and 2 free - read this before
+sizing any cost.** Axes 1 and 2 opt in: a deck with no such unit gets an empty
+resolver dict and exits in exactly one pass, so cost was unchanged for everyone
+else. **Every deck has a gauge**, so axis 3 opts nobody out - mean passes/deck
+went 1.24 -> 5.97 and evaluation cost 4.68x across the board. If you add a fourth
+quantity, ask first which of these two shapes it has; an opt-in quantity is
+nearly free and a universal one is not.
+
+**Convergence is not guaranteed, and that is structural.** 4 decks in 400 do not
+settle: they oscillate with period 2 because the gauge is quantized to a 0.1s
+grid and the true fixed point can sit BETWEEN two grid points, in which case the
+quantized map has no fixed point at all (changing the grid only changes which
+decks land on a boundary). 396/400 converge, max 25 passes. Do not read a
+non-converged deck as a bug in the resolver.
+
+The remaining property to preserve: **the pass count tracks FIGHT DURATION, not
+deck composition**, because each pass propagates the change one cycle further: a
+draining alternating deck needs 3 passes at 200s
 and 8 at 700s. `MAX_FULL_BURST_PASSES` is therefore a runaway guard, not a
 quality knob - size it far above any plausible fight, never at "twice the worst
 deck I measured", since `fight_duration` is a user-entered form field.
