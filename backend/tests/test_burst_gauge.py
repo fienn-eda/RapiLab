@@ -131,3 +131,62 @@ def test_a_weapon_with_no_gauge_data_charges_nothing():
     assert fill_times({"u": [(11.0, False)]}, [10.0],
                       weapon_stats={"u": {"weapon": "AR"}},
                       fight_duration=100.0) == {}
+
+
+# --- 아군 소모탄 트리거 채움원 (bonus_fills) -------------------------------
+# 무기 타격과 다른 채움원: 아군 누적 소모탄이 문턱을 넘을 때마다 fraction *
+# GAUGE_FULL이 한 번에 붙는다(인어공주 Bubble Order, 신데렐라: 크리스탈 웨이브
+# Beauty-Full). 카운터는 `ammo_rounds_by_slug`로 온다 - `shots_by_slug`와
+# 나란한 {슬러그: [발당 라운드, ...]}.
+
+
+def test_bonus_fill_adds_gauge_when_ally_rounds_cross_the_threshold():
+    stats = {"u": _weapon(1.0)}  # 타격 자체는 무시할 만큼 작다
+    shots = {"u": [(11.0, False), (12.0, False), (13.0, False)]}
+    rounds = {"u": [1.0, 1.0, 1.0]}
+    fills = [{"every_ally_rounds": 3.0, "fraction": 1.0}]
+    assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
+                      ammo_rounds_by_slug=rounds, bonus_fills=fills) == {1: 3.0}
+
+
+def test_bonus_fill_can_cross_several_thresholds_in_one_shot():
+    """탄약 주머니 발 하나가 수백 라운드를 회계하면 한 발로 문턱을 여러 번 넘을
+    수 있다 - 인어공주 Bubble Barrage(`build_bubble_barrage_scheduled_nukes`)의
+    기존 `while` 다중 크로싱과 같은 규칙."""
+    stats = {"u": _weapon(1.0)}
+    shots = {"u": [(11.0, False)]}
+    rounds = {"u": [900.0]}
+    fills = [{"every_ally_rounds": 400.0, "fraction": 0.5}]
+    # 900 // 400 = 문턱을 두 번 넘는다 -> 0.5 x 2 = 1.0 x GAUGE_FULL, 한 발로 꽉 찬다.
+    assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
+                      ammo_rounds_by_slug=rounds, bonus_fills=fills) == {1: 1.0}
+
+
+def test_two_fill_sources_share_one_ally_rounds_counter():
+    """컨트롤러 룰링 R2 회귀: 충전원이 둘인 덱(인어공주 + 신데렐라: 크리스탈
+    웨이브)에서 아군 소모탄은 **한 번만** 세어져야 한다. 증가가 `for fill`
+    루프 안에 있으면(브리프 샘플의 결함) 소스 수만큼 중복 계상되어 게이지가
+    실제보다 빨리 찬다 - 8발째(누적 800발)가 아니라 더 일찍 꽉 찬다."""
+    stats = {"u": _weapon(0.0)}  # 무기 타격은 게이지에 기여하지 않는다 - 이 축만 본다
+    shots = {"u": [(11.0 + i, False) for i in range(8)]}      # 11.0..18.0
+    rounds = {"u": [100.0] * 8}                                # 누적 100..800
+    fills = [
+        {"every_ally_rounds": 400.0, "fraction": 0.37},  # 인어공주 Bubble Order (lv10)
+        {"every_ally_rounds": 200.0, "fraction": 0.12},  # 신데렐라: CW Beauty-Full (lv10)
+    ]
+    # 200 문턱은 4번(shots 2,4,6,8), 400 문턱은 2번(shots 4,8) 넘는다:
+    # 4*0.12 + 2*0.37 = 1.22 x GAUGE_FULL >= 1.0 - 8발째(누적 800)에 꽉 찬다.
+    # 증가가 소스마다 중복되면 누적이 실제보다 두 배로 빨리 불어나 이 경계 안에
+    # 못 들어온다(수동 대조: 이 시나리오에서 8발 안에 표에 실리지 않는다).
+    assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=100.0,
+                      ammo_rounds_by_slug=rounds, bonus_fills=fills) == {1: 8.0}
+
+
+def test_bonus_fill_defaults_to_one_round_per_shot_when_rounds_are_not_given():
+    """`ammo_rounds_by_slug`를 안 주면(그런 유닛이 없는 덱) 발당 1라운드로
+    센다 - `context.shot_ammo_rounds`의 기본과 같다."""
+    stats = {"u": _weapon(0.0)}
+    shots = {"u": [(11.0 + i, False) for i in range(4)]}
+    fills = [{"every_ally_rounds": 4.0, "fraction": 1.0}]
+    assert fill_times(shots, [10.0], weapon_stats=stats,
+                      fight_duration=100.0, bonus_fills=fills) == {1: 4.0}

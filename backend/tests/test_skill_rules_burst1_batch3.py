@@ -2,6 +2,8 @@
 Tove, Soline: Frost Ticket. Values are the real max-level (dollskill for
 Moran/Tove) figures from dotgg.
 """
+import pytest
+
 from app.effects import EffectRegistry
 from app.skill_rules.little_mermaid import build_little_mermaid_rules
 from app.skill_rules.moran import build_bring_it_on_per_shot_rules, build_moran_rules
@@ -392,6 +394,15 @@ def test_little_mermaid_bubble_wave_fb_nuke_spec():
     assert spec == {
         "cooldown": 1.0, "percent": 63.36, "hit_count": 4, "during_full_burst": True,
     }
+
+
+def test_bubble_order_fills_the_gauge_every_400_ally_rounds():
+    """Bubble Order: 아군 누적 소모탄 400발마다 게이지 37%(lv10). 한 방에 게이지의
+    3분의 1이 넘게 차는 전부-아니면-전무 사건이라, 그 트리거가 충전 창 안에
+    떨어지느냐로 충전 시간이 불연속으로 뛴다."""
+    from app.skill_rules.little_mermaid import build_bubble_order_gauge_fills
+    fills = build_bubble_order_gauge_fills(LM)
+    assert fills == [{"every_ally_rounds": 400.0, "fraction": pytest.approx(0.37)}]
 
 
 def test_little_mermaid_bubble_barrage_fires_per_500_squad_bullets():

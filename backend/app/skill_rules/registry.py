@@ -80,6 +80,7 @@ from app.skill_rules.bready import (
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.chisato_nishikigi import build_chisato_per_shot_rules, build_chisato_rules
 from app.skill_rules.cinderella_crystal_wave import (
+    build_beauty_full_gauge_fills,
     build_crystal_wave_mg_rules,
     build_crystal_wave_snipe_rules,
     build_snipe_weapon_profile,
@@ -305,6 +306,7 @@ from app.skill_rules.leona import (
 )
 from app.skill_rules.little_mermaid import (
     build_bubble_barrage_scheduled_nukes,
+    build_bubble_order_gauge_fills,
     build_bubble_wave_fb_nuke,
     build_little_mermaid_rules,
     sirens_song_refill,
@@ -1023,6 +1025,17 @@ _SCHEDULED_NUKE_BUILDERS = {
     "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
     "rapi-red-hood-b1": lambda sv: build_attachable_projectiles_scheduled_nukes(
         sv, slug="rapi-red-hood-b1", stage3_requirement_cut=False),
+}
+
+# A Nikke whose skill fills the squad's burst gauge each time allies' total
+# ammo expended crosses a threshold (see burst_gauge.fill_times's
+# `bonus_fills`). Same counting channel as _SCHEDULED_NUKE_BUILDERS' squad-wide
+# ammo consumers - `_AMMO_ROUNDS_PER_SHOT` decides what one shot books toward
+# it. Beauty-Full is shared by both Crystal Wave mode slugs.
+_GAUGE_FILL_BUILDERS = {
+    "little-mermaid": lambda sv: build_bubble_order_gauge_fills(sv),  # Bubble Order, every 400
+    "cinderella-crystal-wave-mg": lambda sv: build_beauty_full_gauge_fills(sv),  # Beauty-Full, every 200
+    "cinderella-crystal-wave-snipe": lambda sv: build_beauty_full_gauge_fills(sv),
 }
 
 # Units the "hold fire through your own Full Burst" tactic is played on, with
@@ -1834,6 +1847,14 @@ def get_scheduled_nukes(slug, skill_values):
     """List of specs for a Nikke whose damage lands on a self-computed schedule
     (see raid_simulator's `scheduled_nukes`), or None for Nikkes without one."""
     builder = _SCHEDULED_NUKE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_gauge_fills(slug, skill_values):
+    """List of {"every_ally_rounds", "fraction"} specs for a Nikke whose skill
+    fills the squad's burst gauge each time allies' total ammo expended
+    crosses a threshold, or None for the vast majority without one."""
+    builder = _GAUGE_FILL_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
 
 

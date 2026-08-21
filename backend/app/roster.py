@@ -31,6 +31,7 @@ from app.skill_rules.registry import (
     get_conditional_full_burst_delta,
     get_full_burst_duration_delta,
     get_full_charge_window,
+    get_gauge_fills,
     get_self_stun,
     get_skill_ammo_refund,
     get_burst_hit_count,
@@ -168,6 +169,10 @@ def assemble_simulation_inputs(ordered_deck, hold_fire=()):
     unlimited_ammo_durations = {}
     burst_anchored_buffs = {}
     conditional_full_burst_deltas = {}
+    # Flat list, squad-scoped: burst_gauge.fill_times's bonus_fills doesn't
+    # care WHO owns a fill source, only its own threshold/fraction, and every
+    # source shares one ally-rounds counter (see fill_times's docstring).
+    gauge_fills = []
 
     for spec in ordered_deck:
         # A standing self-scoped cut to the unit's own burst cooldown (Moran's
@@ -350,6 +355,10 @@ def assemble_simulation_inputs(ordered_deck, hold_fire=()):
         if burst_anchored_buff:
             burst_anchored_buffs[spec.slug] = burst_anchored_buff
 
+        gauge_fill = get_gauge_fills(spec.slug, skill_values)
+        if gauge_fill:
+            gauge_fills.extend(gauge_fill)
+
     _merge_resource_contributions(resource_specs, resource_contributions, deck)
 
     return {
@@ -375,4 +384,5 @@ def assemble_simulation_inputs(ordered_deck, hold_fire=()):
         "unlimited_ammo_durations": unlimited_ammo_durations,
         "burst_anchored_buffs": burst_anchored_buffs,
         "conditional_full_burst_deltas": conditional_full_burst_deltas,
+        "gauge_fills": gauge_fills,
     }

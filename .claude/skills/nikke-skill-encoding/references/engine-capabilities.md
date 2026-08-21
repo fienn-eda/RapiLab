@@ -1573,6 +1573,24 @@ the bigger model exists. The stat is still inert TODAY because nothing multiplie
 the accumulated energy by it yet — but that is a missing WIRE, not a missing
 concept, so record the bullet rather than writing the unit off.
 
+**"Ally ammo threshold -> Burst Gauge %" fills are NOW consumed (2026-08-22)**,
+a second charge source alongside weapon hits: `burst_gauge.fill_times`'s
+`bonus_fills` argument, a list of `{"every_ally_rounds": N, "fraction": X}`.
+Each time the squad's shared "ally ammo expended" counter — the same channel
+Bubble Barrage reads (`context.shot_ammo_rounds`, `_AMMO_ROUNDS_PER_SHOT` for
+who books more than 1 round/shot) — crosses a multiple of N, the gauge jumps
++X% of `GAUGE_FULL` at that instant: all-or-nothing, not a rate. **Every fill
+in a deck shares ONE counter**: a shot's rounds are booked once regardless of
+how many gauge-fill sources are seated, so a deck with two such units doesn't
+double-count and charge faster than either alone. A single shot can cross its
+own threshold more than once (an ammo-pouch shot booking hundreds of rounds at
+once). Wire a Nikke's fill spec via `_GAUGE_FILL_BUILDERS` / `get_gauge_fills`
+in `skill_rules/registry.py`; `roster.assemble_simulation_inputs` collects
+every seated unit's fills into one flat `gauge_fills` list that `simulate_raid`
+forwards to `fill_times`. Consumers: `little_mermaid`'s Bubble Order (every
+400 rounds, +37%), `cinderella_crystal_wave`'s Beauty-Full (every 200 rounds,
++12%, shared by both mode slugs since Beauty-Full is common to MG and Snipe).
+
 **`damage_to_parts_up` and `damage_to_interruption_parts_up` are inert too**, and
 deliberately so. `calculate_damage` still TAKES `damage_to_parts_up` but leaves
 it out of the damage-up bucket on purpose: it raises damage dealt to PARTS, and

@@ -2,7 +2,9 @@
 
 Modeled (DPS-relevant):
 - Bubble Order (skills[0]): squad burst-cooldown reduction when Full Burst
-  ends; squad Attack Damage up when Full Burst begins.
+  ends; squad Attack Damage up when Full Burst begins; Burst Gauge +37% each
+  time allies' total ammo expended reaches 400 (see build_bubble_order_gauge_fills,
+  consumed by burst_gauge.fill_times's bonus_fills).
 - Bubble Wave (skills[1]): the "Bubble" enemy Damage Taken +5.05% debuff.
   It activates "when the enemy appears" (= battle start in a raid, always-on)
   and is continuous, so modeled as a permanent squad-scoped enemy debuff.
@@ -25,8 +27,6 @@ Not modeled:
   re-applies the same 5.05% Damage Taken (plus a 3s stun), so it adds no extra
   damage over the permanent Bubble already modeled - only the stun, which isn't
   modeled. Deliberately not double-counted.
-- Bubble Order's "ally ammo reaches 400 -> Burst Gauge +37%" (gauge fill isn't a
-  consumed stat).
 
 Cross-note (2026-07-19): Bubble Barrage's squad ammo-expended counter assumes
 "1 shot = 1 round." Velvet's ammo pouch (100/300-round accounting) and
@@ -75,6 +75,18 @@ def build_little_mermaid_rules(values):
             ("atk_percent", self_atk, "self", self_atk_duration),
         ]),
     ]
+
+
+def build_bubble_order_gauge_fills(values):
+    """아군 누적 소모탄이 N발에 닿을 때마다 버스트 게이지를 X% 채운다.
+
+    누적 카운터는 Bubble Barrage와 같은 채널(`context.shot_ammo_rounds`)이다 -
+    탄약 주머니를 쓰는 아군은 한 발이 수백 발을 회계하므로 발수와 라운드는
+    같지 않다.
+    """
+    order = values["bubble_order"]
+    return [{"every_ally_rounds": float(order["description_value_04"]),
+             "fraction": float(order["description_value_05"]) / 100}]
 
 
 def sirens_song_refill(values):

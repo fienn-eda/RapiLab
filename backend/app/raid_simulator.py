@@ -1070,6 +1070,11 @@ def _simulate_raid_once(
     burst_anchored_buffs=None,
     ammo_rounds_per_shot=None,
     conditional_full_burst_deltas=None,
+    # [{"every_ally_rounds", "fraction"}, ...] - squad-scoped burst-gauge fills
+    # keyed off allies' cumulative ammo expended (Little Mermaid's Bubble
+    # Order, Cinderella: Crystal Wave's Beauty-Full). Forwarded verbatim to
+    # burst_gauge.fill_times's `bonus_fills`.
+    gauge_fills=None,
     full_burst_stage_overrides=None,
     collect_target_grants=False,
     # {slug: [양 옆 아군 둘]} - "자신과 양 옆 아군 2명" 불릿의 좌석. 안 주면
@@ -1109,6 +1114,7 @@ def _simulate_raid_once(
     scheduled_nukes = scheduled_nukes or {}
     ammo_rounds_per_shot = ammo_rounds_per_shot or {}
     conditional_full_burst_deltas = conditional_full_burst_deltas or {}
+    gauge_fills = gauge_fills or ()
     full_burst_stage_overrides = full_burst_stage_overrides or {}
     # 대상 판정 기록은 계산기 화면 전용이라 기본이 off다. 켜져야만 리스트가
     # 생기고, 그래야 탐색이 도는 수만 번의 시뮬이 오늘과 같은 할당을 한다.
@@ -2529,7 +2535,8 @@ def _simulate_raid_once(
     resolved_gauge = burst_gauge.fill_times(
         gauge_shots_by_slug,
         [e["time"] for e in events if e["type"] == "full_burst_end"],
-        weapon_stats=weapon_stats, fight_duration=fight_duration)
+        weapon_stats=weapon_stats, fight_duration=fight_duration,
+        ammo_rounds_by_slug=ammo_rounds_by_slug, bonus_fills=gauge_fills)
     result["gauge_charge_times"] = resolved_gauge
     # 쿨은 돌았는데 게이지가 안 차서 기다린 사이클 수(**버충 밀림**). 간격이
     # 게이지와 같으면 게이지가 정한 것이고, 더 길면 쿨다운이 정한 것이다.

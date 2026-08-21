@@ -5,9 +5,12 @@ including the "Additional Effect 1/2/3" labels (see skill_values.py's plain
 left-to-right convention; verified against test_skill_value_assembly.py, no
 drop_tokens needed).
 """
+import pytest
+
 from app.effects import EffectRegistry
 from app.skill_rules.cinderella_crystal_wave import (
     SKILL_VALUE_MANIFESTS,
+    build_beauty_full_gauge_fills,
     build_crystal_wave_mg_rules,
     build_crystal_wave_snipe_rules,
     build_snipe_weapon_profile,
@@ -100,6 +103,12 @@ def test_periodic_900_every_5s():
 
 def test_burst_nuke_is_6000():
     assert crystal_wave_burst_percent(CRYSTAL_WAVE_VALUES) == 6000.0
+
+
+def test_beauty_full_fills_the_gauge_every_200_ally_rounds():
+    """Beauty-Full: 아군 누적 소모탄 200발마다 게이지 12%(lv10, 양 모드 공유)."""
+    fills = build_beauty_full_gauge_fills(CRYSTAL_WAVE_VALUES)
+    assert fills == [{"every_ally_rounds": 200.0, "fraction": pytest.approx(0.12)}]
 
 
 def test_snipe_profile_is_static_sr_charge_weapon():

@@ -50,11 +50,24 @@ def quantize(seconds):
     return round(seconds / GAUGE_QUANTUM_SEC) * GAUGE_QUANTUM_SEC
 
 
-def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration):
+def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
+               ammo_rounds_by_slug=None, bonus_fills=()):
     """풀 버스트가 끝난 뒤 게이지가 다시 가득 차기까지 걸리는 시간, 사이클마다.
 
     `shots_by_slug`는 `{슬러그: [(시각, 톡톡이 여부), ...]}`. 대미지 경로와
     직교한다 - 코어히트도 크리티컬도 ATK도 적 DEF도 여기 안 들어온다.
+
+    `bonus_fills`는 무기 타격과 다른 채움원 - 「아군 누적 소모탄이 N발에 닿을
+    때마다 게이지 X%」(인어공주 Bubble Order, 신데렐라: 크리스탈 웨이브 Beauty-
+    Full) - 목록이다. 각 원소는 `{"every_ally_rounds", "fraction"}`. 소모탄
+    카운터는 `ammo_rounds_by_slug`(`shots_by_slug`와 나란한 {슬러그: [발당
+    라운드, ...]} - 탄약 주머니를 쓰는 아군은 한 발이 수백 라운드를 회계한다)가
+    센다. 이 카운터는 사이클마다 이 창의 시작(`end`)에서 **0부터 다시** 센다 -
+    무기 타격 게이지가 사이클마다 0에서 다시 차는 것과 같은 창-상대적 근사다.
+    여러 충전원이 있는 덱에서는 **모두가 같은 카운터를 공유**한다(문턱은
+    원마다 다르다) - 원마다 따로 세면 아군 발수를 소스 수만큼 중복 계상한다.
+    한 샷이 자기 문턱을 여러 번 넘을 수 있다(주머니 발 하나가 수백 라운드를
+    회계하면).
 
     **세는 단위는 샷 레코드 하나, 즉 방아쇠 하나다.** 실측이 정한 단위는 방아쇠가
     아니라 **타격**이고(measurements/burst-gauge-fill.md), 둘이 갈리는 자리가 둘
@@ -91,21 +104,32 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration):
         for slug, stats in weapon_stats.items()
         if stats.get("burst_energy_pershot")
     }
+    ammo_rounds_by_slug = ammo_rounds_by_slug or {}
     merged = sorted(
-        (time, slug, is_tap)
+        (time, slug, is_tap, rounds)
         for slug, shots in shots_by_slug.items()
-        for time, is_tap in shots
+        for (time, is_tap), rounds in zip(
+            shots, ammo_rounds_by_slug.get(slug) or [1.0] * len(shots))
     )
     out = {}
     for cycle_index, end in enumerate(full_burst_ends):
         gauge = 0.0
-        for time, slug, is_tap in merged:
+        ally_rounds = 0.0
+        for time, slug, is_tap, rounds in merged:
             if time < end:
                 continue
             if time >= fight_duration:
                 break
             base, charged = per_hit.get(slug, (0.0, 0.0))
             gauge += base if is_tap else charged
+            if bonus_fills:
+                before = ally_rounds
+                ally_rounds += rounds
+                for fill in bonus_fills:
+                    threshold = fill["every_ally_rounds"]
+                    crossings = int(ally_rounds // threshold) - int(before // threshold)
+                    if crossings:
+                        gauge += crossings * fill["fraction"] * GAUGE_FULL
             if gauge >= GAUGE_FULL:
                 out[cycle_index + 1] = quantize(time - end)
                 break

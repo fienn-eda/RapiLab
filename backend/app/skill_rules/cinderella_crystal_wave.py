@@ -17,6 +17,8 @@ Modeled (DPS-relevant):
   weapon profile, see build_snipe_weapon_profile. Its "every 5 sec, nearest
   enemy" 900%-of-final-ATK nuke is a periodic nuke (both modes; Preparation
   for Change's own timing gimmick around it is mode-switch machinery, deferred).
+  Its "ally total ammo reaches 200 -> Burst Gauge +12%" fill (both modes) is
+  build_beauty_full_gauge_fills, consumed by burst_gauge.fill_times's bonus_fills.
 - Mode Swap (skills[1]): battle-start self ATK +29% (shared). MG keeps
   Pinpoint (core-hit damage +26%, other_core_damage_sources); Snipe keeps
   Destroy (parts damage +26.21%, damage_to_parts_up) - the two are mutually
@@ -30,8 +32,6 @@ Modeled (DPS-relevant):
 
 Not modeled / deferred:
 - Decoy avatar (survivability, no damage path).
-- Burst-gauge +12% per 200 ally rounds (gauge charge time is a fixed sim
-  input - same defer as Little Mermaid's Bubble Order).
 (Snipe Mode's "Gains Pierce" is NOT deferred: the engine holds the pierce
 property itself as `has_pierce`, distinct from the `pierce_damage_up` bucket,
 and it is granted permanently below.)
@@ -143,6 +143,14 @@ def crystal_wave_periodic_nuke(values):
     beauty = values["beauty_full"]
     return {"cooldown": float(beauty["description_value_13"]),
             "percent": float(beauty["description_value_14"])}
+
+
+def build_beauty_full_gauge_fills(values):
+    """아군 누적 소모탄이 N발에 닿을 때마다 버스트 게이지를 X% 채운다. Beauty-Full은
+    두 모드가 공유하는 스킬이라 MG·Snipe 둘 다 이 빌더를 쓴다."""
+    beauty = values["beauty_full"]
+    return [{"every_ally_rounds": float(beauty["description_value_15"]),
+             "fraction": float(beauty["description_value_16"]) / 100}]
 
 
 def build_snipe_weapon_profile(values, weapon_stats=None):
