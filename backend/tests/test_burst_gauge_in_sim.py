@@ -1,0 +1,176 @@
+"""게이지가 보스 상수가 아니라 **덱**에서 계산되는지 - 산술로 단언한다.
+
+**총합으로 단언하지 않는다.** 2026-08-05에 게이지를 2.0에서 2.4로 옮겼을 때
+1871개 테스트 중 아무것도 안 깨졌다. 총합 테스트는 상수 변화에 둔감하다.
+
+표 자체의 산술(키·값·이월·톡톡이)은 `tests/test_burst_gauge.py`에 있다. 여기
+있는 것은 그 표가 **시뮬레이터의 사이클을 실제로 정하는가**다.
+"""
+import pytest
+
+from app.burst_cycle import FULL_BURST_OPEN_DELAY
+from app.deck_search import (BossProfile, deck_is_valid, evaluate_deck,
+                             feasible_orderings)
+from app.models import UserNikkeState
+from app.raid_simulator import simulate_raid
+from app.user_roster import load_roster
+
+# 직전 창 종료에서 다음 창 시작까지, 게이지 말고 붙는 것: manual 모드의 티어 간격
+# 0.1초 둘(티어 1 -> 티어 3), 그리고 그 B3의 캐스트가 확정된 뒤 창이 열리는 순서.
+# 게이지 하한에 붙은 사이클의 간격은 정확히 `게이지 + 이 값`이다.
+CYCLE_OVERHEAD = 0.2 + FULL_BURST_OPEN_DELAY
+
+# 실측 기록의 덱 3(docs/measurements/burst-gauge-fill.md) - 게이지 판독이
+# 2.55~3.5초로 상수 2.4보다 확실히 느린 편성이다.
+MEASURED_DECK_3 = ["liter", "nayuta", "cinderella-crystal-wave-mg",
+                   "cinderella", "modernia"]
+# Fienn의 사격장 런(2026-07-27). 볼륨의 Drop the Beat가 **누적형** CDR이라
+# 사이클마다 쿨이 짧아지고, 그래서 병목이 전투 중간에 쿨다운에서 게이지로
+# 넘어간다 - 그 전환이 「첫 사이클만 보고 게이지를 건너뛴다」류의 최적화를
+# 기각한 근거다.
+VOLUME_DECK = ["volume", "prika", "mint", "snow-white-heavy-arms", "cinderella"]
+
+
+def _nikke(slug):
+    return UserNikkeState.model_validate({
+        "character_slug": slug, "level": 200, "core_level": 0, "hp": 1_000_000.0,
+        "atk": 60_000.0, "def_": 3_000.0,
+        "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10}})
+
+
+def _ordering(slugs):
+    specs, excluded = load_roster([_nikke(s) for s in slugs])
+    assert not excluded, excluded
+    return next(o for o in feasible_orderings(specs)
+                if {u.slug for u in o} == set(slugs) and deck_is_valid(o))
+
+
+def _boss():
+    """실측이 이뤄진 환경 - 잡몹 없는 단일 보스, 180초."""
+    return BossProfile(element="Iron", fight_duration=180.0)
+
+
+@pytest.fixture(scope="module")
+def real_deck_and_boss():
+    return _ordering(MEASURED_DECK_3), _boss()
+
+
+@pytest.fixture(scope="module")
+def volume_deck():
+    return _ordering(VOLUME_DECK)
+
+
+def _cycle_starts_and_ends(result):
+    return ([e["time"] for e in result["events"] if e["type"] == "full_burst_start"],
+            [e["time"] for e in result["events"] if e["type"] == "full_burst_end"])
+
+
+def _synthetic_deck(weapon, burst_energy):
+    """무기와 타격당 게이지값만 다른 3인 최소 덱.
+
+    차지 대미지는 실제 데이터를 그대로 따른다 - 수집된 105정에서 SR은 250%(또는
+    앨리스의 350%)이고 **비차지 무기는 전부 정확히 100%**다. 비차지 무기에 배율을
+    주면 `energy_per_hit`이 그것을 풀차지 배율로 읽어 이 대조가 무너진다.
+    """
+    deck = [{"slug": f"u{tier}", "burst_tier": tier, "element": "Iron",
+             "cooldown": 20.0} for tier in (1, 2, 3)]
+    stats = {member["slug"]: {"weapon": weapon, "damage_percent": 10.0,
+                              "max_ammo": 60, "reload_time": 1.0,
+                              "charge_time": 1.0,
+                              "charge_damage_percent": 250.0 if weapon == "SR" else 100.0,
+                              "burst_energy_pershot": burst_energy}
+             for member in deck}
+    return deck, stats
+
+
+def _computed_gauge(deck_and_stats):
+    deck, weapon_stats = deck_and_stats
+    result = simulate_raid(
+        deck,
+        {member["slug"]: [] for member in deck},
+        burst_damage_percents={},
+        base_stats={member["slug"]: {"atk": 10_000, "def": 0, "max_hp": 0}
+                    for member in deck},
+        enemy_def=0,
+        gauge_charge_time=BossProfile.gauge_charge_time,
+        fight_duration=180.0,
+        mode="manual",
+        weapon_stats=weapon_stats,
+    )
+    return result["gauge_charge_times"]
+
+
+def test_the_table_is_keyed_by_the_cycle_the_fill_leads_INTO(real_deck_and_boss):
+    """풀 버스트 k의 종료에서 잰 채움이 지배하는 것은 **사이클 k+1**이다.
+
+    사이클 0(개전 -> 첫 버스트)은 표에 없다: 개전 게이지 0에서의 채움은 이
+    모델의 범위 밖이라 `BossProfile.gauge_charge_time` 시드가 그대로 답한다.
+    키가 0에서 시작하면 모든 덱의 게이지가 한 사이클씩 밀려 걸리는데, 정상상태에서는
+    값이 거의 같아 **총딜로는 안 드러난다** - 그래서 키를 직접 본다.
+    """
+    ordered, boss = real_deck_and_boss
+    result = evaluate_deck(ordered, boss)
+
+    computed = result["gauge_charge_times"]
+    _, ends = _cycle_starts_and_ends(result)
+    assert computed, "덱이 자기 게이지를 계산해야 한다"
+    assert 0 not in computed
+    assert set(computed) <= set(range(1, len(ends) + 1))
+
+
+def test_gauge_bound_cycles_use_the_computed_gauge(real_deck_and_boss):
+    """게이지가 병목인 사이클의 간격은 정확히 `계산된 게이지 + 티어갭`이고,
+    아닌 사이클은 그보다 길다(쿨다운이 정한다). 그 하한이 사이클마다 자기 키의
+    값이라는 것이 이 변경의 요지다.
+
+    `gauge_bound_cycles`를 여기서 독립적으로 다시 세는 것은 그 진단 값이 표가
+    아니라 **실제 타임라인**과 맞는지 보기 위해서다.
+    """
+    ordered, boss = real_deck_and_boss
+    result = evaluate_deck(ordered, boss)
+
+    computed = result["gauge_charge_times"]
+    starts, ends = _cycle_starts_and_ends(result)
+    bound = 0
+    for cycle_index, seconds in sorted(computed.items()):
+        if cycle_index >= len(starts):
+            continue        # 채움은 쟀지만 그 사이클은 전투 안에서 안 일어났다
+        gap = starts[cycle_index] - ends[cycle_index - 1]
+        assert gap >= seconds + CYCLE_OVERHEAD - 1e-6, "게이지는 하한이다"
+        if gap == pytest.approx(seconds + CYCLE_OVERHEAD, abs=1e-6):
+            bound += 1
+    assert bound, "이 편성은 게이지가 병목인 사이클이 있어야 한다"
+    assert bound == result["gauge_bound_cycles"]
+
+
+def test_a_deck_that_cannot_charge_gets_a_longer_gauge_than_one_that_can():
+    """SR 덱과 MG 덱. 타격당 28,000 대 500이라 56배 차이가 나므로 MG 덱의
+    게이지가 반드시 더 길다 - 이 부등식이 이 변경의 요지다.
+
+    총딜을 비교하지 않는다: 두 덱은 딜도 다르고, 총합은 상수 변화에 둔감하다는
+    것이 2026-08-05의 교훈이다.
+    """
+    sr_gauge = _computed_gauge(_synthetic_deck("SR", burst_energy=28_000))
+    mg_gauge = _computed_gauge(_synthetic_deck("MG", burst_energy=500))
+    assert sr_gauge and mg_gauge
+    assert min(sr_gauge.values()) < min(mg_gauge.values())
+
+
+def test_bottleneck_flips_from_cooldown_to_gauge_as_cdr_ramps(volume_deck):
+    """누적형 CDR(볼륨의 예열 방식)에서는 초반이 쿨다운 병목이고 후반이 게이지
+    병목이다. 실측 타임라인이 간격 7.56 -> 4.86 -> 2.40초로 3번째 사이클에서
+    뒤집히고, 그 뒤가 전부 게이지 병목이다.
+
+    이 전환이 존재한다는 것이 「첫 사이클만 보고 게이지를 건너뛴다」류의
+    최적화를 기각한 근거다(스펙의 「조기 종료는 채택하지 않는다」).
+    """
+    result = evaluate_deck(volume_deck, _boss())
+
+    starts, ends = _cycle_starts_and_ends(result)
+    gaps = [nxt - end for end, nxt in zip(ends, starts[1:])]
+    assert gaps[0] > gaps[-1], "누적 CDR이면 간격이 줄어야 한다"
+    computed = result["gauge_charge_times"]
+    # gaps[-1]은 ends[-2] -> starts[-1], 즉 **사이클 len(gaps)**의 간격이다.
+    late = len(gaps)
+    assert gaps[-1] == pytest.approx(computed[late] + CYCLE_OVERHEAD, abs=1e-6), (
+        "정상상태에서는 게이지가 사이클을 정한다")

@@ -385,18 +385,17 @@ def test_the_gauge_sets_the_steady_cycle_once_cooldowns_outrun_it():
     assert all(g == pytest.approx(FULL_BURST_DURATION + gauge + 0.2) for g in gaps)
 
 
-def test_gauge_charge_time_matches_the_measurement_it_is_derived_from():
-    # It is a per-DECK quantity modelled as one constant, so a change needs an
-    # argument rather than a preference. This value has one: a CDR deck driven
-    # as fast as the gauge allows opens its 15th Full Burst at t~179, which
-    # solves to 2.4 (the arithmetic lives in
-    # test_default_gauge_reproduces_the_measured_fifteenth_full_burst).
-    #
-    # Two measured compositions do NOT agree - the Volume run above implies a
-    # slower gauge - so this sits at the fast end of what has been measured.
-    # That end is the one that invents the fewest constraints for decks whose
-    # gauge never binds, which is the same principle as before; what changed is
-    # which number that principle picks now that a fast deck has been timed.
+def test_default_gauge_is_the_first_pass_seed_not_the_encounter_value():
+    """게이지는 이제 덱에서 계산된다(docs/measurements/burst-gauge-fill.md 및
+    `burst_gauge.fill_times`). 이 상수가 정하는 것은 **첫 패스가 어디서
+    출발하는가**뿐이고, `simulate_raid`의 고정점이 그 위에서 실제 값을 찾는다.
+
+    값 자체는 CDR 편성의 15번째 풀버스트 t~179에서 역산한 것이라(산술은
+    test_default_gauge_reproduces_the_measured_fifteenth_full_burst) 출발점으로
+    여전히 합리적이다. 실측된 두 편성이 서로 다른 게이지를 함의한다는 사실 -
+    예전에는 이 상수를 어느 쪽으로 놓을지의 딜레마였던 것 - 이 곧 게이지가
+    보스가 아니라 덱의 양이라는 증거였다.
+    """
     assert BossProfile.gauge_charge_time == 2.4
 
 

@@ -173,7 +173,8 @@ class BossProfile:
     core_hittable: bool = False
     enemy_def: float = 0.0
     fight_duration: float = 180.0
-    # The floor a cycle cannot go below: Full Burst (10s) + this + the tier gap.
+    # 게이지 채움 시간의 **시드** - 고정점이 아직 그 사이클의 값을 못 낸 동안
+    # 사이클이 못 내려가는 하한이다: 풀 버스트(10초) + 이 값 + 티어 갭.
     #
     # Measured (Fienn, 2026-08-05): a deck carrying a 7.48-sec CDR unit, driven
     # as fast as the gauge can be controlled, opens its 15th Full Burst at
@@ -190,9 +191,10 @@ class BossProfile:
     # 0.4%, which is also why a too-low value quietly promotes CDR-stacked decks
     # in the search.
     #
-    # It remains a per-DECK quantity flattened into one constant: the real gauge
-    # fills from damage dealt, and a different composition measured 2.65 sec.
-    # Promoting it to a deck property is the open item in docs/roadmap.md.
+    # 이제 이 값은 **첫 패스의 시드**다. 게이지는 덱이 넣은 타격 수로 차므로
+    # 사이클마다 다른 덱의 양이고, `simulate_raid`가 고정점까지 반복하며
+    # `burst_gauge.fill_times`가 계산한 사이클별 값으로 이것을 대체한다. 표에
+    # 없는 사이클(개전 -> 첫 버스트)만 이 값이 그대로 답한다.
     gauge_charge_time: float = 2.4
     mode: str = "manual"
     part_destructible: bool = False

@@ -110,6 +110,9 @@ from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
 from dataclasses import replace
 
+# 모듈째 들여온다: 이 파일 안에 지역 변수 `fill_times`가 이미 있어 이름을
+# 그대로 들여오면 그 대입이 함수를 가린다.
+from app import burst_gauge
 from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
 from app.attack_rate import AmmoRefill, CHARGE_WEAPONS, generate_segmented_shots
 from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
@@ -857,6 +860,23 @@ def _resolve_conditional_fb_deltas(context, events, conditional_full_burst_delta
     return resolved
 
 
+def _cycle_gap(events, cycle_index):
+    """사이클 `cycle_index`가 직전 풀 버스트의 종료로부터 실제로 얼마나 뒤에
+    시작했는가 - 게이지 하한에 붙었는지(Fienn의 용어로 **버충 밀림**)를 가리는 값.
+
+    끝을 티어 1의 발동으로 재는 것은 스케줄러가 `fire_time`을 그 시각으로 잡기
+    때문이다: 창은 티어 갭과 `FULL_BURST_OPEN_DELAY`만큼 더 뒤에 열린다.
+
+    전투 안에서 일어나지 않은 사이클은 무한대다 - 채움 시간은 쟀지만 그 사이클이
+    없으므로 게이지가 무엇을 막았다고 말할 수 없다."""
+    ends = [e["time"] for e in events if e["type"] == "full_burst_end"]
+    tier1_fires = [e["time"] for e in events
+                   if e["type"] == "burst" and e["tier"] == 1]
+    if cycle_index <= 0 or cycle_index >= len(tier1_fires):
+        return float("inf")
+    return tier1_fires[cycle_index] - ends[cycle_index - 1]
+
+
 def simulate_raid(*args, **kwargs):
     """한 번의 레이드 시뮬레이션. 대부분의 덱에서는 `_simulate_raid_once`를 정확히
     한 번 부르는 것과 같다.
@@ -877,22 +897,39 @@ def simulate_raid(*args, **kwargs):
     늦은 flat_max_hp는 패스 1과 같은 집합이다. 환산 소비자가 없거나 늦은
     flat_max_hp가 없으면 빈 튜플이 오가고 첫 패스에서 끝난다.
 
-    두 축 중 어느 것도 안 걸리는 덱은 해석기가 빈 딕셔너리와 빈 튜플을 돌려주고
-    첫 패스에서 종료한다 - 결과도 비용도 오늘과 같다.
+    셋째는 **버스트 게이지 채움 시간**이다. 게이지는 덱이 넣은 타격 수로 차므로
+    그 덱의 발사 타임라인이 있어야 계산되는데, 타임라인은 게이지가 정한 사이클
+    위에서 만들어진다. `BossProfile.gauge_charge_time`은 그 고리의 **시드**가
+    되고, 패스마다 표가 갱신된다(`burst_gauge.fill_times`).
+
+    이 축은 다른 둘과 달리 **모든 덱이 최소 두 패스를 산다** - 첫 패스가 빈
+    표로 출발해 반드시 값이 있는 표를 돌려주기 때문이다. 그리고 멈추는 방식이
+    **접두사 안정화**다: 사이클 k의 채움은 사이클 k-1의 종료 이후 타임라인만
+    보므로 패스마다 앞에서부터 한 사이클씩 확정된다(추적으로 확인). 그래서 비용은
+    상수 배가 아니라 **게이지가 무는 사이클 수**에 비례한다 - 표본 400덱에서
+    중앙값 9~11패스, 최대 18패스였다.
+
+    멈추지 않는 덱이 있다: 같은 표본에서 3덱(0.75%)이 32패스를 다 쓴다. 사이클
+    한둘의 값이 격자 한 칸씩 번갈아 뛰는 **주기 2의 극한 순환**이고, 진짜 고정점이
+    격자점 둘 사이에 있다는 뜻이다(`GAUGE_QUANTUM_SEC` 참조). 아래의
+    `FullBurstConvergenceWarning`이 그 경우를 잡는다.
     """
     overrides = {}
     late_max_hp = ()
+    gauge = {}
     result = None
     for attempt in range(MAX_FULL_BURST_PASSES):
-        result, resolved, resolved_max_hp = _simulate_raid_once(
+        result, resolved, resolved_max_hp, resolved_gauge = _simulate_raid_once(
             *args, **kwargs, full_burst_stage_overrides=overrides,
-            late_flat_max_hp=late_max_hp,
+            late_flat_max_hp=late_max_hp, gauge_charge_overrides=gauge,
         )
-        if resolved == overrides and resolved_max_hp == late_max_hp:
+        if (resolved == overrides and resolved_max_hp == late_max_hp
+                and resolved_gauge == gauge):
             result["full_burst_passes"] = {"passes": attempt + 1, "converged": True}
             return result
         overrides = resolved
         late_max_hp = resolved_max_hp
+        gauge = resolved_gauge
     result["full_burst_passes"] = {"passes": MAX_FULL_BURST_PASSES, "converged": False}
     # `converged: False`만으로는 아무도 못 본다 - 이 플래그를 읽는 하류가 없다.
     # 질의 헬퍼를 하나 더 만들어도 `scripts/`의 소비자 16개 중 2개만 부르는
@@ -1038,6 +1075,10 @@ def _simulate_raid_once(
     # X%" 환산이 이 패스에서 그걸 함께 읽는다(SquadContext.live_max_hp). 레코드
     # 튜플이라 패스 간 동일성 비교가 곧 수렴 판정이다 - simulate_raid 참고.
     late_flat_max_hp=(),
+    # {사이클 인덱스: 초} - 앞 패스가 그 덱의 발사 타임라인에서 적산한 게이지
+    # 채움 시간. 비어 있으면 `gauge_charge_time` 시드가 모든 사이클을 답한다.
+    # 표라서 패스 간 동일성 비교가 곧 수렴 판정이다 - simulate_raid 참고.
+    gauge_charge_overrides=None,
 ):
     weapon_stats = weapon_stats or {}
     # None means "no band read for this encounter", which pays nobody. An
@@ -1632,6 +1673,7 @@ def _simulate_raid_once(
         full_burst_duration_overrides=_stage_seconds(
             full_burst_stage_overrides, conditional_full_burst_deltas
         ),
+        gauge_charge_overrides=gauge_charge_overrides,
         on_battle_start=on_battle_start,
         on_tier_fire=on_tier_fire,
         on_full_burst_enter=on_full_burst_enter,
@@ -1701,6 +1743,10 @@ def _simulate_raid_once(
         return lambda t: min(1.0, base_crit_rate + registry.total_for("crit_rate", target, t))
 
     shot_times_by_slug = {}
+    # 게이지 적산용 (시각, 톡톡이 여부). `damage_log`가 아니라 샷에서 세는 이유는
+    # 로그가 코어/관통으로 인스턴스가 쪼개져 **타격 수와 1:1이 아니고** 무기도
+    # 풀차지 여부도 안 싣기 때문이다.
+    gauge_shots_by_slug = {}
     ammo_rounds_by_slug = {}
     last_bullet_times_by_slug = {}
     tap_fire_used = set()
@@ -1988,6 +2034,7 @@ def _simulate_raid_once(
                    weapon=rec.weapon,
                    damage_type_gate=rec.damage_type_gate)
         shot_times_by_slug[slug] = shot_times
+        gauge_shots_by_slug[slug] = [(rec.time, rec.is_tap_fire) for rec in shot_records]
 
     # Each unit's [Unlimited Ammunition] windows, anchored on their own burst -
     # every skill that grants it does so from the caster's own burst skill, for
@@ -2473,10 +2520,23 @@ def _simulate_raid_once(
             (e.stat, e.value, e.scope, e.duration, e.source_slug, e.refresh_group, at)
             for e, at in registry.entries_since(post_burst_cycle, "flat_max_hp")
         )
+    # 이 패스의 발사 타임라인이 정한 게이지. 다음 패스가 사이클을 이 값으로 다시
+    # 짜고, 값이 안 바뀌면 고정점이다.
+    resolved_gauge = burst_gauge.fill_times(
+        gauge_shots_by_slug,
+        [e["time"] for e in events if e["type"] == "full_burst_end"],
+        weapon_stats=weapon_stats, fight_duration=fight_duration)
+    result["gauge_charge_times"] = resolved_gauge
+    # 쿨은 돌았는데 게이지가 안 차서 기다린 사이클 수(**버충 밀림**). 간격이
+    # 게이지와 같으면 게이지가 정한 것이고, 더 길면 쿨다운이 정한 것이다.
+    result["gauge_bound_cycles"] = sum(
+        1 for cycle_index, seconds in resolved_gauge.items()
+        if seconds >= _cycle_gap(events, cycle_index) - 1e-6)
     return (result,
             _resolve_conditional_fb_deltas(
                 context, events, conditional_full_burst_deltas),
-            late_max_hp_records)
+            late_max_hp_records,
+            resolved_gauge)
 
 
 # `inspect.signature` follows `__wrapped__`, so introspecting the public name
@@ -2484,10 +2544,10 @@ def _simulate_raid_once(
 # Set here rather than beside the wrapper because `_simulate_raid_once` is
 # defined below it.
 #
-# Two entries in that list are not real parameters for a caller: the wrapper
-# supplies `full_burst_stage_overrides` and `late_flat_max_hp` itself on every
-# iteration (they are what it iterates TO a fixed point), so passing either
-# through `simulate_raid(**kwargs)` raises `TypeError: got multiple values for
-# keyword argument`. The advertised signature is honest about every other
-# parameter.
+# Three entries in that list are not real parameters for a caller: the wrapper
+# supplies `full_burst_stage_overrides`, `late_flat_max_hp` and
+# `gauge_charge_overrides` itself on every iteration (they are what it iterates
+# TO a fixed point), so passing any of them through `simulate_raid(**kwargs)`
+# raises `TypeError: got multiple values for keyword argument`. The advertised
+# signature is honest about every other parameter.
 simulate_raid.__wrapped__ = _simulate_raid_once

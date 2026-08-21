@@ -28,6 +28,22 @@ MIHARA = "mihara-bonding-chain"
 WITH_GRANTER = ["miranda-signature", "liter", "crown", MIHARA, "helm-signature"]
 WITHOUT_GRANTER = ["liter", "volume", "crown", MIHARA, "helm-signature"]
 
+# 홀드의 **부호**를 재는 두 덱 - 위의 둘과 같은 모양이고 캐리만 에이다다.
+#
+# 캐리가 미하라가 아닌 이유: 게이지가 덱의 양이 되면서(`burst_gauge.fill_times`)
+# 이 편성의 게이지가 상수 2.4초에서 사이클별 3.1~4.4초(중앙값 3.8)로 늘었고,
+# 미하라의 홀드는 게이지 3.0초 부근에서 순이익에서 순손해로 넘어간다(상수를
+# 2.4 -> 6.0으로 올려 가며 확인: +2.15% -> -7.6%). 그녀의 부호는 로테이션 속도에
+# 달려 있어 여기서 못박을 값이 아니다 - ATK 스프레드로도 뒤집힌다는 것이 이미
+# 기록돼 있다.
+#
+# 에이다는 같은 구간 전체에서 부호가 안 바뀐다(+4~5.4% 대 -3~4.5%). 이 테스트가
+# 못박으려는 인과 - **살릴 버프의 유무가 부호를 가른다** - 를 타임라인과 무관하게
+# 재현하는 쪽이다.
+ADA = "ada-wong"
+WITH_GRANTER_ADA = ["miranda-signature", "liter", "crown", ADA, "helm-signature"]
+WITHOUT_GRANTER_ADA = ["liter", "volume", "crown", ADA, "helm-signature"]
+
 
 class _Context:
     def __init__(self, bursts, windows):
@@ -161,11 +177,13 @@ def test_a_boss_that_spawns_adds_is_never_offered_the_hold():
 def test_the_report_path_reports_no_hold_against_a_boss_that_spawns_adds():
     # 게이트가 있어도 리포트 경로가 보스를 안 넘기면 결과에는 홀드가 그대로 남는다 -
     # `effective_range_band`가 정확히 그렇게 사라졌었다.
-    ordering = _ordering(WITH_GRANTER, MIHARA)
+    # 조용한 쪽이 홀드를 **실제로 고르는** 덱이어야 아래 두 줄이 대조가 된다 -
+    # 안 고르는 덱이면 두 줄 다 무조건 통과한다.
+    ordering = _ordering(WITH_GRANTER_ADA, ADA)
     quiet = BossProfile(element="Iron", fight_duration=180.0)
     noisy = BossProfile(element="Iron", fight_duration=180.0, spawns_adds=True)
 
-    assert evaluate_deck_best_seating(ordering, quiet)["hold_fire"] == [MIHARA]
+    assert evaluate_deck_best_seating(ordering, quiet)["hold_fire"] == [ADA]
     assert "hold_fire" not in evaluate_deck_best_seating(ordering, noisy)
 
 
@@ -178,13 +196,14 @@ def test_the_adds_gate_is_the_encounters_call_not_the_decks():
 
 
 def test_holding_pays_when_there_is_a_buff_to_preserve_and_costs_when_there_is_not():
-    ordering = _ordering(WITH_GRANTER, MIHARA)
+    # 같은 홀더를 두 덱에 앉힌 대조다 - 갈리는 것은 아군 라운드 버프의 유무뿐.
+    ordering = _ordering(WITH_GRANTER_ADA, ADA)
     plain = evaluate_deck(ordering, BOSS)
-    held = evaluate_deck(ordering, BOSS, hold_fire={MIHARA})
+    held = evaluate_deck(ordering, BOSS, hold_fire={ADA})
     assert held["total_damage"] > plain["total_damage"]
 
-    bare = _ordering(WITHOUT_GRANTER, MIHARA)
-    assert (evaluate_deck(bare, BOSS, hold_fire={MIHARA})["total_damage"]
+    bare = _ordering(WITHOUT_GRANTER_ADA, ADA)
+    assert (evaluate_deck(bare, BOSS, hold_fire={ADA})["total_damage"]
             < evaluate_deck(bare, BOSS)["total_damage"])
 
 
