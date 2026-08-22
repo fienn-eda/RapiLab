@@ -230,7 +230,7 @@ export function BossProfileField({
   return (
     // 접히면 legend만 남는다. .group의 세로 여백이 그대로면 머리 아래 빈 상자가
     // 그려지고, 그건 「나와야 할 것이 안 나왔다」로 읽힌다.
-    <fieldset className={showBody ? 'group' : 'group group--collapsed'}>
+    <fieldset className="group">
       {/* 카드가 있을 때만 설명을 붙인다 - 회차 데이터가 없으면 이 탭에 카드 자체가
           없어서, 카드를 고르면 어떻게 된다는 설명이 가리킬 대상이 없다. */}
       <legend className="group__legend">
