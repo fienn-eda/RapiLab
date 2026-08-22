@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SavedRunList } from './SavedRunList'
 import { HELP } from '../lib/helpText'
 import type { SavedRun } from '../types/profile'
@@ -129,5 +129,104 @@ describe('SavedRunList', () => {
     renderList()
 
     expect(screen.getByText(/^\d{2}-\d{2} \d{2}:\d{2}$/)).toBeInTheDocument()
+  })
+})
+
+// 보관물은 그때의 응답을 그대로 박제한 기록이고, 로스터 재동기화에도 앱
+// 업데이트에도 살아남는다. 그래서 옛 모양이 새 화면으로 들어오는 일이 구조적으로
+// 생기고, 2026-08-22에는 그것이 앱 전체를 언마운트시켰다(검은 화면). 여기서 재는
+// 것은 그 사고가 이제 "이 항목 하나가 안 열림"으로 줄어드는가다.
+describe('SavedRunList 열다가 터졌을 때', () => {
+  const Boom = () => {
+    throw new Error('Cannot read properties of undefined')
+  }
+
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  // 한 번에 한 항목만 펼쳐지므로 "둘이 동시에 산다"가 아니라 "터진 뒤에도 목록이
+  // 살아 있어 다른 것을 열 수 있다"가 재는 값이다. 울타리가 없으면 첫 클릭에서
+  // 목록째 사라져 두 번째 클릭 자체가 불가능하다.
+  it('터진 뒤에도 목록이 살아 다른 항목을 열 수 있다', async () => {
+    const user = userEvent.setup()
+    const broken = run({ id: 'bad', name: '깨진 보관물' })
+    const fine = run({ id: 'ok', name: '멀쩡한 보관물' })
+    render(
+      <SavedRunList
+        runs={[broken, fine]}
+        renderRun={(r) => (r.id === 'bad' ? <Boom /> : <p>결과 내용</p>)}
+        onRestore={noop}
+        onRename={noop}
+        onDelete={noop}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /깨진 보관물/ }))
+    expect(screen.getByRole('alert')).toHaveTextContent('깨진 보관물')
+
+    await user.click(screen.getByRole('button', { name: /멀쩡한 보관물/ }))
+    expect(screen.getByText('결과 내용')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  // 열 수 없는 보관물을 손에 쥔 유저에게 남는 유일한 수가 이것이다. 이것이 없으면
+  // localStorage를 통째로 지우는 것 말고는 빠져나올 길이 없다.
+  it('안내에서 그 보관물을 지울 수 있다', async () => {
+    const user = userEvent.setup()
+    const onDelete = vi.fn()
+    render(
+      <SavedRunList
+        runs={[run({ id: 'bad', name: '깨진 보관물' })]}
+        renderRun={() => <Boom />}
+        onRestore={noop}
+        onRename={noop}
+        onDelete={onDelete}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /깨진 보관물/ }))
+    await user.click(screen.getByRole('button', { name: '이 보관물 삭제' }))
+
+    expect(onDelete).toHaveBeenCalledWith('bad')
+  })
+
+  // 이번 사고를 가른 정보가 정확히 이것이었다: 그 덱이 실제로 무슨 키를 갖고
+  // 있는가. 유저가 그것을 버튼 하나로 넘길 수 있어야 한다.
+  it('진단에 버전과 덱이 가진 키 목록을 담는다', async () => {
+    const user = userEvent.setup()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    const legacy = run({ id: 'bad', name: '깨진 보관물' })
+    // v0.1.4에서 저장된 덱의 모양 - hold_fire_slugs가 없다.
+    ;(legacy.view as { decks: unknown[] }).decks = [
+      { deck: ['a'], total_damage: 1, hold_burst_slugs: [] },
+    ]
+    render(
+      <SavedRunList
+        runs={[legacy]}
+        renderRun={() => <Boom />}
+        onRestore={noop}
+        onRename={noop}
+        onDelete={noop}
+        versions={{ engineVersion: 'fb6b35bb068b', appVersion: 'v0.1.5' }}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /깨진 보관물/ }))
+    await user.click(screen.getByRole('button', { name: /진단 정보 복사/ }))
+
+    const text = writeText.mock.calls[0][0] as string
+    expect(text).toContain('v0.1.5')
+    expect(text).toContain('fb6b35bb068b')
+    expect(text).toContain('깨진 보관물')
+    expect(text).toContain('deck, total_damage, hold_burst_slugs')
   })
 })

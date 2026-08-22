@@ -3254,3 +3254,52 @@ button.draft-editor__slot-grip:hover .draft-editor__slot-portrait {
   flex-basis: 100%;
   padding-left: calc(40px + var(--sp-2));
 }
+
+/* 렌더가 터진 자리에 대신 서는 카드(ErrorBoundary). 채움 상자를 만들지 않는
+   이유는 이 화면의 나머지와 같다 - 면을 밝히면 --accent가 대비 하한을 잃는다.
+   대신 왼쪽 선 하나로 "여기가 그 자리"만 말한다. */
+.error-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-left: var(--sp-3);
+  border-left: 2px solid var(--accent);
+}
+
+.error-card__title {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* 오류 원문은 유저에게 읽히려는 것이 아니라 제보에 옮겨지려는 것이다. 조용히
+   두고, 실제로 넘어가는 것은 아래 진단 텍스트다. */
+.error-card__message {
+  color: var(--text-muted);
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.error-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.error-card__hint {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* 클립보드가 막혔을 때만 펼쳐진다. 손으로 긁어 복사하는 자리라 글자를 고정폭으로
+   두고 줄바꿈을 막지 않는다 - 스택이 잘리면 제보의 값어치가 준다. */
+.error-card__text {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2);
+}

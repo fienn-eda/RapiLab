@@ -95,6 +95,9 @@ interface RecommendPanelProps {
   /** The result cache's invalidation axis - lib/inputHash.ts. Null until the
    * backend has answered. */
   engineVersion: string | null
+  /** 이 빌드의 릴리스 태그. 캐시와는 무관하고, 보관물이 안 열릴 때 진단에 적는다 -
+   * 제보를 읽을 때 「어느 릴리스냐」가 가장 값나가는 한 줄이다. */
+  appVersion?: string | null
   /** 이 프로필이 솔로 탭에서 이름 붙여 남겨 둔 결과들, 최신순. */
   savedRuns: SavedRun[]
   /** 보관 상한에 걸려 거절되면 false. */
@@ -177,6 +180,7 @@ export function RecommendPanel({
   restoreResult,
   investmentFor,
   engineVersion,
+  appVersion = null,
   savedRuns,
   onSaveRun,
   onRenameRun,
@@ -1047,6 +1051,7 @@ export function RecommendPanel({
               onRestore={restoreRun}
               onRename={onRenameRun}
               onDelete={onDeleteRun}
+              versions={{ engineVersion, appVersion }}
             />
           </details>
         </fieldset>

@@ -5,6 +5,34 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 옛 보관물이 못 열려도 앱은 산다 — 울타리는 항목마다, 진단은 유저 손에
+- Date: 2026-08-23
+- Context: 저장한 결과(SavedRun)는 그때의 응답을 그대로 박제한 기록이고, 캐시와 달리
+  로스터 재동기화에도 앱 업데이트에도 **살아남는 것이 요점**이다. 그래서 엔진이
+  필드를 더할 때마다 옛 모양이 새 화면으로 들어오고, 화면이 그것을 무가드로 읽으면
+  React가 트리 전체를 언마운트해 "검은 화면"이 된다. 2026-08-22의 `hold_fire_slugs`가
+  두 번째였고(첫 번째는 `hold_burst_slugs`), 두 번 다 릴리스가 나간 뒤에 알았다.
+  캐시 쪽은 이미 엔진 버전을 해시 키에 넣어 닫혀 있는데, `savedRuns`는 설계상
+  **어떤 무효화도 안 받는** 세 번째 경로라 키를 고치는 방식으로는 영원히 안 닫힌다.
+- Decision: 층을 셋 둔다. ㉮ `ErrorBoundary`를 **보관물 항목마다** 두고 앱 루트에
+  하나 더 둔다 — 하나가 못 열려도 나머지는 열리고, 어디서 터지든 검은 화면 대신
+  카드가 선다. ㉯ 그 카드가 \[진단 정보 복사]를 준다: 오류·스택 5줄·엔진 버전·
+  릴리스 태그, 그리고 **그 덱이 실제로 가진 키 목록**(사고를 가른 정보가 정확히
+  그것이었다). 릴리스 태그는 새 엔드포인트 대신 이미 도는 `/api/engine-version`에
+  얹었다. ㉰ `fixtures/legacySchemas.ts`에 **릴리스별 필드 집합 표**를 두고, 결과
+  뷰 넷이 그 모양들로 전부 그려지는지 스위트가 매번 확인한다.
+- Why: 울타리는 증상(검은 화면)을, 픽스처 표는 원인(스키마 드리프트)을 막는다 —
+  둘 중 하나만으로는 부족하다. 표를 **실제 JSON이 아니라 필드 이름 목록**으로 둔
+  이유는 실패 모드가 「필드 없음」이고 릴리스별 필드 집합이 정확히 그 축이기
+  때문이다(실제 JSON은 부피가 크고 계정 정보가 섞인다). 버전은 React 컨텍스트가
+  아니라 prop으로 내려보냈다 — 이 코드베이스에 컨텍스트가 한 곳도 없어서,
+  진단 하나 때문에 새 패턴을 들이지 않는다.
+- Consequences: 표에 **릴리스마다 한 줄을 더해야** 그 릴리스의 저장본이 검사된다
+  (필드 목록은 `git show <tag>:frontend/src/types/recommend.ts`에서 뽑을 것).
+  표는 태그만으로 부족하다는 것도 말한다 — 「개발 빌드 (2026-08-10 관측)」 행은
+  어느 태그와도 안 맞는데 실제 보관물에 그 모양으로 남아 있었다. 울타리가 잡은
+  뒤에도 데이터는 여전히 낡은 것이므로, 근본 수정은 여전히 「새 필드는 옵셔널로」다.
+
 ## A skill hit may DECLARE its gauge energy, instead of always taking the unit's own
 - Date: 2026-08-22
 - Context: The gauge gives every skill-made hit the caster's own weapon base energy.

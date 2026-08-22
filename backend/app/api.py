@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.app_version import app_version
 from app.cancellation import CancelToken, Cancelled
 from app.cube_effects import CUBE_NAMES, DEFAULT_CUBE
 from app.charge_window import (ladder_stop_reason, outcome, reload_intervenes,
@@ -996,10 +997,15 @@ def raid_rotations_route() -> RaidRotationsResponse:
 
 
 @app.get("/api/engine-version")
-def engine_version_route() -> dict[str, str]:
+def engine_version_route() -> dict[str, str | None]:
     """클라이언트는 요청을 보내기 전에 결과 캐시를 조회하므로, 버전을 응답으로만
-    받으면 조회 시점에 알 수가 없다. 그래서 GET으로도 낸다."""
-    return {"engine_version": engine_version()}
+    받으면 조회 시점에 알 수가 없다. 그래서 GET으로도 낸다.
+
+    릴리스 태그도 같이 낸다. 캐시와는 아무 상관이 없고(그 축은 engine_version
+    뿐이다) 화면이 진단 정보에 적기 위한 것이다 - 제보를 읽을 때 「어느
+    릴리스냐」가 가장 값나가는 한 줄인데, 새 엔드포인트를 만드느니 마운트 시
+    이미 도는 이 왕복에 얹는 편이 싸다. 개발 실행에서는 None이다."""
+    return {"engine_version": engine_version(), "app_version": app_version()}
 
 
 # 북마클릿이 놓고 가면 앱이 집어가는 한 칸.

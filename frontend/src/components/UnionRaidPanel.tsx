@@ -57,6 +57,10 @@ interface UnionRaidPanelProps {
    * lookup RecommendPanel passes its own palette. Without it every chip here
    * would show blank stars/core/heart next to a recommend tab that shows them. */
   investmentFor?: (slug: string) => UnitInvestment
+  /** 진단에 적을 버전들. 이 탭은 결과 캐시를 쓰지 않으므로 엔진 버전도 여기서만
+   * 쓰인다 - 보관물이 안 열릴 때 무엇으로 저장된 것인지 말하기 위해서다. */
+  engineVersion?: string | null
+  appVersion?: string | null
   /** 이 프로필이 유니온 탭에서 이름 붙여 남겨 둔 결과들, 최신순. */
   savedRuns: SavedRun[]
   /** 보관 상한에 걸려 거절되면 false. */
@@ -89,6 +93,8 @@ export function UnionRaidPanel({
   nameFor,
   burstTiersFor,
   investmentFor,
+  engineVersion = null,
+  appVersion = null,
   savedRuns,
   onSaveRun,
   onRenameRun,
@@ -454,6 +460,7 @@ export function UnionRaidPanel({
             </summary>
             <SavedRunList
               runs={savedRuns}
+              versions={{ engineVersion, appVersion }}
               renderRun={(run) => {
                 const view = run.view as UnionRunView
                 return (

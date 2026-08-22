@@ -1231,7 +1231,7 @@ describe('RecommendPanel persistence', () => {
   it('restores a result that only becomes restorable once the engine version arrives', async () => {
     // Whether a stored result is still valid can't be answered until the
     // backend says which engine produced the current numbers, and that answer
-    // lands a beat AFTER mount (useEngineVersion fetches it). So restoreResult
+    // lands a beat AFTER mount (useVersions fetches it). So restoreResult
     // is null on the first render and turns into a value on a later one.
     // Restoring only what was present at mount would drop it forever.
     const { rerender } = render(

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { useProfiles } from './hooks/useProfiles'
 import { usePortraitManifest } from './hooks/usePortraitManifest'
-import { useEngineVersion } from './hooks/useEngineVersion'
+import { useVersions } from './hooks/useVersions'
 import { getValidRoster } from './types/nikkeDraft'
 import { getResult, runsForTab } from './types/profile'
 import { restorableResult } from './lib/restorableResult'
@@ -14,6 +14,7 @@ import { useSupportedUnits } from './hooks/useSupportedUnits'
 import { useRaidRotations } from './hooks/useRaidRotations'
 import { nameFromSlug } from './lib/unitName'
 import { burstTiersFor } from './types/supportedUnit'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { ProfileSwitcher } from './components/ProfileSwitcher'
 import { RosterGrid } from './components/RosterGrid'
 import { RecommendPanel } from './components/RecommendPanel'
@@ -92,7 +93,7 @@ function App() {
   // 두 탭 패널이 동시에 마운트되므로 훅을 패널마다 부르면 같은 파일을 두 번
   // 받는다. 한 번 받아 내려보낸다.
   const raidRotations = useRaidRotations()
-  const engineVersion = useEngineVersion()
+  const { engineVersion, appVersion } = useVersions()
   const [tab, setTab] = useState<Tab>('roster')
   // 탭 목록은 사이드바에 고정돼 스크롤을 따라온다. 접는 것은 가로가 필요할 때의
   // 예외라 선택이 세션을 넘어 남는다 - 매번 다시 접게 만들면 접기가 기능이
@@ -164,6 +165,19 @@ function App() {
   const burstTiersResolver = (slug: string) => burstTiersFor(slug, unitIndex)
 
   return (
+    // 마지막 방어선. 안쪽 울타리(보관물 목록)가 못 잡은 예외가 여기서 멈춘다 -
+    // 안 그러면 React가 트리를 통째로 걷어내고 어두운 배경만 남아 "검은 화면"이
+    // 된다. App 자신의 본문에서 던지는 것은 이 울타리 바깥이지만, 저장소를 읽는
+    // 자리(useProfiles)는 이미 try/catch로 감싸여 있다.
+    <ErrorBoundary
+      title="화면을 그리는 중 문제가 생겼습니다"
+      context={{ where: '앱 전체', engineVersion, appVersion }}
+      actions={
+        <button type="button" className="btn" onClick={() => window.location.reload()}>
+          다시 불러오기
+        </button>
+      }
+    >
     <div className="app">
       <header className="app__header">
         <div className="app__masthead">
@@ -281,6 +295,7 @@ function App() {
                 rotations={raidRotations.rotations}
                 investmentFor={investmentFor}
                 engineVersion={engineVersion}
+                appVersion={appVersion}
                 activeKey={state.activeKey}
                 getCached={(hash) => (activeProfile ? getResult(activeProfile, hash) : null)}
                 onResult={(args) => {
@@ -321,6 +336,8 @@ function App() {
                 nameFor={nameFor}
                 burstTiersFor={burstTiersResolver}
                 investmentFor={investmentFor}
+                engineVersion={engineVersion}
+                appVersion={appVersion}
                 savedRuns={unionSavedRuns}
                 onSaveRun={(run) =>
                   state.activeKey ? saveRun({ key: state.activeKey, run }) : false
@@ -407,6 +424,7 @@ function App() {
         </p>
       </footer>
     </div>
+    </ErrorBoundary>
   )
 }
 
