@@ -1752,6 +1752,25 @@ This is an OPEN item, not a settled deferral, and NO guard is wired — see
 their tier-1/2 seats carry no burst-cast damage rows, so "identical on all five"
 was a fact about those rosters, not about the model.
 
+**A cycle the deck cannot fill before the fight ends is `float("inf")`, not a
+missing key.** `fill_times` writes an entry for EVERY cycle it was handed a Full
+Burst end for; `inf` is how it says "this deck never charges that one". Leaving
+the key out is not equivalent and is a live trap: `simulate_burst_cycle` reads the
+table as `.get(cycle_index, gauge_charge_time)`, so a missing key falls back to
+the BOSS SEED (`BossProfile.gauge_charge_time`, 2.4 s) — "never charges" would
+render as "charges faster than nearly any real deck" and the burst would fire for
+free. The bias runs exactly against the point of the feature, since the decks
+collecting the phantom cycle are the ones too slow to charge; on a synthetic MG
+deck the free cycle was worth +0.87% damage and on the measured Little Mermaid
+deck +0.95%. With `inf` the scheduler's `fire_time = max(gauge_ready, ...)` is
+`inf` and its own `fire_time >= fight_duration` check ends the fight there.
+Un-fillable cycles are necessarily a SUFFIX (each window starts later, so its hit
+set is a subset of the previous window's, and the ally-ammo crossings shrink with
+it), but the judgement is made per cycle, so a hole in the middle would still come
+back as `inf` for that cycle alone. Cycle 0 is the one cycle with no entry at all
+— battle start to first burst is outside this model and the seed is its real
+answer.
+
 **The scheduler DECLARES which constraint opened each cycle (2026-08-22).** Every
 `"burst"` event `simulate_burst_cycle` emits carries `gauge_bound: bool` — whether
 that cycle's fire time was set by the gauge (`gauge_ready > max(tier_ready)`)
@@ -1773,8 +1792,11 @@ infinite, which would poison the sum).
 
 `raid_simulator` only COUNTS and SUMS the declarations, into
 `result["gauge_bound_cycles"]` and `result["gauge_delay_seconds"]`, and
-`deck_search._summarize` carries both plus `total_cycles` (completed
-`full_burst_end` events) out to `DeckRecommendation` for the screen. **The opening
+`deck_search._summarize` carries both plus `total_cycles` (one
+`full_burst_end` event per cycle whose burst FIRED — the scheduler compares only
+the FIRE time against `fight_duration`, so the last window may close after the
+fight ends — on all five hand-measured decks it does, at 180.24–189.28 s of a
+180 s fight) out to `DeckRecommendation` for the screen. **The opening
 cycle is excluded from both**: no cooldown is running yet, so the gauge is its
 only start condition and every deck would carry a constant 1. All three fields are
 DIAGNOSTIC — nothing in the engine reads them back, and they do not move damage.

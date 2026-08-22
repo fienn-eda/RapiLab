@@ -15,6 +15,11 @@
 수렴시킨다(반쪽짜리 비교가 아니라 회계 규칙 교체가 사이클 타이밍 자체를 바꾸는
 이차 효과까지 잡기 위해서다). 사이클별 게이지·문턱 크로싱 횟수를 나란히 찍는다.
 
+두 규칙은 회계 축 **하나**만 다르고 나머지는 오늘 엔진과 같아야 한다 -
+`raid_simulator`가 넘기는 인자가 늘면(`skill_hits_by_slug`, `speed_multiplier_at`)
+여기도 같이 받아야 하고, `**_ignored`로 삼키면 오늘 존재하지 않는 `fill_times`에
+대해 회계를 비교하게 된다. 공통부는 `_fill_times`에 한 벌로 있다.
+
 **언제 쓰나:** `fill_times`의 아군 소모탄 회계 방식(리셋 vs 누적, 문턱값,
 `GAUGE_QUANTUM_SEC`)을 건드릴 때. 2026-08-22 측정: 덱2(인어공주, 문턱 400,
 초당 ~118발이라 3.4초 창)에서 정상상태 채움 시간이 창-리셋 ~5.5초 -> 누적
@@ -62,81 +67,95 @@ def _per_hit(weapon_stats):
     }
 
 
-def _merged(shots_by_slug, ammo_rounds_by_slug):
+def _merged(shots_by_slug, ammo_rounds_by_slug, skill_hits_by_slug):
+    """(시각, 슬러그, 종류, 타격 수, 소모 라운드) - `app.burst_gauge.fill_times`와
+    같은 모양. 무기가 쏘지 않은 타격(라이더·드론·오토파이어·주기 타격)은 풀차지
+    배율을 안 받고 아군 소모탄에 0을 기여한다."""
     ammo_rounds_by_slug = ammo_rounds_by_slug or {}
     return sorted(
-        (time, slug, is_tap, rounds)
-        for slug, shots in shots_by_slug.items()
-        for (time, is_tap), rounds in zip(shots, ammo_rounds_by_slug.get(slug) or [1.0] * len(shots))
+        [(time, slug, "tap" if is_tap else "charged", 1, rounds)
+         for slug, shots in shots_by_slug.items()
+         for (time, is_tap), rounds in zip(
+             shots, ammo_rounds_by_slug.get(slug) or [1.0] * len(shots),
+             strict=True)]
+        + [(time, slug, "skill", count, 0.0)
+           for slug, hits in (skill_hits_by_slug or {}).items()
+           for time, count in hits]
     )
 
 
-def fill_times_window_reset(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
-                            ammo_rounds_by_slug=None, bonus_fills=()):
-    """2026-08-22 이전 커밋의 회계 - `ally_rounds`가 창마다 0에서 다시 센다."""
-    per_hit = _per_hit(weapon_stats)
-    merged = _merged(shots_by_slug, ammo_rounds_by_slug)
-    out, crossings = {}, {}
-    for cycle_index, end in enumerate(full_burst_ends):
-        gauge, ally_rounds, n = 0.0, 0.0, 0
-        for time, slug, is_tap, rounds in merged:
-            if time < end:
-                continue
-            if time >= fight_duration:
-                break
-            base, charged = per_hit.get(slug, (0.0, 0.0))
-            gauge += base if is_tap else charged
-            if bonus_fills:
-                before = ally_rounds
-                ally_rounds += rounds
-                for fill in bonus_fills:
-                    threshold = fill["every_ally_rounds"]
-                    c = int(ally_rounds // threshold) - int(before // threshold)
-                    if c:
-                        n += c
-                        gauge += c * fill["fraction"] * GAUGE_FULL
-            if gauge >= GAUGE_FULL:
-                out[cycle_index + 1] = quantize(time - end)
-                crossings[cycle_index + 1] = n
-                break
-    return out, crossings
+def _fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
+                ammo_rounds_by_slug=None, bonus_fills=(), skill_hits_by_slug=None,
+                speed_multiplier_at=None, cumulative):
+    """두 회계를 **한 인자**로만 가른다 - 두 벌로 적으면 나머지가 같다는 것을
+    아무도 보장하지 못한다. `cumulative=False`가 2026-08-22 이전 커밋의 창-리셋
+    회계이고 `True`가 오늘 `app.burst_gauge.fill_times`의 누적 회계다.
 
-
-def fill_times_cumulative(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
-                          ammo_rounds_by_slug=None, bonus_fills=()):
-    """오늘 `app.burst_gauge.fill_times`가 실제로 쓰는 회계 - `ally_rounds`는
-    전투 시작부터 절대 안 비고, 창은 그 시점의 누적값을 위상으로 이어받는다."""
+    그 밖의 모든 축(스킬이 만드는 타격 · 충전 속도 배율 · 풀차지 트리거 채움원 ·
+    못 채우는 사이클의 무한대)은 **오늘 엔진과 같아야 한다.** 낡은 축이 하나라도
+    있으면 이 스크립트는 오늘 존재하지 않는 `fill_times`에 대해 회계를 비교하게
+    되고, 그 답은 어느 커밋의 것도 아니다. `raid_simulator`가 새 인자를 넘기기
+    시작하면 여기도 같이 받아야 한다 - `**_ignored`로 삼키면 조용히 그 상태가
+    된다.
+    """
     per_hit = _per_hit(weapon_stats)
-    merged = _merged(shots_by_slug, ammo_rounds_by_slug)
-    times_only = [m[0] for m in merged]
-    prefix = [0.0]
-    for m in merged:
-        prefix.append(prefix[-1] + m[3])
+    if not per_hit and not bonus_fills:
+        return {}, {}
+    speed_multiplier_at = speed_multiplier_at or (lambda slug, time: 1.0)
+    merged = _merged(shots_by_slug, ammo_rounds_by_slug, skill_hits_by_slug)
+    ally_round_fills = [f for f in bonus_fills if "every_ally_rounds" in f]
+    full_charge_fills = [f for f in bonus_fills if "every_own_full_charge" in f]
+    if ally_round_fills and cumulative:
+        times_only = [m[0] for m in merged]
+        prefix = [0.0]
+        for m in merged:
+            prefix.append(prefix[-1] + m[4])
     out, crossings = {}, {}
     for cycle_index, end in enumerate(full_burst_ends):
         gauge, n = 0.0, 0
-        ally_rounds = prefix[bisect.bisect_left(times_only, end)] if bonus_fills else 0.0
-        for time, slug, is_tap, rounds in merged:
+        if cumulative:
+            ally_rounds = (prefix[bisect.bisect_left(times_only, end)]
+                           if ally_round_fills else 0.0)
+        else:
+            ally_rounds = 0.0
+        out[cycle_index + 1] = float("inf")
+        for time, slug, kind, hits, rounds in merged:
             if time < end:
                 continue
             if time >= fight_duration:
                 break
             base, charged = per_hit.get(slug, (0.0, 0.0))
-            gauge += base if is_tap else charged
-            if bonus_fills:
+            energy = charged if kind == "charged" else base
+            gauge += energy * hits * speed_multiplier_at(slug, time)
+            if ally_round_fills:
                 before = ally_rounds
                 ally_rounds += rounds
-                for fill in bonus_fills:
+                for fill in ally_round_fills:
                     threshold = fill["every_ally_rounds"]
                     c = int(ally_rounds // threshold) - int(before // threshold)
                     if c:
                         n += c
                         gauge += c * fill["fraction"] * GAUGE_FULL
+            if kind == "charged":
+                for fill in full_charge_fills:
+                    if slug == fill["every_own_full_charge"]:
+                        gauge += fill["fraction"] * GAUGE_FULL
             if gauge >= GAUGE_FULL:
                 out[cycle_index + 1] = quantize(time - end)
                 crossings[cycle_index + 1] = n
                 break
     return out, crossings
+
+
+def fill_times_window_reset(*args, **kwargs):
+    """2026-08-22 이전 커밋의 회계 - `ally_rounds`가 창마다 0에서 다시 센다."""
+    return _fill_times(*args, cumulative=False, **kwargs)
+
+
+def fill_times_cumulative(*args, **kwargs):
+    """오늘 `app.burst_gauge.fill_times`가 실제로 쓰는 회계 - `ally_rounds`는
+    전투 시작부터 절대 안 비고, 창은 그 시점의 누적값을 위상으로 이어받는다."""
+    return _fill_times(*args, cumulative=True, **kwargs)
 
 
 def _specs(slugs, states):

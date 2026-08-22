@@ -155,17 +155,18 @@ def build_beauty_full_gauge_fills(values):
              "fraction": float(beauty["description_value_16"]) / 100}]
 
 
-def build_snipe_weapon_profile(values, weapon_stats=None):
+def build_snipe_weapon_profile(values, weapon_stats):
     """Snipe's static weapon profile (Beauty-Full's "Changes the weapon in
     use: Snipe Mode" block). The `weapon` field stays "MG" at the unit-identity
     level in registry/roster data (weapon-type ally filters, e.g. Tove's SG
     theme, key off the character's real gun) - firing cadence and per-shot
     typing are decided by THIS profile's "SR" weapon field once it's swapped
     in via get_weapon_profile_override. `weapon_stats` (the collected profile)
-    is otherwise unused: this is a full swap, not a correction - except the
-    burst gauge constant and pellet count, which describe the underlying MG
-    she never stops holding (BURST_ENERGY_FALLBACK's "Snipe 모드도 같은
-    기저 무기다") and would silently vanish if not carried across the swap."""
+    is REQUIRED even though this is a full swap rather than a correction: the
+    burst gauge constant and pellet count are read straight out of it, because
+    they describe the underlying MG she never stops holding
+    (BURST_ENERGY_FALLBACK's "Snipe 모드도 같은 기저 무기다") and would silently
+    vanish if not carried across the swap."""
     beauty = values["beauty_full"]
     return {
         "weapon": "SR",

@@ -145,9 +145,26 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     그러면 다섯 덱 전부가 창 종료 전에 가득 차서 덱2의 3.7초 판독을 설명 못 한다).
     초과분은 다음 사이클로 이월되지 않는다.
 
-    전투가 끝날 때까지 못 채우는 사이클은 표에 안 싣는다 - 그 사이클은 어차피
-    일어나지 않고, 무한대를 스케줄러에 넘기면 하한 계산이 통째로 뒤집힌다.
-    `fight_duration` 검사는 그 약속을 이 함수가 **스스로** 지키게 한다: 오늘의
+    전투가 끝날 때까지 못 채우는 사이클은 **`float("inf")`로 싣는다.** 표에서
+    빼면 `burst_cycle`의 `.get(cycle_index, gauge_charge_time)`이 보스 시드(2.4초)로
+    떨어져 「이 사이클은 절대 못 찬다」가 「거의 모든 실덱보다 빨리 찬다」로
+    뒤집히고, 그 사이클이 공짜로 터진다 - 이득을 보는 것이 하필 게이지가 느려서
+    못 채우는 덱이라 편향의 방향이 이 기능의 존재 이유와 정확히 반대다. 무한대면
+    스케줄러의 `fire_time = max(gauge_ready, ...)`가 무한대가 되어 그쪽의
+    `fight_duration` 검사가 사이클을 제대로 끊는다.
+
+    못 채우는 사이클은 **접미사**다 - `end`가 사이클마다 뒤로만 가므로 사이클
+    k+1이 보는 타격 집합은 사이클 k가 본 집합의 부분집합이고, 아군 누적 소모탄의
+    크로싱 수도 같은 이유로 줄기만 한다. 그래도 판정은 사이클마다 따로 하므로
+    중간에 구멍이 나는 날에도 그 사이클 하나만 무한대가 된다.
+
+    게이지값이 있는 좌석도 `bonus_fills`도 **하나도 없는** 입력은 예외다 - 그때는
+    표가 통째로 비고 시드가 모든 사이클을 답한다. 그 경우의 「안 참」은 덱의 성질이
+    아니라 **입력의 부재**이고, 그것을 무한대로 답하면 게이지 데이터를 안 주는
+    호출자(손으로 만든 무기 프로필)의 전투가 사이클 0에서 끝난다. 실덱은 이
+    가지에 못 들어온다: `load_roster`가 게이지값 없는 유닛을 아예 제외한다.
+
+    아래 `fight_duration` 검사는 창 밖 적산이 전투 종료에서 멈추게 한다: 오늘의
     발사 생성기는 종료 시각을 넘겨 쏘지 않으므로(실측 175,259발 중 0발) 검사가
     걸리는 일은 없지만, 그 성질은 이 함수의 것이 아니라 호출자의 것이다.
     """
@@ -160,6 +177,13 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
         for slug, stats in weapon_stats.items()
         if stats.get("burst_energy_pershot")
     }
+    # 채움원이 **하나도** 없으면 표를 아예 안 낸다. 「이 덱은 못 채운다」가 아니라
+    # 「잴 것이 없다」라서다 - 없는 입력을 무한대로 답하면 스케줄러가 첫 사이클
+    # 뒤에 전투를 끝낸다. 실제 유닛은 게이지값이 없으면 `load_roster`가 제외하므로
+    # (`_weapon_stats`가 `None`을 돌려준다) 프로덕션 덱에서는 이 가지가 안 열리고,
+    # 그래서 아래 무한대가 실덱에서 약해지지 않는다.
+    if not per_hit and not bonus_fills:
+        return {}
     ammo_rounds_by_slug = ammo_rounds_by_slug or {}
     speed_multiplier_at = speed_multiplier_at or (lambda slug, time: 1.0)
     # (시각, 슬러그, 종류, 타격 수, 소모 라운드). `종류`는 어느 에너지를 쓰는지를
@@ -168,8 +192,12 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     merged = sorted(
         [(time, slug, "tap" if is_tap else "charged", 1, rounds)
          for slug, shots in shots_by_slug.items()
+         # `strict=True`: 두 목록은 같은 `shot_records`에서 나오므로 프로덕션에선
+         # 항상 나란하다. 어긋나는 날 `zip`이 잘라 버리면 **게이지에서만** 샷이
+         # 조용히 사라지고 대미지는 멀쩡해, 어디가 틀렸는지 알 길이 없다.
          for (time, is_tap), rounds in zip(
-             shots, ammo_rounds_by_slug.get(slug) or [1.0] * len(shots))]
+             shots, ammo_rounds_by_slug.get(slug) or [1.0] * len(shots),
+             strict=True)]
         + [(time, slug, "skill", count, 0.0)
            for slug, hits in (skill_hits_by_slug or {}).items()
            for time, count in hits]
@@ -190,6 +218,9 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
         gauge = 0.0
         if ally_round_fills:
             ally_rounds = ally_round_prefix[bisect.bisect_left(ally_round_times, end)]
+        # 가득 차는 순간에 덮어쓴다. 안 덮이면 그 사이클은 전투가 끝날 때까지
+        # 못 채운다는 뜻이고, 무한대가 그것을 스케줄러에 말하는 방식이다.
+        out[cycle_index + 1] = float("inf")
         for time, slug, kind, hits, rounds in merged:
             if time < end:
                 continue

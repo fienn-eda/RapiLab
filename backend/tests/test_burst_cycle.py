@@ -116,15 +116,15 @@ def test_a_cycle_the_gauge_and_the_cooldown_open_together_is_not_gauge_bound():
     `OPEN_DELAY + DURATION` 뒤에 닫히므로 사이클 1의 게이지 준비 시각은
     거기서 다시 GAUGE 뒤다. 쿨다운을 그 시각에 **정확히** 맞춘다.
 
-    첫 단언이 그 동점이 실제로 성립했는지부터 확인하는 것이 이 테스트의 절반이다 -
-    격자가 어긋나 두 시각이 갈리면 이 테스트는 아무것도 안 재게 되고, 옛 구현
-    (`>=`)도 그대로 통과한다.
+    동점이 실제로 성립했는지는 **시뮬레이션을 읽어** 확인한다 - 아래
+    `second["time"] == gauge_ready`가 그 자리다. 손으로 세운
+    `gauge + cooldown == gauge_ready`를 단언하는 것은 구성상 참이라 아무것도 안
+    잰다: `cooldown`을 그 차이로 정의했기 때문이다.
     """
     gauge = 5.0
     end_of_opening_window = (gauge + FULL_BURST_OPEN_DELAY) + FULL_BURST_DURATION
     gauge_ready = end_of_opening_window + gauge
     cooldown = gauge_ready - gauge
-    assert gauge + cooldown == gauge_ready, "동점이 성립해야 재는 것이 있다"
 
     deck = [{"slug": f"u{tier}", "burst_tier": tier, "cooldown": cooldown}
             for tier in (1, 2, 3)]

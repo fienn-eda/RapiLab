@@ -3,10 +3,13 @@
 앨리스 5발 / 에이드 7발 / 드레이크 10발 / 블랑 250발 / 리타 500발 / 크라운 1000발이
 각각 게이지를 채운다. 여섯이 독립적으로 같은 총량을 준다.
 """
+import math
+
 import pytest
 
 from app.burst_gauge import (GAUGE_FULL, GAUGE_QUANTUM_SEC, energy_per_hit,
                              fill_times, quantize)
+from app.deck_search import BossProfile
 
 
 def _weapon(burst_energy, pellets=1, charge_damage_percent=0.0):
@@ -104,12 +107,23 @@ def test_overflow_does_not_carry_into_the_next_cycle():
                       fight_duration=100.0) == {1: 1.0, 2: 3.0}
 
 
-def test_a_cycle_that_never_fills_is_left_out_of_the_table():
-    """전투가 끝날 때까지 못 채운 사이클은 표에 안 싣는다. 무한대를 스케줄러에
-    넘기면 하한 계산이 통째로 뒤집힌다."""
+def test_a_cycle_that_never_fills_is_reported_as_infinite():
+    """전투가 끝날 때까지 못 채운 사이클은 **무한대**로 싣는다 - 키를 빼면 안 된다.
+
+    `burst_cycle`은 표에 없는 사이클을 `.get(cycle_index, gauge_charge_time)`으로
+    읽어 **보스 시드**(`BossProfile.gauge_charge_time`, 2.4초)에 떨어뜨린다.
+    그래서 키를 빼는 구현에서는 「이 사이클은 절대 못 찬다」가 「2.4초면 찬다」로
+    뒤집혀 그 사이클이 공짜로 터진다 - 시드보다 **느린** 값이 나와야 할 자리에서
+    거의 모든 실덱보다 **빠른** 값이 나오는 것이라, 부호가 뒤집힌 버그다.
+
+    그래서 「비어 있지 않다」로 끝내지 않고 시드와 직접 대조한다: `{}`를 돌려주는
+    옛 구현도, 시드보다 작은 아무 유한값을 채워 넣는 구현도 여기서 걸린다.
+    """
     stats = {"u": _weapon(1.0)}
-    assert fill_times({"u": [(11.0, False)]}, [10.0],
-                      weapon_stats=stats, fight_duration=100.0) == {}
+    table = fill_times({"u": [(11.0, False)]}, [10.0],
+                       weapon_stats=stats, fight_duration=100.0)
+    assert table == {1: math.inf}
+    assert table[1] > BossProfile.gauge_charge_time
 
 
 def test_the_charge_multiplier_only_reaches_full_charge_shots():
@@ -124,13 +138,26 @@ def test_the_charge_multiplier_only_reaches_full_charge_shots():
                       fight_duration=100.0) == {1: 18.0}
 
 
-def test_a_weapon_with_no_gauge_data_charges_nothing():
-    """실제 유닛은 값이 없으면 `load_roster`가 아예 제외하므로 여기 오지 않는다.
-    이 관용이 받는 것은 손으로 만든 무기 프로필뿐이고, 그런 좌석은 게이지에
-    기여하지 않는다."""
+def test_a_deck_with_no_gauge_data_at_all_gets_no_table():
+    """채움원이 하나도 없는 입력의 「안 참」은 **덱의 성질이 아니라 입력의
+    부재**다 - 표를 비워 시드가 답하게 둔다. 무한대로 답하면 게이지 데이터를 안
+    주는 호출자(손으로 만든 무기 프로필)의 전투가 사이클 0에서 끝난다.
+
+    실제 유닛은 값이 없으면 `load_roster`가 아예 제외하므로 실덱은 이 가지에 못
+    들어오고, 그래서 이 관용이 「못 채우는 사이클은 무한대」를 약화시키지 않는다."""
     assert fill_times({"u": [(11.0, False)]}, [10.0],
                       weapon_stats={"u": {"weapon": "AR"}},
                       fight_duration=100.0) == {}
+
+
+def test_one_seat_without_gauge_data_does_not_disarm_the_rest():
+    """위 관용은 **덱 전체**에 채움원이 없을 때만 열린다. 한 좌석만 값이 없으면
+    나머지는 그대로 세고, 못 채우면 무한대가 나온다 - 좌석 단위로 관용하면 값이
+    없는 좌석 하나가 그 덱의 게이지 판정을 통째로 꺼 버린다."""
+    stats = {"quiet": {"weapon": "AR"}, "loud": _weapon(1.0)}
+    shots = {"quiet": [(11.0, False)], "loud": [(12.0, False)]}
+    assert fill_times(shots, [10.0], weapon_stats=stats,
+                      fight_duration=100.0) == {1: math.inf}
 
 
 # --- 아군 소모탄 트리거 채움원 (bonus_fills) -------------------------------
@@ -346,9 +373,10 @@ def test_a_skill_hit_from_a_unit_with_no_gauge_data_charges_nothing():
     이쪽에도 있다는 것을 못박는다. `per_hit`에 없는 슬러그를 KeyError로 죽는
     구현이 여기서 걸린다.
     """
-    stats = {"u": {"weapon": "AR"}}
-    assert fill_times({"u": []}, [10.0], weapon_stats=stats, fight_duration=100.0,
-                      skill_hits_by_slug={"u": [(11.0, 99)]}) == {}
+    stats = {"u": {"weapon": "AR"}, "other": _weapon(1.0)}
+    assert fill_times({"u": [], "other": [(12.0, False)]}, [10.0],
+                      weapon_stats=stats, fight_duration=100.0,
+                      skill_hits_by_slug={"u": [(11.0, 99)]}) == {1: math.inf}
 
 
 # --- 자기 풀차지 트리거 채움원 (bonus_fills) --------------------------------
@@ -393,7 +421,8 @@ def test_only_the_units_own_full_charge_shots_trigger_the_fill():
     hits = {"a": [(15.0, 1), (16.0, 1)]}
     assert fill_times(shots, [10.0], weapon_stats=stats, fight_duration=60.0,
                       skill_hits_by_slug=hits,
-                      bonus_fills=[{"every_own_full_charge": "a", "fraction": 0.6}]) == {}
+                      bonus_fills=[{"every_own_full_charge": "a", "fraction": 0.6}]
+                      ) == {1: math.inf}
 
 
 def test_own_full_charge_fill_is_not_scaled_by_the_fill_speed_multiplier():

@@ -34,6 +34,10 @@ MEASURED_DECK_3 = ["liter", "nayuta", "cinderella-crystal-wave-mg",
 # 기각한 근거다.
 VOLUME_DECK = ["volume", "prika", "mint", "snow-white-heavy-arms", "cinderella"]
 
+# 합성 덱들이 도는 전투 길이. 「전투가 끝날 때까지 못 채운다」를 단언하려면 이
+# 값이 상수로 보여야 한다.
+SYNTHETIC_FIGHT_SEC = 180.0
+
 
 def _nikke(slug):
     return UserNikkeState.model_validate({
@@ -97,7 +101,7 @@ def _synthetic_result(deck_and_stats, **extra):
                     for member in deck},
         enemy_def=0,
         gauge_charge_time=BossProfile.gauge_charge_time,
-        fight_duration=180.0,
+        fight_duration=SYNTHETIC_FIGHT_SEC,
         mode="manual",
         weapon_stats=weapon_stats,
         **extra,
@@ -176,19 +180,37 @@ def test_the_opening_cycle_is_not_counted_as_gauge_bound():
     assert result["gauge_delay_seconds"] == 0.0
 
 
-def test_a_deck_that_barely_charges_reports_its_cycles_as_gauge_bound():
-    """반대 방향 - 타격당 500짜리 MG 덱은 게이지가 20초대라 20초 쿨다운을
-    매 사이클 이긴다. 마지막 사이클만 예외인데, 게이지가 전투가 끝날 때까지
-    다 안 차서 그 사이클은 보스 기본값으로 떨어지기 때문이다.
+def test_a_cycle_the_deck_cannot_fill_does_not_fire_at_the_boss_seed():
+    """반대 방향 - 타격당 500짜리 MG 덱은 게이지가 20초대라 20초 쿨다운을 매
+    사이클 이긴다. **마지막 창은 전투가 끝나기 전에 게이지를 못 채운다**: 그
+    사이클은 일어나지 않고, 표는 그것을 무한대로 말한다.
 
-    첫 사이클을 빼고 세므로 「가득 찬」 값은 사이클 수보다 둘 작다.
+    이 테스트의 옛 기대값(`[True] * (n-1) + [False]`)은 버그를 정답으로 적고
+    있었다. 못 채우는 사이클을 표에서 **빼면** `burst_cycle`이
+    `.get(cycle_index, gauge_charge_time)`으로 보스 시드(2.4초)를 읽는데, 아래
+    첫 단언이 보이듯 그 시드는 남은 전투 시간에 **넉넉히 들어간다**. 그래서
+    20초를 못 채우는 덱이 2.4초 만에 채운 것처럼 한 사이클을 더 터뜨렸고, 그
+    공짜 사이클만 「게이지가 안 밀었다(False)」로 보였다 - 마지막 사이클이
+    유일하게 시드를 탄 사이클이었기 때문이다. 이 편성에서 그 사이클은 총딜
+    **+0.87%**다(2026-08-22 대조). 편향의 방향이 이 기능의 존재 이유와 반대인
+    것이 요점이다: 이득을 보는 것이 하필 게이지를 못 채우는 덱이다.
+
+    첫 사이클을 빼고 세므로 밀린 사이클 수는 사이클 수보다 하나 작다.
     """
     result = _synthetic_result(_synthetic_deck("MG", burst_energy=500))
     tier1 = [e for e in result["events"]
              if e["type"] == "burst" and e["tier"] == 1]
+    computed = result["gauge_charge_times"]
+    ends = [e["time"] for e in result["events"] if e["type"] == "full_burst_end"]
 
-    assert [e["gauge_bound"] for e in tier1] == [True] * (len(tier1) - 1) + [False]
-    assert result["gauge_bound_cycles"] == len(tier1) - 2
+    assert computed[len(ends)] == math.inf, "마지막 창은 전투 안에 못 채운다"
+    # 시드로 떨어지는 구현이 정말로 사이클을 하나 더 얻는지 확인한다 - 이
+    # 부등식이 깨지면(마지막 창이 전투 끝에 너무 붙으면) 시드도 못 들어가므로
+    # 이 테스트는 아무것도 안 재게 되고 옛 구현도 그대로 통과한다.
+    assert ends[-1] + BossProfile.gauge_charge_time < SYNTHETIC_FIGHT_SEC
+    assert computed[1] > BossProfile.gauge_charge_time, "이 덱은 시드보다 훨씬 느리다"
+    assert [e["gauge_bound"] for e in tier1] == [True] * len(tier1)
+    assert result["gauge_bound_cycles"] == len(tier1) - 1
     # 게이지가 20초대인데 쿨다운이 20초라, 밀린 사이클마다 초 단위로 민다.
     # 합계는 유한하고(첫 사이클의 -inf가 안 샜다는 뜻) 사이클 수보다 크다.
     assert math.isfinite(result["gauge_delay_seconds"])

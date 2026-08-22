@@ -909,9 +909,11 @@ def simulate_raid(*args, **kwargs):
     환산이 그 둘을 통째로 못 본다. 앞 패스가 모아 둔 것을 다음 패스에 그림자로
     넘겨 함께 읽게 한다(`SquadContext.live_max_hp`).
 
-    이쪽은 항상 두 패스 만에 멈춘다: Max HP는 타임라인을 안 바꾸므로 패스 2의
-    늦은 flat_max_hp는 패스 1과 같은 집합이다. 환산 소비자가 없거나 늦은
-    flat_max_hp가 없으면 빈 튜플이 오가고 첫 패스에서 끝난다.
+    이 축은 **혼자서는** 아무것도 안 민다 - Max HP는 사이클 길이에 안 들어가므로
+    타임라인을 바꾸지 않는다. 그런데 넘기는 기록이 `applied_at`으로 끝나는
+    튜플이라, 게이지가 패스마다 버스트 일정을 옮기는 동안 그 시각도 같이 움직인다.
+    그래서 두 패스에 혼자 멈추지 않고 **게이지와 함께 수렴한다**. 환산 소비자가
+    없거나 늦은 flat_max_hp가 없으면 빈 튜플이 오가고 이 축은 아무 패스도 안 산다.
 
     셋째는 **버스트 게이지 채움 시간**이다. 게이지는 덱이 넣은 타격 수로 차므로
     그 덱의 발사 타임라인이 있어야 계산되는데, 타임라인은 게이지가 정한 사이클
@@ -963,7 +965,10 @@ def simulate_raid(*args, **kwargs):
     # 있고, 애초에 패스 수를 정하는 축이다.
     bound = inspect.signature(_simulate_raid_once).bind_partial(*args, **kwargs)
     warnings.warn(
-        f"풀 버스트 확장이 {MAX_FULL_BURST_PASSES} 패스 안에 수렴하지 않았다 "
+        f"버스트 사이클 고정점이 {MAX_FULL_BURST_PASSES} 패스 안에 수렴하지 않았다 "
+        f"- 축은 게이지 채움 시간 / 풀 버스트 확장 / 늦은 flat_max_hp 셋이고, "
+        f"오늘 멈추지 않는 것은 거의 언제나 **게이지**다(표본 400덱 중 3~4덱, "
+        f"격자 두 점 사이에 진짜 고정점이 앉은 주기 2의 극한 순환) "
         f"(fight_duration={bound.arguments.get('fight_duration', '?')}) - "
         f"이 결과의 total_damage는 고정점이 아니다.",
         FullBurstConvergenceWarning,
