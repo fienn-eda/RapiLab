@@ -124,7 +124,7 @@ export const HELP = {
     /** modeLabel은 RecommendPanel.tsx가 넘긴다 - 제출 버튼의 진행 중 라벨과 같은
      * 문구라 라벨이고, 라벨은 이 파일로 오지 않는다. */
     searchRunning: (modeLabel: string) =>
-      `${modeLabel} — 수천 번의 시뮬레이션을 실행하며 보통 2~5분이 걸려요. 아직 진행 중이니 완료되면 버튼이 다시 활성화돼요.`,
+      `${modeLabel} — 수천 번의 시뮬레이션을 실행하며 보통 10분 안팎이 걸려요. 아직 진행 중이니 완료되면 버튼이 다시 활성화돼요.`,
     evaluateRunning: '기대 딜량 계산 중이에요 — 몇 초면 끝나요.',
     poolNote: (included: number, total: number) =>
       `${included}/${total} 탐색 풀에 포함됨 — 사용하지 않을 니케는 니케 풀 탭에서 설정해요`,
