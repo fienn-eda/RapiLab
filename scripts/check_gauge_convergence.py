@@ -47,6 +47,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app import burst_gauge  # noqa: E402
 from app.cascade import FIT_SAMPLE_DECKS, FIT_SEED  # noqa: E402
 from app.deck_search import BossProfile, evaluate_deck  # noqa: E402
+from app.raid_simulator import FullBurstConvergenceWarning  # noqa: E402
 from app.surrogate import sample_feasible_combinations  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
 from roster_fixture import add_roster_argument, real_roster  # noqa: E402
@@ -62,6 +63,18 @@ def _round_roster(specs, index, rounds):
     dropped = {unit.slug for unit in ordered[(index - 1) * width:index * width]}
     return ([unit for unit in specs if unit.slug not in dropped],
             f"minus {sorted(dropped)[0]}..{sorted(dropped)[-1]} ({len(dropped)})")
+
+
+def _stall_shape(entry):
+    """정지한 덱이 **어떤** 정지였는지 한 조각.
+
+    감지된 주기 2였다면 그 폭을 격자 칸으로 말한다. 감지 자체가 없었다면 주기 3
+    이상이거나 혼돈이거나 그냥 상한이 모자랐던 것인데, 셋을 여기서 못 가른다 -
+    엔진이 남기는 것이 거기까지다. 「이유 미상」이 그 정직한 이름이다.
+    """
+    if entry.get("gauge_oscillation_detected"):
+        return f"period-2, max gap {entry['max_gap_quanta']} quanta (too wide to damp)"
+    return "no period-2 detected - period 3+, chaotic, or simply needed more passes"
 
 
 def main():
@@ -92,10 +105,10 @@ def main():
           f"{args.rounds} rounds x {FIT_SAMPLE_DECKS} sampled decks "
           f"(seed {FIT_SEED}); grid {burst_gauge.GAUGE_QUANTUM_SEC}\n")
 
-    # 경고를 에러로 올려 잡는다: `FullBurstConvergenceWarning`은 파이썬 기본
-    # 필터가 (텍스트, 카테고리, 위치)로 접어 버려, 그냥 두면 두 번째 덱부터
-    # 조용해진다 - 세는 것이 목적인 여기서는 정확히 반대가 필요하다.
-    warnings.simplefilter("error")
+    # 경고를 **에러로 올리지 않는다**: 올리면 결과가 안 돌아와서, 그 정지가 넓은
+    # 주기 2였는지(`max_gap_quanta`) 이유 미상이었는지를 못 읽는다. 대신 덱마다
+    # `record=True` + "always"로 받는다 - 파이썬 기본 필터가 (텍스트, 카테고리,
+    # 위치)로 중복을 접어 두 번째 덱부터 조용해지는 것을 그것이 막는다.
     passes = collections.Counter()
     damped = []
     stalled = []
@@ -106,21 +119,29 @@ def main():
         for combo in combos:
             slugs = [unit.slug for unit in combo]
             try:
-                result = evaluate_deck(list(combo), boss)
-            except Warning:
-                raised += 1
-                stalled.append(slugs)
-                print(f"  STALLED {slugs}")
-                continue
+                with warnings.catch_warnings(record=True) as caught:
+                    warnings.simplefilter("always")
+                    result = evaluate_deck(list(combo), boss)
             except Exception as exc:  # noqa: BLE001 - 시뮬 자체가 깨진 것도 보고한다
                 raised += 1
                 print(f"  RAISED  {slugs}\n    {type(exc).__name__}: {exc}")
                 continue
+            # 다른 경고를 삼키지 않는다 - 예전에는 전부 정지로 접혀 있었다.
+            for other in caught:
+                if not isinstance(other.message, FullBurstConvergenceWarning):
+                    print(f"  WARNED  {slugs}\n    "
+                          f"{type(other.message).__name__}: {other.message}")
             entry = result["full_burst_passes"]
+            if any(isinstance(w.message, FullBurstConvergenceWarning) for w in caught):
+                raised += 1
+                stalled.append(entry)
+                print(f"  STALLED {slugs}  {_stall_shape(entry)}")
+                continue
             passes[entry["passes"]] += 1
             if entry.get("gauge_oscillation_damped"):
                 damped.append(slugs)
-                print(f"  DAMPED  {slugs} ({entry['passes']} passes)")
+                print(f"  DAMPED  {slugs} ({entry['passes']} passes, "
+                      f"gap {entry['max_gap_quanta']} quanta)")
         print(f"round {index} ({label}): {len(combos)} decks, {raised} did not converge")
 
     # 히스토그램·평균은 답을 낸 덱 전부(자연 수렴 + 감쇠)를 센다 - 비용은 감쇠
@@ -133,10 +154,15 @@ def main():
         print(f"\npasses: {dict(counts)}")
         print(f"answered {answered}: two-pass {100 * passes[2] / answered:.0f}%, "
               f"median {ordered[answered // 2]}, mean {mean:.2f}, max {max(passes)}")
+    wide = [e for e in stalled if e.get("gauge_oscillation_detected")]
     sampled = answered + len(stalled)
     print(f"of {sampled} sampled decks: {answered - len(damped)} converged, "
           f"{len(damped)} settled by damping a period-2 oscillation, "
           f"{len(stalled)} never settled at all")
+    if stalled:
+        widest = f" (max gap {max(e['max_gap_quanta'] for e in wide)} quanta)" if wide else ""
+        print(f"  of those {len(stalled)}: {len(wide)} a period-2 too wide to "
+              f"damp{widest}, {len(stalled) - len(wide)} for no recorded reason")
     return 1 if stalled else 0
 
 

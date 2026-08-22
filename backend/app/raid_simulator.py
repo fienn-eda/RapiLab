@@ -893,13 +893,17 @@ def _resolve_conditional_fb_deltas(context, events, conditional_full_burst_delta
     return resolved
 
 
-def _gauge_tables_are_one_quantum_apart(one, other):
-    """두 게이지 표가 **모든 사이클에서** 격자 한 칸 이내로만 다른가.
+def _gauge_gap_quanta(one, other):
+    """두 게이지 표가 **가장 크게** 벌어진 사이클에서 격자 몇 칸 떨어져 있는가.
 
-    주기 2 진동을 감쇠하기 전의 가드다. 한 사이클이라도 그보다 크게 다르면 그것은
-    양자화 인공물이 아니라 **진짜 불안정**이고, 감쇠는 그것을 숫자 하나로 덮어
-    버린다 - 그러면 무엇을 감췄는지 아무도 모른다. 가드가 걸리면 감쇠하지 않고
-    예전대로 상한까지 돌아 `FullBurstConvergenceWarning`이 뜬다.
+    주기 2 진동을 감쇠할지 정하는 자다. 한 칸 이내면 양자화 인공물이므로 감쇠하고,
+    그보다 크면 **진짜 불안정**이라 감쇠하지 않는다 - 감쇠는 그것을 숫자 하나로
+    덮어 버리고, 그러면 무엇을 감췄는지 아무도 모른다.
+
+    **불리언이 아니라 칸 수를 돌려주는 것은 관측 때문이다.** 가드가 거절한 정지는
+    결과 dict가 주기 3·혼돈 정지와 바이트 동일해져서, 어떤 정지가 「넓은 주기 2」
+    였는지 저장소 안에서 알 방법이 없어진다. 이 값이 `full_burst_passes`의
+    `max_gap_quanta`로 실린다.
 
     **이 함수가 보는 축을 헷갈리면 설계를 잘못 읽는다.** 한 덱의 버스트 충전
     시간이 4초, 3.9초, 4초, 2.5초로 흔들린다고 할 때 두 가지가 갈린다.
@@ -907,28 +911,28 @@ def _gauge_tables_are_one_quantum_apart(one, other):
     사이클3=4.0, …) 여기 감쇠는 **아무것도 안 한다** - 그건 진짜 물리이고
     (재장전 위상이 사이클마다 다르다) 이 비교는 그 축을 아예 안 본다.
     **패스 사이**에서 같은 사이클이 4.0 -> 2.5로 뛰는 것이라면 1.5초가 격자 한
-    칸의 열다섯 배라 여기서 False가 되고, 감쇠하지 않는다.
+    칸의 열다섯 배라 15가 나오고, 감쇠하지 않는다.
 
-    무한대(전투가 끝날 때까지 못 채우는 사이클)는 양쪽이 다 무한대일 때만
-    통과한다 - 한쪽만 무한대면 차가 무한대이고, `inf - inf`를 만들지 않으려고
-    뺄셈 전에 동등성으로 걸러 낸다.
+    무한대(전투가 끝날 때까지 못 채우는 사이클)와 사이클 수가 다른 표는
+    `float("inf")` 칸으로 답한다 - 간격이 격자로 안 묶인다는 뜻이다. 한쪽만
+    무한대인 경우를 뺄셈 **전에** 동등성으로 걸러 내므로 `inf - inf`는 안 만든다.
     """
     if one.keys() != other.keys():
-        return False
-    # 격자값끼리의 차는 격자의 배수라 「한 칸」과 「두 칸」 사이 어디에 선을 그어도
-    # 판정이 같지만, `burst_gauge.quantize`가 이진 부동소수라 한 칸이 0.1보다 아주
-    # 조금 클 수 있다 - 반 칸을 여유로 둔다. 격자는 **호출 시점에** 읽는다:
-    # `scripts/check_gauge_convergence.py --quantum`이 모듈 전역을 갈아끼운다.
-    tolerance = 1.5 * burst_gauge.GAUGE_QUANTUM_SEC
+        return float("inf")
+    # 격자는 **호출 시점에** 읽는다: `scripts/check_gauge_convergence.py --quantum`이
+    # 모듈 전역을 갈아끼운다. 나누고 반올림하는 것은 `burst_gauge.quantize`가 이진
+    # 부동소수라 한 칸이 정확히 0.1이 아니기 때문이고, 값이 격자의 배수라 반올림이
+    # 정확히 칸 수를 준다.
+    quantum = burst_gauge.GAUGE_QUANTUM_SEC
+    widest = 0
     for cycle_index, seconds in one.items():
         counterpart = other[cycle_index]
         if seconds == counterpart:
             continue
         if seconds == float("inf") or counterpart == float("inf"):
-            return False
-        if abs(seconds - counterpart) > tolerance:
-            return False
-    return True
+            return float("inf")
+        widest = max(widest, round(abs(seconds - counterpart) / quantum))
+    return widest
 
 
 def _slower_fill_each_cycle(one, other):
@@ -944,6 +948,27 @@ def _slower_fill_each_cycle(one, other):
     """
     return {cycle_index: max(seconds, other[cycle_index])
             for cycle_index, seconds in one.items()}
+
+
+def _full_burst_passes_record(count, *, converged, gap_quanta, damped):
+    """`full_burst_passes` 한 줄.
+
+    진동을 아예 안 만난 덱은 **예전 그대로 두 키 dict**를 받는다 - 이 결과를 읽는
+    소비자가 있고, 안 일어난 일을 키로 알리지 않는다.
+
+    진동을 만났으면 **가드가 거절했더라도** 남긴다. 안 남기면 넓은 주기 2로 정지한
+    덱과 주기 3·혼돈으로 정지한 덱의 dict가 바이트 동일해져서, 어떤 정지가 어느
+    쪽이었는지 저장소 안에서 알 방법이 없다 - `converged: False` 하나로는 그냥
+    33패스가 필요했던 덱과도 안 갈린다. `max_gap_quanta`가 그 폭을 격자 칸으로
+    말하고, `scripts/check_gauge_convergence.py`가 그것을 읽어 정지를 둘로 가른다.
+    """
+    record = {"passes": count, "converged": converged}
+    if gap_quanta is not None:
+        record["gauge_oscillation_detected"] = True
+        record["max_gap_quanta"] = gap_quanta
+    if damped:
+        record["gauge_oscillation_damped"] = True
+    return record
 
 
 def simulate_raid(*args, **kwargs):
@@ -979,25 +1004,32 @@ def simulate_raid(*args, **kwargs):
     보므로 패스마다 앞에서부터 한 사이클씩 확정된다(추적으로 확인). 그래서 비용은
     상수 배가 아니라 **게이지가 무는 사이클 수**에 비례한다.
 
-    표본 400덱(cascade의 FIT_SAMPLE_DECKS, 격자 0.1)에서: **46%(184/397)가 딱 두
+    표본 400덱(cascade의 FIT_SAMPLE_DECKS, 격자 0.1)에서: **48%(189/397)가 딱 두
     패스에 멈춘다** - 게이지가 한 사이클도 안 무는 덱들이고, 그런 덱에는 표가
-    있으나 마나다. 무는 덱은 9~11패스에 몰린다(안 멈춘 46%를 뺀 나머지의 38%).
-    전체로는 **중앙값 4 · 평균 5.8 · 최대 18**이다.
+    있으나 마나다. 무는 덱은 8~12패스에 몰린다(두 패스에 멈춘 것을 뺀 나머지의
+    49%). 전체로는 **중앙값 3 · 평균 5.88 · 최대 25**다(2026-08-22 측정).
+
+    **최대가 18에서 25로 늘어난 것은 비용 신호다.** 평균은 오히려 줄었는데
+    (스킬 타격이 배선되면서 게이지가 빨리 차 고정점이 덜 돈다) 꼬리는 길어졌다 -
+    `MAX_FULL_BURST_PASSES`(32)까지의 여유가 14에서 7로 반이 됐다는 뜻이다.
+    게이지가 무는 사이클 수를 늘리는 변경은 이 꼬리부터 밀어 올린다.
 
     멈추지 않는 덱이 있다: 같은 표본에서 3덱(0.75%)이 **주기 2의 극한 순환**에
     빠진다. 진짜 고정점이 격자점 둘 사이에 있으면 양자화된 사상에는 고정점이
     **아예 없다**(`GAUGE_QUANTUM_SEC` 참조 - 격자를 바꾸면 어느 덱이 경계에
     앉는지만 바뀐다). 그런 순환은 아래에서 **감지한 뒤 감쇠해서** 답을 하나로
-    정한다(`_gauge_tables_are_one_quantum_apart` · `_slower_fill_each_cycle`).
+    정한다(`_gauge_gap_quanta` · `_slower_fill_each_cycle`).
 
-    **그런데 오늘의 3덱은 셋 다 감쇠 가드에 걸린다** - 두 표가 사이클마다 격자
-    4~9칸(0.4~0.9초) 벌어져 있어 양자화 인공물이 아니다(2026-08-22 측정,
-    `.superpowers/sdd/2026-08-21-burst-gauge-as-deck-property/gauge_oscillation_shape.py`).
-    폭이 큰 이유는 채움이 **접두사 안정화**라는 위 성질의 뒷면이다: 이른 사이클이
-    0.1초 밀리면 그 창의 종료가 밀리고, 재장전 위상이 밀려, 뒤 사이클에서는
-    한 매거진이 통째로 경계를 넘나든다. 그 덱들은 감쇠 없이 상한까지 돌고
+    **그런데 오늘의 3덱은 셋 다 감쇠 가드에 걸린다**(2026-08-22 측정). 모양은
+    「균일하게 넓은 진동」이 아니라 **대체로 격자 한 칸인데 꼬리의 한두 사이클이
+    4~9칸(0.4~0.9초)까지 벌어지는** 것이다 - 셋 중 하나는 비교되는 일곱 사이클 중
+    다섯이 정확히 한 칸이고 마지막 둘만 4칸·2칸이다. 폭이 뒤로 갈수록 커지는 것은
+    채움이 **접두사 안정화**라는 위 성질의 뒷면이다: 이른 사이클이 0.1초 밀리면 그
+    창의 종료가 밀리고, 재장전 위상이 밀려, 뒤 사이클에서는 한 매거진이 통째로
+    경계를 넘나든다. 그 덱들은 감쇠 없이 상한까지 돌고
     `FullBurstConvergenceWarning`을 받는다 - 감춰지지 않는다는 것이 가드의 목적이고,
-    0.9초짜리 흔들림을 한 값으로 덮으면 오차가 격자로 안 묶인다.
+    0.9초짜리 흔들림을 한 값으로 덮으면 오차가 격자로 안 묶인다. 폭은 결과의
+    `max_gap_quanta`에 실리고 `scripts/check_gauge_convergence.py`가 그것을 찍는다.
 
     감쇠로도 안 잡히는 나머지 - 주기 3 이상, 감쇠 패스가 또 다른 값을 내는 경우 -
     도 같은 경고가 잡는다.
@@ -1009,6 +1041,11 @@ def simulate_raid(*args, **kwargs):
     # A -> B -> A는 이번 출력이 두 패스 전의 입력과 같을 때만 보인다.
     gauge_two_passes_back = None
     damped = False
+    # 감지된 주기 2의 폭(격자 칸). `None`은 「진동을 아예 못 봤다」이고, 값이
+    # 있는데 감쇠가 안 걸렸으면 「봤지만 가드가 거절했다」다 - 그 둘이 결과에서
+    # 갈려야 넓은 주기 2 정지와 주기 3·혼돈 정지를 구분할 수 있다. 극한 순환에
+    # 들어가면 매 두 패스마다 같은 값이 다시 나오므로 최댓값을 들고 있는다.
+    oscillation_gap_quanta = None
     result = None
     for attempt in range(MAX_FULL_BURST_PASSES):
         result, resolved, resolved_max_hp, resolved_gauge = _simulate_raid_once(
@@ -1019,15 +1056,13 @@ def simulate_raid(*args, **kwargs):
                      and resolved_gauge == gauge)
         # 감쇠한 표로 돈 패스는 그 자체가 답이다. 그 출력을 다시 먹이면 진동으로
         # 돌아가고, 어느 쪽 값이 나가는지를 다시 패스 수가 정하게 된다.
+        #
+        # 「히스테리시스로 풀렸다」와 「진짜 고정점」은 다른 것이다 - 감쇠한 답은
+        # 오차가 격자 한 칸 안이라는 뜻이지 사상의 고정점이 아니다.
         if converged or damped:
-            passes = {"passes": attempt + 1, "converged": converged}
-            if damped:
-                # 「히스테리시스로 풀렸다」와 「진짜 고정점」은 다른 것이다 -
-                # 감쇠한 답은 오차가 격자 한 칸 안이라는 뜻이지 사상의 고정점이
-                # 아니다. 키를 따로 두지 않으면 다음 사람이 이 덱들을 수렴한
-                # 것으로 읽는다. 진동이 없던 덱에는 이 키가 아예 안 붙는다.
-                passes["gauge_oscillation_damped"] = True
-            result["full_burst_passes"] = passes
+            result["full_burst_passes"] = _full_burst_passes_record(
+                attempt + 1, converged=converged,
+                gap_quanta=oscillation_gap_quanta, damped=damped)
             return result
         # 주기 2: 이번 출력이 두 패스 전의 입력과 같고 **직전 입력과는 다르다.**
         # 뒤 조건이 없으면 게이지가 이미 멈춘 채 다른 축이 아직 걸어가는 중인
@@ -1036,15 +1071,23 @@ def simulate_raid(*args, **kwargs):
         # 감쇠는 **게이지 축에만** 건다. 나머지 둘(풀 버스트 확장 · 늦은
         # flat_max_hp)은 진동하는 것이 관찰된 적이 없고, 셋 다에 걸면 관찰되지
         # 않은 동작 위에 코드를 얹는 것이다.
-        if (resolved_gauge == gauge_two_passes_back and resolved_gauge != gauge
-                and _gauge_tables_are_one_quantum_apart(resolved_gauge, gauge)):
-            resolved_gauge = _slower_fill_each_cycle(resolved_gauge, gauge)
-            damped = True
+        if resolved_gauge == gauge_two_passes_back and resolved_gauge != gauge:
+            gap = _gauge_gap_quanta(resolved_gauge, gauge)
+            oscillation_gap_quanta = (
+                gap if oscillation_gap_quanta is None
+                else max(oscillation_gap_quanta, gap))
+            # 감쇠는 폭이 격자 한 칸 이내일 때만. 넘으면 감지 사실만 남기고
+            # 예전대로 돈다 - 상한에서 `FullBurstConvergenceWarning`이 뜬다.
+            if gap <= 1:
+                resolved_gauge = _slower_fill_each_cycle(resolved_gauge, gauge)
+                damped = True
         gauge_two_passes_back = gauge
         overrides = resolved
         late_max_hp = resolved_max_hp
         gauge = resolved_gauge
-    result["full_burst_passes"] = {"passes": MAX_FULL_BURST_PASSES, "converged": False}
+    result["full_burst_passes"] = _full_burst_passes_record(
+        MAX_FULL_BURST_PASSES, converged=False,
+        gap_quanta=oscillation_gap_quanta, damped=False)
     # `converged: False`만으로는 아무도 못 본다 - 이 플래그를 읽는 하류가 없다.
     # 질의 헬퍼를 하나 더 만들어도 `scripts/`의 소비자 16개 중 2개만 부르는
     # `deck_search.never_full_bursts`의 전철을 밟는다. 경고는 소비자가 아무것도
@@ -1061,7 +1104,10 @@ def simulate_raid(*args, **kwargs):
         f"- 축은 게이지 채움 시간 / 풀 버스트 확장 / 늦은 flat_max_hp 셋이고, "
         f"오늘 멈추지 않는 것은 거의 언제나 **게이지**다. 격자 한 칸짜리 주기 2는 "
         f"감쇠가 잡으므로(`gauge_oscillation_damped`), 여기까지 온 것은 주기 3 "
-        f"이상이거나 값이 격자 한 칸보다 크게 뛰어 감쇠 가드가 걸린 경우다 "
+        f"이상이거나 값이 격자 한 칸보다 크게 뛰어 감쇠 가드가 걸린 경우다 - "
+        f"둘 중 어느 쪽인지는 결과의 `gauge_oscillation_detected`와 "
+        f"`max_gap_quanta`가 말한다(덱마다 다른 텍스트는 아래 이유로 메시지에 "
+        f"안 싣는다) "
         f"(fight_duration={bound.arguments.get('fight_duration', '?')}) - "
         f"이 결과의 total_damage는 고정점이 아니다.",
         FullBurstConvergenceWarning,
@@ -2677,6 +2723,11 @@ def _simulate_raid_once(
         ammo_rounds_by_slug=ammo_rounds_by_slug, bonus_fills=gauge_fills,
         skill_hits_by_slug=_gauge_skill_hits(damage_log),
         speed_multiplier_at=gauge_fill_speed_at)
+    # 이 패스가 **계산한** 표다. 고정점에서는 입력과 같지만, 감쇠로 끝난 덱
+    # (`gauge_oscillation_damped`)에서는 다르다 - 그 덱의 이벤트는 감쇠된 표로
+    # 스케줄됐는데 여기 실리는 것은 그 스케줄이 다시 낸 표라, 둘이 한 단계
+    # 어긋난다. 감쇠 답이 고정점이 아니라는 것의 다른 얼굴이고, 그 사실은
+    # `full_burst_passes`가 이미 말한다.
     result["gauge_charge_times"] = resolved_gauge
     # 쿨은 돌았는데 게이지가 안 차서 기다린 사이클 수(**버충 밀림**). 스케줄러가
     # 사이클마다 선언한 것을 세기만 한다 - 실현된 간격에서 되유도하면 게이지와

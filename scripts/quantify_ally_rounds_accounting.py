@@ -173,6 +173,52 @@ def _specs(slugs, states):
     return specs
 
 
+def _assert_cumulative_matches_the_engine(order, boss, real_fill_times):
+    """이 스크립트의 손 복사본이 **오늘 엔진과 같은 답을 내는가** - 재기 전에 확인.
+
+    `fill_times_cumulative`는 `app.burst_gauge.fill_times`의 회계를 손으로 옮겨
+    적은 것이라 엔진이 세는 것이 바뀌면 조용히 갈라진다. 독스트링의 경고는 가드가
+    아니다: 갈라진 채로 재면 「리셋 대 누적」이 아니라 「낡은 엔진 대 오늘 엔진」을
+    재게 되고, 그 결과가 이 스크립트가 남기는 정량 증거로 남는다.
+
+    픽스처를 손으로 짓지 않고 **엔진이 실제로 넘기는 인자를 가로채** 비교한다 -
+    이 저장소가 이름을 붙여 둔 함정(「측정 스크립트는 모듈에 물어봐야 한다」)이
+    바로 손으로 지은 호출이 실제 호출과 달라지는 것이다. 인자가 늘어도 여기가
+    같이 따라간다.
+    """
+    seen = []
+
+    def spy(shots_by_slug, full_burst_ends, **kw):
+        seen.append((shots_by_slug, full_burst_ends, kw))
+        return real_fill_times(shots_by_slug, full_burst_ends, **kw)
+
+    burst_gauge.fill_times = spy
+    try:
+        _simulate_raid_once(
+            **assemble_simulation_inputs(order), enemy_def=boss.enemy_def,
+            gauge_charge_time=boss.gauge_charge_time,
+            fight_duration=boss.fight_duration, mode=boss.mode,
+            core_hittable=boss.core_hittable, boss_element=boss.element,
+            part_destructible=boss.part_destructible,
+            part_destruction_times=boss.part_destruction_times,
+            effective_range_band=boss.effective_range_band,
+            pierce_hits_body_behind_core=boss.pierce_hits_body_behind_core,
+            core_diameter_px=boss.core_diameter_px,
+            full_burst_stage_overrides={}, late_flat_max_hp=(),
+            gauge_charge_overrides={})
+    finally:
+        burst_gauge.fill_times = real_fill_times
+
+    assert seen, "엔진이 fill_times를 한 번도 안 불렀다 - 픽스처가 잘못됐다"
+    for shots_by_slug, full_burst_ends, kw in seen:
+        mine, _ = fill_times_cumulative(shots_by_slug, full_burst_ends, **kw)
+        theirs = real_fill_times(shots_by_slug, full_burst_ends, **kw)
+        assert mine == theirs, (
+            "fill_times_cumulative가 app.burst_gauge.fill_times와 갈라졌다 - "
+            "엔진이 세는 것이 바뀌었고 이 스크립트의 손 복사본이 안 따라왔다.\n"
+            f"  script: {mine}\n  engine: {theirs}")
+
+
 def _converge(order, boss, rule):
     """진짜 고정점까지 - `simulate_raid`와 같은 루프를 직접 돌린다(그래야 회계
     교체가 사이클 타이밍 자체를 바꾸는 이차 효과까지 반영된다)."""
@@ -221,6 +267,7 @@ def main():
         burst_gauge.fill_times = real_fill_times  # 좌석 선택은 오늘 코드로 - 어느 회계를 재든 같은 좌석
         order = list(max(feasible_orderings(specs),
                          key=lambda d: evaluate_deck(list(d), boss)["total_damage"]))
+        _assert_cumulative_matches_the_engine(order, boss, real_fill_times)
 
         old_gauge, old_crossings, old_passes = _converge(order, boss, fill_times_window_reset)
         new_gauge, new_crossings, new_passes = _converge(order, boss, fill_times_cumulative)

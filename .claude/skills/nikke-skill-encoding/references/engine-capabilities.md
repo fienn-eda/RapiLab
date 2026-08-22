@@ -1036,8 +1036,17 @@ and differs from the pass's own input, that is a period-2 cycle. It then rebuild
 one table from the SLOWER fill of each cycle (`_slower_fill_each_cycle`), runs
 exactly one more pass with it, and returns that pass's result tagged
 `full_burst_passes = {"passes": N, "converged": False,
-"gauge_oscillation_damped": True}`. The extra key appears ONLY on damped decks -
-a deck that never oscillated gets the same two-key dict as before.
+"gauge_oscillation_detected": True, "max_gap_quanta": 1,
+"gauge_oscillation_damped": True}`.
+
+**A detected oscillation is recorded even when the guard refuses to damp it** -
+`gauge_oscillation_detected` plus `max_gap_quanta` (the widest per-cycle gap, in
+grid steps) without `gauge_oscillation_damped`. Without that, a deck stalling on
+a too-wide period 2 returns a dict byte-identical to one stalling on period 3, on
+chaos, or on simply needing a 33rd pass, and nothing in the repo can tell them
+apart. `scripts/check_gauge_convergence.py` reads those keys and splits its
+stall count accordingly. A deck that never oscillated gets the same two-key dict
+as before - no key announces something that did not happen.
 
 Four things about that design are load-bearing:
 
@@ -1067,14 +1076,18 @@ differs per cycle - and damping never looks at that axis. And a value that jumps
 refuses it and you get the warning instead of a quietly averaged number.
 
 **Measured 2026-08-22: all 3 stalling decks hit the guard, so damping fires on
-NONE of them today.** Their two alternating tables are 4 to 9 grid steps
-(0.4-0.9s) apart on several cycles - that is not a quantization artifact. The
-width is the flip side of prefix stabilization: an early cycle moving 0.1s moves
-its window's end, which moves the reload phase, which sends a whole magazine
-across a boundary in a later cycle. So the counts are unchanged (397 converged /
-0 damped / 3 stalled, max 25 passes, mean 5.88) and so is the cost. The
-machinery is live and tested but has not yet met a deck it applies to - do not
-widen the guard to make the number move; the guard IS the finding.
+NONE of them today.** The shape is not "uniformly wide": it is mostly ONE grid
+step with a wide TAIL of one or two cycles reaching 4-9 steps (0.4-0.9s) - one of
+the three has five of its seven compared cycles at exactly one step and only the
+last two at 4 and 2. That tail is what trips the guard, and it grows toward the
+end because of prefix stabilization: an early cycle moving 0.1s moves its
+window's end, which moves the reload phase, which sends a whole magazine across a
+boundary in a later cycle. So the counts are unchanged (397 converged / 0 damped
+/ 3 stalled, max 25 passes, mean 5.88) and so is the cost. The machinery is live
+and tested but has not yet met a deck it applies to - do not widen the guard to
+make the number move. Those three decks have NO fixed point to find; widening
+would not resolve a grid artifact deterministically, it would pick one of two
+real timelines and stop asking, which is a different feature.
 
 The remaining property to preserve: **the pass count tracks FIGHT DURATION, not
 deck composition**, because each pass propagates the change one cycle further: a

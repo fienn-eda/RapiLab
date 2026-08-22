@@ -4402,10 +4402,11 @@ def test_a_long_fight_still_reaches_a_fixed_point_with_room_to_spare():
 # 덱이 그 자리에 앉는지는 격자와 로스터가 정한다. 여기서 재는 것은 스케줄러가
 # 아니라 **고정점 루프가 수열을 어떻게 다루는가**다.
 #
-# 오늘 그 셋은 **전부 가드에 걸린다** - 진동 폭이 격자 4~9칸이라 양자화 인공물이
-# 아니다(2026-08-22 측정, `.superpowers/sdd/.../gauge_oscillation_shape.py`).
-# 그래서 감쇠 경로는 실덱에서 아직 한 번도 안 열렸고, 이 스텁 다섯이 그 경로가
-# 무엇을 하고 무엇을 안 하는지를 붙들고 있는 유일한 것이다.
+# 오늘 그 셋은 **전부 가드에 걸린다** - 모양이 「균일하게 넓은 진동」이 아니라
+# **대체로 격자 한 칸인데 꼬리의 한두 사이클이 4~9칸으로 벌어지는** 것이고, 그
+# 꼬리가 가드를 넘긴다(2026-08-22 측정, `scripts/check_gauge_convergence.py`가
+# 정지마다 그 폭을 찍는다). 그래서 감쇠 경로는 실덱에서 아직 한 번도 안 열렸고,
+# 이 스텁 다섯이 그 경로가 무엇을 하고 무엇을 안 하는지를 붙들고 있는 유일한 것이다.
 
 
 def _gauge_sequence_stub(monkeypatch, next_table):
@@ -4456,7 +4457,8 @@ def test_a_period_two_gauge_oscillation_settles_on_the_slower_fill_each_cycle(
     # 시드 -> A -> B(여기서 주기 2가 보인다) -> 사이클별 느린 쪽.
     assert seen == [{}, a, b, {1: 3.1, 2: 4.1}]
     assert result["full_burst_passes"] == {
-        "passes": 4, "converged": False, "gauge_oscillation_damped": True}
+        "passes": 4, "converged": False, "gauge_oscillation_detected": True,
+        "max_gap_quanta": 1, "gauge_oscillation_damped": True}
     assert result["pass_index"] == 4, "감쇠한 표로 돈 패스의 답이 나가야 한다"
 
 
@@ -4486,8 +4488,11 @@ def test_a_gauge_that_jumps_far_between_passes_is_not_damped_but_warned(monkeypa
     with pytest.warns(FullBurstConvergenceWarning):
         result = simulate_raid()
 
+    # 감지는 **기록된다** - `max_gap_quanta`가 없으면 이 정지가 「넓은 주기 2」인지
+    # 「주기 3·혼돈」인지 결과에서 못 가른다. 15칸은 사이클 2의 4.0 -> 2.5다.
     assert result["full_burst_passes"] == {
-        "passes": MAX_FULL_BURST_PASSES, "converged": False}
+        "passes": MAX_FULL_BURST_PASSES, "converged": False,
+        "gauge_oscillation_detected": True, "max_gap_quanta": 15}
     # 감쇠했다면 사이클별 느린 쪽 표가 한 번은 입력으로 들어갔을 것이다. A도 B도
     # 아닌 표라, 안 들어갔다는 것이 곧 안 감쇠했다는 것이다.
     assert {1: 4.0, 2: 4.0} not in seen
