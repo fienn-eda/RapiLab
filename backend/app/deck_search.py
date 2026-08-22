@@ -745,7 +745,15 @@ def ranking_damage(ordered_deck, boss):
 def _score_batch(decks, boss, pool):
     """Total damage for each deck. `pool` (a SimPool, duck-typed - this module
     must not import sim_pool, which imports evaluate_deck from here) fans the
-    batch out to worker processes; None runs inline."""
+    batch out to worker processes; None runs inline.
+
+    Both arms score at `RANKING_MAX_PASSES`, and this being the single chokepoint
+    is what keeps the cascade honest: `deck_allocation` fits the surrogate by
+    injecting THIS function as its scorer, so the model learns the capped
+    objective and its shortlist is then re-scored on the same scale. A cap
+    applied anywhere further down would have trained the surrogate on one number
+    and ranked on another.
+    """
     if pool is None:
         return [ranking_damage(deck, boss) for deck in decks]
     return pool.score_many(decks)
