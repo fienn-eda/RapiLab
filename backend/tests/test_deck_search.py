@@ -1071,9 +1071,9 @@ def _recorded_max_passes(monkeypatch):
 def test_the_ranking_path_caps_convergence_passes(monkeypatch):
     """순위만 필요한 경로는 고정점까지 안 간다.
 
-    탐색 한 판의 비용은 (시뮬 수) x (시뮬당 패스 수)인데 실측에서 뒤 항이 7.41이라
-    캡이 곧 배수다. 48%의 덱은 애초에 두 패스에 수렴하므로 캡이 그들에게는 아무
-    일도 안 한다.
+    탐색 한 판의 비용은 (시뮬 수) x (시뮬당 패스 수)인데 실제 로스터 400덱에서 뒤
+    항이 평균 5.96이라 캡이 곧 배수다. 54%의 덱은 애초에 두 패스에 수렴하므로 캡이
+    그들에게는 아무 일도 안 한다.
     """
     import app.deck_search as ds
 

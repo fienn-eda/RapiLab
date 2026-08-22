@@ -994,8 +994,8 @@ def simulate_raid(*args, max_passes=None, **kwargs):
     `max_passes`는 고정점 반복을 **일부러** 그 패스 수에서 끊는다 - 탐색의 랭킹
     경로가 쓰고(`deck_search.RANKING_MAX_PASSES`), 안 주면 오늘과 완전히 같다.
     순위를 매기는 데는 정확한 총딜이 필요 없는데 이 반복이 비용을 지배하기
-    때문이다: 실측 할당 런에서 `evaluate_deck`당 **7.41패스 · 덱당 851ms**였고,
-    패스당 115ms로 거의 순수 비례라 캡이 곧 배수다. 끊긴 결과는
+    때문이다: 실제 로스터 400덱에서 **평균 5.96패스 · 덱당 887ms**였고(중앙값은
+    2, 최대 32), 패스당 비용이 거의 일정해 캡이 곧 배수다. 끊긴 결과는
     `full_burst_passes`에 `capped: True`를 달고, 경고는 **안 뜬다** - 수렴을
     시도하지도 않은 것이라 `FullBurstConvergenceWarning`의 사유가 아니고, 그걸
     내면 진짜 안 수렴하는 덱의 신호가 그 소음에 묻힌다.

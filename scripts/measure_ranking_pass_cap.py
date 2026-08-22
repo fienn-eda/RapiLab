@@ -9,9 +9,12 @@
 FIT_SEED)을 써서 두 측정을 나란히 읽을 수 있게 한다.
 
 **언제 쓰나:** `RANKING_MAX_PASSES`를 정하거나 다시 정할 때, 그리고 게이지 채움이
-세는 것을 바꿔 패스 분포가 움직였을 때. 분포는 로스터와 보스에 강하게 의존한다 -
-표본 셋에서 평균 패스가 3.13 / 5.88 / 7.41로 갈렸다. 그러니 **캡 값을 계획에 박기
-전에 자기 로스터로 한 번 돌릴 것.**
+세는 것을 바꿔 패스 분포가 움직였을 때.
+
+**합성 로스터로 재지 말 것.** 균일 스탯은 같은 티어 유닛을 서로 바꿔치기 가능하게
+만드는데, 그게 바로 랭킹 오차를 숨기는 조건이다. 합성 30덱이 평균 오차 0.189%를
+줬는데 실제 로스터 400덱은 0.560%였다 - **3배 과소평가**다. `--roster`는 기본이
+동기화된 실물이고(`roster_fixture.py`), 그대로 두는 것이 맞다.
 
 **어떻게 읽나 - 세 숫자가 캡의 생사를 가른다.**
 
@@ -135,7 +138,7 @@ def _season_subset(specs, path):
     return kept
 
 
-def _allocation_ab(specs, boss, units, num_decks):
+def _allocation_ab(specs, boss, units, num_decks, caps):
     """추천 한 판을 캡 없이 / 캡 있이 돌려 벽시계와 **추천 결과 자체**를 대조한다.
 
     덱 표집이 답하는 것은 「점수의 순위가 같은가」지 「추천이 같은가」가 아니다.
@@ -161,35 +164,46 @@ def _allocation_ab(specs, boss, units, num_decks):
         raise SystemExit(f"--end-to-end {units}: 부분집합에 티어가 다 없다 - 늘릴 것")
 
     shipped = ds.RANKING_MAX_PASSES
-    runs = {}
-    for label, cap in (("uncapped", None), (f"cap {shipped}", shipped)):
+    print(f"\nend-to-end A/B: {len(subset)} units, {num_decks} decks, serial")
+
+    def _run(cap):
         ds.RANKING_MAX_PASSES = cap
         t0 = time.perf_counter()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", FullBurstConvergenceWarning)
             result = allocate_decks(subset, boss, num_decks=num_decks)
-        runs[label] = (time.perf_counter() - t0, result)
-    ds.RANKING_MAX_PASSES = shipped
+        return time.perf_counter() - t0, result
 
-    print(f"\nend-to-end A/B: {len(subset)} units, {num_decks} decks, serial")
-    for label, (elapsed, result) in runs.items():
-        total = sum(d["total_damage"] for d in result["decks"])
-        print(f"  {label:>10}: {elapsed:7.1f}s   allocation damage {total:,.0f}")
-    (slow, before), (fast, after) = runs.values()
-    print(f"  speedup {slow / fast:.2f}x")
-    same = ([d["deck"] for d in before["decks"]]
-            == [d["deck"] for d in after["decks"]])
-    print(f"  same recommendation: {same}")
-    if not same:
+    try:
+        base_t, base = _run(None)
+    finally:
+        ds.RANKING_MAX_PASSES = shipped
+    base_damage = sum(d["total_damage"] for d in base["decks"])
+    base_decks = [d["deck"] for d in base["decks"]]
+    print(f"  {'uncapped':>10}: {base_t:7.1f}s   allocation damage {base_damage:,.0f}")
+
+    for cap in caps:
+        try:
+            elapsed, result = _run(cap)
+        finally:
+            ds.RANKING_MAX_PASSES = shipped
+        damage = sum(d["total_damage"] for d in result["decks"])
+        decks = [d["deck"] for d in result["decks"]]
+        mark = " <- shipped" if cap == shipped else ""
+        print(f"  {f'cap {cap}':>10}: {elapsed:7.1f}s   allocation damage "
+              f"{damage:,.0f}   speedup {base_t / elapsed:.2f}x{mark}")
+        if decks == base_decks:
+            print("      same recommendation, exactly")
+            continue
         # 편성이 갈렸으면 총딜 차이가 그 대가다 - 두 총딜 모두 보고 경로(고정점)에서
-        # 나오므로 비교 가능한 값이다.
-        loss = (sum(d["total_damage"] for d in before["decks"])
-                - sum(d["total_damage"] for d in after["decks"]))
-        print(f"  damage given up by the capped run: {loss:,.0f} "
-              f"({loss / sum(d['total_damage'] for d in before['decks']) * 100:+.3f}%)")
-        for label, result in (("uncapped", before), ("capped", after)):
-            for i, deck in enumerate(result["decks"]):
-                print(f"    {label:>8} deck {i}: {deck['deck']}")
+        # 나오므로 비교 가능한 값이고, 부호도 뜻이 있다: 캡이 더 높은 총딜을 찾는
+        # 일도 실제로 있다(탐색은 최적해를 보장하지 않는다).
+        print(f"      DIFFERENT recommendation: "
+              f"{(damage - base_damage) / base_damage * 100:+.3f}% damage")
+        for i, (before_deck, after_deck) in enumerate(zip(base_decks, decks)):
+            if before_deck != after_deck:
+                print(f"      deck {i} uncapped: {before_deck}")
+                print(f"      deck {i} capped:   {after_deck}")
 
 
 def main():
@@ -233,7 +247,8 @@ def main():
     if args.skip_sampling:
         if args.end_to_end is None:
             raise SystemExit("--skip-sampling은 --end-to-end와 함께 쓸 때만 뜻이 있다")
-        _allocation_ab(specs, boss, args.end_to_end, args.end_to_end_decks)
+        _allocation_ab(specs, boss, args.end_to_end, args.end_to_end_decks,
+                       [int(c) for c in args.caps.split(",")])
         return
     decks = sample_feasible_combinations(specs, args.decks, seed=FIT_SEED)
     print(f"{len(decks)} sampled decks (seed {FIT_SEED})\n")
@@ -271,7 +286,8 @@ def main():
               f"largest rank move {moved}")
 
     if args.end_to_end is not None:
-        _allocation_ab(specs, boss, args.end_to_end, args.end_to_end_decks)
+        _allocation_ab(specs, boss, args.end_to_end, args.end_to_end_decks,
+                       [int(c) for c in args.caps.split(",")])
 
 
 if __name__ == "__main__":

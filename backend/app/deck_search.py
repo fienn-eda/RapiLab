@@ -344,23 +344,35 @@ SEARCH_SIM_BUDGET = 1200
 # (`simulate_raid`'s `max_passes`). The budget above caps how many decks get
 # simulated; this caps what each one costs, and the two multiply.
 #
-# The fixed point is not free: measured on a real allocation run, one
-# `evaluate_deck` averaged **7.41 passes** (851 ms/deck at ~115 ms a pass), and
-# the distribution is savagely skewed - 28 of 30 sampled decks settled in 2
-# passes while two took 11 and 27. So a handful of decks own a third of the
-# search's wall clock.
+# The fixed point is not free, and the distribution is savagely skewed.
+# Measured on the real synced roster, 400 sampled decks, Wind boss, 180 s
+# (scripts/measure_ranking_pass_cap.py, 2026-08-22): 887 ms/deck at a mean of
+# **5.96 passes** - but the MEDIAN is 2. 215 of 400 decks settle in two passes
+# and the rest smear out to 32, so a minority of decks own most of the clock.
 #
-# Two is the floor rather than one because pass 1 always starts from an empty
-# gauge table and pass 2 is the first that sees a real one. Measured over 30
-# sampled decks against the converged answer: mean damage error 0.189% (max
-# 3.497%), the top-1 and top-5 sets unchanged, and 1 rank inversion in 435
-# pairs - against 0.818% / 7 inversions at a cap of 1.
+# Cap / speedup / mean damage error / top-5 set kept / rank inversions of 79,800:
+#     1    6.08x   1.968%   NO    1396
+#     2    3.05x   0.560%   yes    435
+#     3    2.48x   0.298%   yes    218
+#     4    2.12x   0.235%   yes    180
+#
+# One is rejected outright: it drops a deck out of the top 5, which is the one
+# thing a ranking may not do. Two is the floor that survives, because pass 1
+# always starts from an EMPTY gauge table and pass 2 is the first that sees a
+# real one - so a cap of 1 scores every deck on a table it then throws away,
+# and 0 of 400 decks were exact.
 #
 # The error is confined to the tail by construction: a deck that truly settles
-# in two passes is scored EXACTLY, and those are 48% of them. And the decks
-# that do get approximated are the ones whose answer wobbles on the gauge grid
-# anyway (period-2 limit cycles, see simulate_raid) - the most expensive passes
-# were buying the least trustworthy digits.
+# inside the cap is scored EXACTLY, and at a cap of 2 that is 54% of them. The
+# decks that do get approximated are the ones whose answer wobbles on the gauge
+# grid anyway (period-2 limit cycles, see simulate_raid; 2 of these 400 never
+# converged at all) - the most expensive passes buy the least trustworthy
+# digits.
+#
+# Numbers measured on a SYNTHETIC roster understated this by ~3x (0.189% mean
+# error over 30 decks). Uniform stats make same-tier units interchangeable,
+# which is exactly the condition that hides ranking error - re-measure on a real
+# roster before trusting any of these figures (scripts/roster_fixture.py).
 #
 # Ranking only. The decks actually shown to the player are re-scored to the
 # fixed point by `evaluate_deck_best_seating`, exactly as seating already works.
