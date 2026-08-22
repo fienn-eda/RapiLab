@@ -5,6 +5,45 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## Ranking simulations stop at 3 burst-cycle passes; only reported decks run to the fixed point
+- Date: 2026-08-22
+- Context: A search costs (number of sims) x (passes per sim). `SEARCH_SIM_BUDGET`
+  has always capped the first term; nothing capped the second, and once the burst
+  gauge became a convergence axis it started to dominate. Measured on the real
+  synced roster (400 sampled decks, Wind, 180 s): **887 ms/deck at a mean of 5.96
+  passes**, median 2, max 32. Every pass re-simulates the whole 180-second fight
+  from t=0. The distribution is savagely skewed - 215 of 400 decks settle in two
+  passes and the rest smear out to the ceiling, so a minority of decks own most
+  of the wall clock. Two decks never converged at all.
+- Decision: `simulate_raid` takes `max_passes`; `deck_search.RANKING_MAX_PASSES = 3`
+  is passed by every path that only compares decks (`ranking_damage`, the single
+  chokepoint). Paths that produce a number for the player - `_report`,
+  `evaluate_deck_best_seating`, `sim_pool.summarize_many` - pass nothing and run to
+  the fixed point as before. 2.35-2.48x faster end to end.
+- Why: Ranking needs an ORDER, not an exact total, and this is the same
+  cheap-rank / exact-report split the module already uses for seating. Three
+  rather than two costs 18% of the speedup and buys back more than half of every
+  error measure (on a 46-unit subset: worst damage error 17.51% -> 2.75%, worst
+  rank move 20 -> 6, inversions 143 -> 54). **Four is not a further improvement**
+  (2.75% -> 4.91%): later passes overshoot the fixed point and come back, so
+  accuracy is not monotone in the cap and three is a real local optimum. One was
+  rejected outright - it drops a deck out of the top 5, structurally, because
+  pass 1 always scores against an empty gauge table it then discards (0 of 400
+  decks exact).
+- Consequences: A capped result carries `full_burst_passes["capped"] = True` and
+  raises **no** `FullBurstConvergenceWarning` - "the caller did not ask for a
+  fixed point" is not the same event as "the engine could not find one", and
+  conflating them would turn every ranking sim into a test failure under
+  `filterwarnings = error`. The approximation is confined to the tail by
+  construction: 57-59% of decks converge inside the cap and are scored exactly,
+  and the ones that do not are the decks whose answer oscillates on the gauge
+  grid anyway. Pool-pruning baselines are capped too - they are subtracted from
+  capped totals, and mixing the two would make the difference measure pass count
+  rather than a unit's worth. `best_ordering_summary` still PICKS the reported
+  deck's intra-tier ordering on capped scores (the total it prints is exact);
+  that pick was exact before this change. Measured with
+  `scripts/measure_ranking_pass_cap.py`.
+
 ## A skill hit may DECLARE its gauge energy, instead of always taking the unit's own
 - Date: 2026-08-22
 - Context: The gauge gives every skill-made hit the caster's own weapon base energy.
