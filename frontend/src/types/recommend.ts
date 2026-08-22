@@ -65,33 +65,41 @@ export interface DeckRecommendation {
   // Everything that was neither a burst nor a normal attack — DoTs, per-shot
   // riders, self-cooldowned procs. The three add up to total_damage.
   skill_damage: number
+  // 아래 플레이 지시 필드는 **전부 옵셔널**이다. 백엔드가 안 보내서가 아니라
+  // (항상 보낸다) 각 필드가 생기기 전에 저장한 SavedRun의 localStorage JSON에
+  // 그 필드가 없기 때문이다 — SavedRun은 캐시(results)와 달리 로스터 재동기화에도
+  // 앱 업데이트에도 살아남으므로, 옛 모양이 새 화면으로 들어온다. 필수로 선언하면
+  // TS는 통과시키고 화면이 `undefined.length`로 터진다(그러면 에러 바운더리가
+  // 없어 트리 전체가 언마운트되고, 유저에게는 검은 화면이다). 읽는 쪽은 DeckCard
+  // 하나뿐이고 거기서 한 번 채운다. **새 필드를 더할 때도 옵셔널로 더할 것.**
+  //
   // 덱 순서만으로는 표현할 수 없는 플레이 지시: 이 슬러그들은 첫 풀버스트에
   // 버스트를 아껴야 채점된 그 상태가 걸린다. 거의 항상 빈 배열이다 — 엔진은
   // 동점이면 그대로 플레이 가능한 순서를 고르므로, 홀드가 더 높게 나올 때만 찬다.
-  hold_burst_slugs: string[]
+  hold_burst_slugs?: string[]
   // 위 수치가 **수동 톡톡이**(차지하자마자 발사)를 전제로 계산된 슬러그. 같은
   // 성격의 플레이 지시이고, 누가 여기 들어가는지는 엔진이 정해서 실어 보낸다 —
   // 화면이 슬러그를 보고 판단하지 않는다.
-  tap_fire_slugs: string[]
+  tap_fire_slugs?: string[]
   // 그중 **배율을 실제로 버린** 슬러그. 여기 없으면 그 유닛은 차지가 0으로 내려간
   // 구간에서만 톡톡이이고, 그때는 눌러도 풀차지라 잃는 것이 없다.
-  partial_charge_slugs: string[]
+  partial_charge_slugs?: string[]
   // 그 좌석이 매거진 하나에서 실제로 쏜 풀차지 발수(최빈값). 화면 문구는 이 필드와
   // `partial_charge_slugs` **둘의 조합**으로 세 갈래로 갈린다 — 슬러그가 없으면
   // (배율을 안 버렸으면) 버스트 턴만 톡톡이, 슬러그가 있고 이 값이 0이면 매거진을
   // 통째로 톡톡이, 1 이상이면 매거진 안에서 풀차지와 섞었다(밀크: 블루밍 바니).
   // 문안 자체는 helpText.ts의 tapFireBurstOnly/tapFireAlways/tapFireMixed 참고.
-  partial_charge_full_rounds: Record<string, number>
+  partial_charge_full_rounds?: Record<string, number>
   // 자기 풀버스트 동안 **평타를 멈춰야** 하는 슬러그. 라운드 버프(「N발 유지」)는
   // 탄으로 소모되므로, 안 쏘면 창 내내 살아 그 안의 스킬딜이 전부 그 버프를 받는다.
   // 위 셋과 같은 계열의 플레이 지시다 — 이 수를 두지 않으면 위 수치가 안 나온다.
-  hold_fire_slugs: string[]
+  hold_fire_slugs?: string[]
   // 「자신과 양 옆 아군 2명」을 대상으로 하는 버프를 가진 유닛(루주의 Sword Coin,
   // 플로라 애장품의 Peace of Mind)을 어떻게 앉혀야 위 수치가 나오는지. 그런 유닛이
   // 없는 덱은 빈 객체다. 이것도 덱 목록에 안 담기는 편성 지시인데, 이유가
   // hold_burst_slugs와 다르다: 자리는 버스트 우선순위와 **다른 축**이라 애초에
   // 목록이 표현하는 것이 아니다.
-  seating: Record<string, SeatingEntry>
+  seating?: Record<string, SeatingEntry>
   // 쿨타임은 돌았는데 게이지가 안 차서 버스트가 밀린 **총 시간**과 그런 사이클
   // **수**, 그리고 이 전투가 완주한 사이클 수. 「게이지가 병목인 사이클」이
   // 아니다 — 게이지와 쿨타임이 같은 시각이면 게이지가 없었어도 같은 때 터졌으므로
@@ -101,9 +109,7 @@ export interface DeckRecommendation {
   // 덱 3은 똑같이 14사이클 중 11이 밀리는데 합계가 4.3초 대 11.6초이고, 판독은
   // 그 둘을 「안 밀림」과 「밀림」으로 가른다. 개수만 그리면 두 덱이 같아 보인다.
   //
-  // 옵셔널인 이유는 백엔드가 안 보내서가 아니라(항상 보낸다) 이 브랜치 이전에
-  // 저장한 SavedRun의 localStorage JSON에 이 필드가 없기 때문이다 —
-  // partial_charge_full_rounds가 같은 자리다.
+  // 옵셔널인 이유는 위 플레이 지시 필드들과 같다 — 옛 SavedRun에는 없다.
   gauge_delay_seconds?: number
   gauge_bound_cycles?: number
   total_cycles?: number

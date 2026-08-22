@@ -57,11 +57,18 @@ export function DeckCard({
   nameFor = nameFromSlug,
   gimmickUnmetFor,
 }: DeckCardProps) {
-  // 옛 SavedRun(이 브랜치 이전에 저장한 기록)에는 이 필드가 아예 없다 - engine_version
-  // 캐시와 달리 SavedRun은 로스터가 바뀌어도 안 지워지므로, localStorage JSON이 TS
-  // 타입의 필수 선언을 못 잡는다. 없으면 빈 객체로 대신해 아래 네 곳이 전부
-  // `undefined[slug]`로 안 터지게 한다.
+  // 플레이 지시 필드는 전부 「그 필드가 생기기 전에 저장한 기록에는 아예 없다」는
+  // 같은 처지다 - engine_version 캐시와 달리 SavedRun은 로스터가 바뀌어도 앱을
+  // 업데이트해도 지워지지 않으므로, localStorage JSON이 TS 타입의 선언을 못 잡는다.
+  // 여기서 한 번 채워 아래 읽는 자리들이 `undefined.length`나 `undefined[slug]`로
+  // 안 터지게 한다. 터지면 앱에 에러 바운더리가 없어 트리 전체가 언마운트되고,
+  // 유저에게는 검은 화면으로 보인다.
+  const holdBurst = deck.hold_burst_slugs ?? []
+  const tapFire = deck.tap_fire_slugs ?? []
+  const partialCharge = deck.partial_charge_slugs ?? []
   const fullRounds = deck.partial_charge_full_rounds ?? {}
+  const holdFire = deck.hold_fire_slugs ?? []
+  const seatingByCaster = deck.seating ?? {}
   return (
     <li className="deck-results__item">
       <div className="deck-results__header">
@@ -112,22 +119,22 @@ export function DeckCard({
           {deck.total_cycles ?? 0} 사이클 중 {deck.gauge_bound_cycles}
         </p>
       )}
-      {deck.hold_burst_slugs.length > 0 && (
+      {holdBurst.length > 0 && (
         <p className="deck-results__hold">
           <span aria-hidden="true">⏳</span>{' '}
-          <HelpText>{HELP.results.holdBurst(deck.hold_burst_slugs.map(nameFor).join(', '))}</HelpText>
+          <HelpText>{HELP.results.holdBurst(holdBurst.map(nameFor).join(', '))}</HelpText>
         </p>
       )}
       {/* 톡톡이 좌석을 「배율을 실제로 버렸는가」로 갈라 문구를 고른다. 어느 쪽인지는
           엔진이 정해서 실어 보내므로(`partial_charge_slugs`) 여기서 슬러그를 보고
           판단하지 않는다 — 홀드 안내·좌석 안내와 같은 계약이다. */}
-      {deck.partial_charge_slugs.filter((slug) => !fullRounds[slug]).length >
+      {partialCharge.filter((slug) => !fullRounds[slug]).length >
         0 && (
         <p className="deck-results__hold">
           <span aria-hidden="true">👆</span>{' '}
           <HelpText>
             {HELP.results.tapFireAlways(
-              deck.partial_charge_slugs
+              partialCharge
                 .filter((slug) => !fullRounds[slug])
                 .map(nameFor)
                 .join(', '),
@@ -135,7 +142,7 @@ export function DeckCard({
           </HelpText>
         </p>
       )}
-      {deck.partial_charge_slugs
+      {partialCharge
         .filter((slug) => fullRounds[slug] > 0)
         .map((slug) => (
           <p className="deck-results__hold" key={`tap-mixed-${slug}`}>
@@ -145,13 +152,13 @@ export function DeckCard({
             </HelpText>
           </p>
         ))}
-      {deck.tap_fire_slugs.some((slug) => !deck.partial_charge_slugs.includes(slug)) && (
+      {tapFire.some((slug) => !partialCharge.includes(slug)) && (
         <p className="deck-results__hold">
           <span aria-hidden="true">👆</span>{' '}
           <HelpText>
             {HELP.results.tapFireBurstOnly(
-              deck.tap_fire_slugs
-                .filter((slug) => !deck.partial_charge_slugs.includes(slug))
+              tapFire
+                .filter((slug) => !partialCharge.includes(slug))
                 .map(nameFor)
                 .join(', '),
             )}
@@ -162,15 +169,15 @@ export function DeckCard({
           누가 여기 들어가는지는 엔진이 정해서 실어 보낸다. testid를 다는 이유는 이
           안내의 문안이 따로 다듬어지기 때문이다 - 문구로 찾으면 다듬을 때마다
           멀쩡한 테스트가 깨진다. */}
-      {deck.hold_fire_slugs.length > 0 && (
+      {holdFire.length > 0 && (
         <p className="deck-results__hold" data-testid="hold-fire-note">
           <span aria-hidden="true">🚫</span>{' '}
           <HelpText>
-            {HELP.results.holdFire(deck.hold_fire_slugs.map(nameFor).join(', '))}
+            {HELP.results.holdFire(holdFire.map(nameFor).join(', '))}
           </HelpText>
         </p>
       )}
-      {Object.entries(deck.seating).map(([caster, seat]) => (
+      {Object.entries(seatingByCaster).map(([caster, seat]) => (
         <p className="deck-results__seating" key={caster}>
           <HelpText>
             {HELP.results.seating(

@@ -343,3 +343,49 @@ describe('DeckCard 홀드 파이어 안내', () => {
   })
 })
 
+describe('DeckCard 옛 저장본의 덱', () => {
+  // 저장한 결과(SavedRun)는 그때의 응답을 그대로 박제한 기록이다. 캐시(results)와
+  // 달리 로스터 재동기화에도 앱 업데이트에도 살아남으므로, 엔진이 나중에 더한
+  // 필드는 그 JSON에 아예 없다 - TS가 필수로 선언해도 실제 값을 보장하지 못한다.
+  // 여기서 터지면 앱에 에러 바운더리가 없어 React가 트리 전체를 언마운트하고,
+  // 배경이 어두워 유저에게는 "검은 화면"으로 보인다.
+  //
+  // 아래 둘은 실제 저장소에서 읽어 온 모양이다: 솔로 레이드 결과는 게이지 필드와
+  // hold_fire_slugs만 없고, 더 오래된 유니온 결과는 플레이 지시 필드가 통째로 없다.
+  const LEGACY_SOLO = {
+    deck: ['a', 'b', 'c', 'd', 'e'],
+    total_damage: 1000,
+    burst_damage: 500,
+    normal_attack_damage: 400,
+    skill_damage: 100,
+    hold_burst_slugs: [],
+    tap_fire_slugs: [],
+    partial_charge_slugs: [],
+    partial_charge_full_rounds: {},
+    seating: {},
+  }
+
+  const LEGACY_UNION = {
+    deck: ['a', 'b', 'c', 'd', 'e'],
+    total_damage: 2000,
+    burst_damage: 500,
+    normal_attack_damage: 400,
+    skill_damage: 100,
+  }
+
+  it('hold_fire_slugs가 없는 덱도 그려진다', () => {
+    render(<DeckCard label="덱 1" deck={LEGACY_SOLO} />)
+
+    expect(screen.getByText(/총딜/)).toBeInTheDocument()
+    expect(screen.queryByTestId('hold-fire-note')).not.toBeInTheDocument()
+  })
+
+  it('플레이 지시 필드가 통째로 없는 덱도 그려진다', () => {
+    render(<DeckCard label="덱 1" deck={LEGACY_UNION} />)
+
+    expect(screen.getByText(/총딜/)).toBeInTheDocument()
+    expect(screen.queryByText(/첫 풀버스트/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/양 옆/)).not.toBeInTheDocument()
+  })
+})
+
