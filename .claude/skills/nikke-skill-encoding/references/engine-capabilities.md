@@ -1002,7 +1002,9 @@ whole fight before simulating it. So `simulate_raid` is a wrapper that calls
 `_simulate_raid_once` from the no-extension lower bound and feeds each pass's
 resolved stage table back in as `full_burst_stage_overrides` until a pass
 reproduces its own input. Results carry
-`full_burst_passes = {"passes": N, "converged": bool}`.
+`full_burst_passes = {"passes": N, "converged": bool}` (plus
+`"gauge_oscillation_damped": True` on the decks described under "Convergence is
+not guaranteed" below).
 
 That loop now iterates THREE quantities to the same fixed point. The pass count in
 `full_burst_passes` counts passes of the whole loop, so it covers all three axes.
@@ -1021,12 +1023,58 @@ went 1.24 -> 5.97 and evaluation cost 4.68x across the board. If you add a fourt
 quantity, ask first which of these two shapes it has; an opt-in quantity is
 nearly free and a universal one is not.
 
-**Convergence is not guaranteed, and that is structural.** 4 decks in 400 do not
-settle: they oscillate with period 2 because the gauge is quantized to a 0.1s
-grid and the true fixed point can sit BETWEEN two grid points, in which case the
-quantized map has no fixed point at all (changing the grid only changes which
-decks land on a boundary). 396/400 converge, max 25 passes. Do not read a
-non-converged deck as a bug in the resolver.
+**Convergence is not guaranteed, and that is structural.** 3 decks in 400 do not
+settle: they oscillate with period 2, because the true fixed point can sit
+BETWEEN two grid points, in which case the quantized map has no fixed point at
+all (changing the grid only changes which decks land on a boundary). 397/400
+converge, max 25 passes, mean 5.88. Do not read a non-converged deck as a bug in
+the resolver.
+
+**Period-2 gauge oscillation is damped, but only AFTER it is detected.** The
+loop keeps the gauge table from TWO passes back; when a pass's output equals it
+and differs from the pass's own input, that is a period-2 cycle. It then rebuilds
+one table from the SLOWER fill of each cycle (`_slower_fill_each_cycle`), runs
+exactly one more pass with it, and returns that pass's result tagged
+`full_burst_passes = {"passes": N, "converged": False,
+"gauge_oscillation_damped": True}`. The extra key appears ONLY on damped decks -
+a deck that never oscillated gets the same two-key dict as before.
+
+Four things about that design are load-bearing:
+
+- **Detect first, never damp by default.** The naive form ("if the new value is
+  within one grid step of the current one, keep the current") freezes a deck that
+  is WALKING toward its fixed point (4.0 -> 3.9 -> ... -> 3.0) at its first
+  value, a 1.0s error, and reports it converged.
+- **The slower fill, not the faster and not the mean.** The gauge exists to
+  filter out decks that cannot fill it; when the model cannot choose between two
+  adjacent grid points, erring slow is the conservative direction. The error is
+  bounded by one `GAUGE_QUANTUM_SEC` by construction. (Same reason `quantize`
+  was NOT changed to floor - see `docs/engine-gaps.md`.)
+- **A guard, or the damping hides real instability.** If the two tables differ by
+  more than one grid step on ANY cycle, this is not a quantization artifact: no
+  damping happens, the loop runs on as before, and
+  `FullBurstConvergenceWarning` fires. The grid is read from
+  `burst_gauge.GAUGE_QUANTUM_SEC` at call time, so a `--quantum` sweep moves the
+  guard with it.
+- **The gauge axis only.** Axes 1 and 2 have never been observed to oscillate;
+  damping all three would build on unobserved behavior.
+
+**What damping does NOT touch.** It compares the SAME cycle index BETWEEN
+passes. A deck whose fill time varies from cycle to cycle WITHIN one run (cycle
+1 = 4.0s, cycle 2 = 3.9s, cycle 3 = 4.0s, ...) is real physics - reload phase
+differs per cycle - and damping never looks at that axis. And a value that jumps
+4.0 -> 2.5 between passes on the same cycle is fifteen grid steps, so the guard
+refuses it and you get the warning instead of a quietly averaged number.
+
+**Measured 2026-08-22: all 3 stalling decks hit the guard, so damping fires on
+NONE of them today.** Their two alternating tables are 4 to 9 grid steps
+(0.4-0.9s) apart on several cycles - that is not a quantization artifact. The
+width is the flip side of prefix stabilization: an early cycle moving 0.1s moves
+its window's end, which moves the reload phase, which sends a whole magazine
+across a boundary in a later cycle. So the counts are unchanged (397 converged /
+0 damped / 3 stalled, max 25 passes, mean 5.88) and so is the cost. The
+machinery is live and tested but has not yet met a deck it applies to - do not
+widen the guard to make the number move; the guard IS the finding.
 
 The remaining property to preserve: **the pass count tracks FIGHT DURATION, not
 deck composition**, because each pass propagates the change one cycle further: a

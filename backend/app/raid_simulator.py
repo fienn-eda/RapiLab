@@ -893,6 +893,59 @@ def _resolve_conditional_fb_deltas(context, events, conditional_full_burst_delta
     return resolved
 
 
+def _gauge_tables_are_one_quantum_apart(one, other):
+    """두 게이지 표가 **모든 사이클에서** 격자 한 칸 이내로만 다른가.
+
+    주기 2 진동을 감쇠하기 전의 가드다. 한 사이클이라도 그보다 크게 다르면 그것은
+    양자화 인공물이 아니라 **진짜 불안정**이고, 감쇠는 그것을 숫자 하나로 덮어
+    버린다 - 그러면 무엇을 감췄는지 아무도 모른다. 가드가 걸리면 감쇠하지 않고
+    예전대로 상한까지 돌아 `FullBurstConvergenceWarning`이 뜬다.
+
+    **이 함수가 보는 축을 헷갈리면 설계를 잘못 읽는다.** 한 덱의 버스트 충전
+    시간이 4초, 3.9초, 4초, 2.5초로 흔들린다고 할 때 두 가지가 갈린다.
+    **한 번의 런 안에서 사이클마다** 다른 것이라면(사이클1=4.0, 사이클2=3.9,
+    사이클3=4.0, …) 여기 감쇠는 **아무것도 안 한다** - 그건 진짜 물리이고
+    (재장전 위상이 사이클마다 다르다) 이 비교는 그 축을 아예 안 본다.
+    **패스 사이**에서 같은 사이클이 4.0 -> 2.5로 뛰는 것이라면 1.5초가 격자 한
+    칸의 열다섯 배라 여기서 False가 되고, 감쇠하지 않는다.
+
+    무한대(전투가 끝날 때까지 못 채우는 사이클)는 양쪽이 다 무한대일 때만
+    통과한다 - 한쪽만 무한대면 차가 무한대이고, `inf - inf`를 만들지 않으려고
+    뺄셈 전에 동등성으로 걸러 낸다.
+    """
+    if one.keys() != other.keys():
+        return False
+    # 격자값끼리의 차는 격자의 배수라 「한 칸」과 「두 칸」 사이 어디에 선을 그어도
+    # 판정이 같지만, `burst_gauge.quantize`가 이진 부동소수라 한 칸이 0.1보다 아주
+    # 조금 클 수 있다 - 반 칸을 여유로 둔다. 격자는 **호출 시점에** 읽는다:
+    # `scripts/check_gauge_convergence.py --quantum`이 모듈 전역을 갈아끼운다.
+    tolerance = 1.5 * burst_gauge.GAUGE_QUANTUM_SEC
+    for cycle_index, seconds in one.items():
+        counterpart = other[cycle_index]
+        if seconds == counterpart:
+            continue
+        if seconds == float("inf") or counterpart == float("inf"):
+            return False
+        if abs(seconds - counterpart) > tolerance:
+            return False
+    return True
+
+
+def _slower_fill_each_cycle(one, other):
+    """두 게이지 표에서 사이클마다 **느린 쪽**을 골라 표 하나로 만든다.
+
+    최솟값도 평균도 아닌 이유가 이 기능의 존재 이유다: 게이지는 **못 채우는 덱을
+    걸러내려고** 모델된다. 모델이 인접한 두 격자점 사이에서 못 정하면 느린 쪽으로
+    트는 것이 보수적인 방향이다 - 덱이 실제보다 게이지를 잘 채우는 것처럼 보이지
+    않는다. 오차는 구성상 격자 한 칸(`GAUGE_QUANTUM_SEC`) 이내로 묶인다.
+
+    같은 이유로 이 브랜치는 `burst_gauge.quantize`를 내림으로 바꾸는 것을 이미
+    기각했다(`docs/engine-gaps.md`의 「1·2티어 캐스트 시각」 항목).
+    """
+    return {cycle_index: max(seconds, other[cycle_index])
+            for cycle_index, seconds in one.items()}
+
+
 def simulate_raid(*args, **kwargs):
     """한 번의 레이드 시뮬레이션. 대부분의 덱에서는 `_simulate_raid_once`를 정확히
     한 번 부르는 것과 같다.
@@ -931,24 +984,63 @@ def simulate_raid(*args, **kwargs):
     있으나 마나다. 무는 덱은 9~11패스에 몰린다(안 멈춘 46%를 뺀 나머지의 38%).
     전체로는 **중앙값 4 · 평균 5.8 · 최대 18**이다.
 
-    멈추지 않는 덱이 있다: 같은 표본에서 3덱(0.75%)이 32패스를 다 쓴다. 사이클
-    한둘의 값이 격자 한 칸씩 번갈아 뛰는 **주기 2의 극한 순환**이고, 진짜 고정점이
-    격자점 둘 사이에 있다는 뜻이다(`GAUGE_QUANTUM_SEC` 참조). 아래의
-    `FullBurstConvergenceWarning`이 그 경우를 잡는다.
+    멈추지 않는 덱이 있다: 같은 표본에서 3덱(0.75%)이 **주기 2의 극한 순환**에
+    빠진다. 진짜 고정점이 격자점 둘 사이에 있으면 양자화된 사상에는 고정점이
+    **아예 없다**(`GAUGE_QUANTUM_SEC` 참조 - 격자를 바꾸면 어느 덱이 경계에
+    앉는지만 바뀐다). 그런 순환은 아래에서 **감지한 뒤 감쇠해서** 답을 하나로
+    정한다(`_gauge_tables_are_one_quantum_apart` · `_slower_fill_each_cycle`).
+
+    **그런데 오늘의 3덱은 셋 다 감쇠 가드에 걸린다** - 두 표가 사이클마다 격자
+    4~9칸(0.4~0.9초) 벌어져 있어 양자화 인공물이 아니다(2026-08-22 측정,
+    `.superpowers/sdd/2026-08-21-burst-gauge-as-deck-property/gauge_oscillation_shape.py`).
+    폭이 큰 이유는 채움이 **접두사 안정화**라는 위 성질의 뒷면이다: 이른 사이클이
+    0.1초 밀리면 그 창의 종료가 밀리고, 재장전 위상이 밀려, 뒤 사이클에서는
+    한 매거진이 통째로 경계를 넘나든다. 그 덱들은 감쇠 없이 상한까지 돌고
+    `FullBurstConvergenceWarning`을 받는다 - 감춰지지 않는다는 것이 가드의 목적이고,
+    0.9초짜리 흔들림을 한 값으로 덮으면 오차가 격자로 안 묶인다.
+
+    감쇠로도 안 잡히는 나머지 - 주기 3 이상, 감쇠 패스가 또 다른 값을 내는 경우 -
+    도 같은 경고가 잡는다.
     """
     overrides = {}
     late_max_hp = ()
     gauge = {}
+    # 주기 2를 보려면 **직전**이 아니라 **두 패스 전**의 게이지 표가 필요하다:
+    # A -> B -> A는 이번 출력이 두 패스 전의 입력과 같을 때만 보인다.
+    gauge_two_passes_back = None
+    damped = False
     result = None
     for attempt in range(MAX_FULL_BURST_PASSES):
         result, resolved, resolved_max_hp, resolved_gauge = _simulate_raid_once(
             *args, **kwargs, full_burst_stage_overrides=overrides,
             late_flat_max_hp=late_max_hp, gauge_charge_overrides=gauge,
         )
-        if (resolved == overrides and resolved_max_hp == late_max_hp
-                and resolved_gauge == gauge):
-            result["full_burst_passes"] = {"passes": attempt + 1, "converged": True}
+        converged = (resolved == overrides and resolved_max_hp == late_max_hp
+                     and resolved_gauge == gauge)
+        # 감쇠한 표로 돈 패스는 그 자체가 답이다. 그 출력을 다시 먹이면 진동으로
+        # 돌아가고, 어느 쪽 값이 나가는지를 다시 패스 수가 정하게 된다.
+        if converged or damped:
+            passes = {"passes": attempt + 1, "converged": converged}
+            if damped:
+                # 「히스테리시스로 풀렸다」와 「진짜 고정점」은 다른 것이다 -
+                # 감쇠한 답은 오차가 격자 한 칸 안이라는 뜻이지 사상의 고정점이
+                # 아니다. 키를 따로 두지 않으면 다음 사람이 이 덱들을 수렴한
+                # 것으로 읽는다. 진동이 없던 덱에는 이 키가 아예 안 붙는다.
+                passes["gauge_oscillation_damped"] = True
+            result["full_burst_passes"] = passes
             return result
+        # 주기 2: 이번 출력이 두 패스 전의 입력과 같고 **직전 입력과는 다르다.**
+        # 뒤 조건이 없으면 게이지가 이미 멈춘 채 다른 축이 아직 걸어가는 중인
+        # 덱까지 「진동」으로 읽혀, 루프가 그 축의 고정점 전에 끊긴다.
+        #
+        # 감쇠는 **게이지 축에만** 건다. 나머지 둘(풀 버스트 확장 · 늦은
+        # flat_max_hp)은 진동하는 것이 관찰된 적이 없고, 셋 다에 걸면 관찰되지
+        # 않은 동작 위에 코드를 얹는 것이다.
+        if (resolved_gauge == gauge_two_passes_back and resolved_gauge != gauge
+                and _gauge_tables_are_one_quantum_apart(resolved_gauge, gauge)):
+            resolved_gauge = _slower_fill_each_cycle(resolved_gauge, gauge)
+            damped = True
+        gauge_two_passes_back = gauge
         overrides = resolved
         late_max_hp = resolved_max_hp
         gauge = resolved_gauge
@@ -967,8 +1059,9 @@ def simulate_raid(*args, **kwargs):
     warnings.warn(
         f"버스트 사이클 고정점이 {MAX_FULL_BURST_PASSES} 패스 안에 수렴하지 않았다 "
         f"- 축은 게이지 채움 시간 / 풀 버스트 확장 / 늦은 flat_max_hp 셋이고, "
-        f"오늘 멈추지 않는 것은 거의 언제나 **게이지**다(표본 400덱 중 3~4덱, "
-        f"격자 두 점 사이에 진짜 고정점이 앉은 주기 2의 극한 순환) "
+        f"오늘 멈추지 않는 것은 거의 언제나 **게이지**다. 격자 한 칸짜리 주기 2는 "
+        f"감쇠가 잡으므로(`gauge_oscillation_damped`), 여기까지 온 것은 주기 3 "
+        f"이상이거나 값이 격자 한 칸보다 크게 뛰어 감쇠 가드가 걸린 경우다 "
         f"(fight_duration={bound.arguments.get('fight_duration', '?')}) - "
         f"이 결과의 total_damage는 고정점이 아니다.",
         FullBurstConvergenceWarning,

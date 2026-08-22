@@ -14,7 +14,16 @@
 빨라지면 사이클이 짧아지고, 그 고리가 어느 덱을 진동으로 밀어 넣는지는 돌려 봐야
 안다. 2026-08-21 측정: 격자 0.05에서 400덱 중 18덱이 안 멈췄고 0.1에서 3덱이다.
 
-**어떻게 읽나:** `stalled`가 0이 아니면 그 덱들이 조용히 틀린 점수를 받고 있다.
+**어떻게 읽나 - 덱은 세 갈래로 갈린다.**
+
+- `converged`: 패스가 자기 입력을 재생산했다. 진짜 고정점이다.
+- `damped`: 격자 한 칸짜리 **주기 2 진동**을 `simulate_raid`가 감지해 사이클마다
+  느린 쪽으로 감쇠하고 한 패스 더 돌려 답을 정했다. 고정점은 **아니고** 오차가
+  격자 한 칸 안이다. 이 수가 **늘면** 봐야 한다 - 자연 수렴하던 덱이 감쇠 경로로
+  넘어갔다면 가드가 헐거워진 것이다.
+- `stalled`: 감쇠로도 안 잡혔다(주기 3 이상, 또는 값이 격자 한 칸보다 크게 뛰어
+  감쇠 가드가 걸린 경우). 그 덱들은 조용히 틀린 점수를 받고 있다.
+
 격자를 굵게 하는 것이 언제나 답은 아니다 - 0.2·0.25에서 다시 늘어난다. 패스
 히스토그램은 비용도 알려준다: 게이지가 한 사이클도 안 무는 덱은 2패스에 멈추고,
 무는 덱은 무는 사이클 수만큼 산다.
@@ -88,6 +97,7 @@ def main():
     # 조용해진다 - 세는 것이 목적인 여기서는 정확히 반대가 필요하다.
     warnings.simplefilter("error")
     passes = collections.Counter()
+    damped = []
     stalled = []
     for index in range(args.rounds):
         subset, label = _round_roster(specs, index, args.rounds)
@@ -106,19 +116,27 @@ def main():
                 raised += 1
                 print(f"  RAISED  {slugs}\n    {type(exc).__name__}: {exc}")
                 continue
-            passes[result["full_burst_passes"]["passes"]] += 1
+            entry = result["full_burst_passes"]
+            passes[entry["passes"]] += 1
+            if entry.get("gauge_oscillation_damped"):
+                damped.append(slugs)
+                print(f"  DAMPED  {slugs} ({entry['passes']} passes)")
         print(f"round {index} ({label}): {len(combos)} decks, {raised} did not converge")
 
-    total = sum(passes.values())
-    if total:
+    # 히스토그램·평균은 답을 낸 덱 전부(자연 수렴 + 감쇠)를 센다 - 비용은 감쇠
+    # 덱도 똑같이 지불한다. 「몇 덱이 진짜 고정점인가」는 그 아래 줄이 따로 답한다.
+    answered = sum(passes.values())
+    if answered:
         counts = sorted(passes.items())
         ordered = [n for n, count in counts for _ in range(count)]
-        mean = sum(n * count for n, count in counts) / total
+        mean = sum(n * count for n, count in counts) / answered
         print(f"\npasses: {dict(counts)}")
-        print(f"converged {total}: two-pass {100 * passes[2] / total:.0f}%, "
-              f"median {ordered[total // 2]}, mean {mean:.2f}, max {max(passes)}")
-    print(f"{len(stalled)} of {total + len(stalled)} sampled decks never reached "
-          f"a fixed point")
+        print(f"answered {answered}: two-pass {100 * passes[2] / answered:.0f}%, "
+              f"median {ordered[answered // 2]}, mean {mean:.2f}, max {max(passes)}")
+    sampled = answered + len(stalled)
+    print(f"of {sampled} sampled decks: {answered - len(damped)} converged, "
+          f"{len(damped)} settled by damping a period-2 oscillation, "
+          f"{len(stalled)} never settled at all")
     return 1 if stalled else 0
 
 

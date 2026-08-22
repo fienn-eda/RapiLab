@@ -4395,6 +4395,173 @@ def test_a_long_fight_still_reaches_a_fixed_point_with_room_to_spare():
         "상한을 다 쓰면 한 패스 더 필요한 덱이 조용히 오답을 낸다")
 
 
+# --- 게이지 축의 주기 2 진동 - 감지한 뒤에만 감쇠한다 -----------------------
+#
+# 아래 다섯은 `_simulate_raid_once`를 스텁으로 갈아끼워 게이지 표의 수열을 손으로
+# 정한다. 진짜 덱으로는 진동을 픽스처로 못 박는다 - 표본 400덱 중 셋뿐이고, 어느
+# 덱이 그 자리에 앉는지는 격자와 로스터가 정한다. 여기서 재는 것은 스케줄러가
+# 아니라 **고정점 루프가 수열을 어떻게 다루는가**다.
+#
+# 오늘 그 셋은 **전부 가드에 걸린다** - 진동 폭이 격자 4~9칸이라 양자화 인공물이
+# 아니다(2026-08-22 측정, `.superpowers/sdd/.../gauge_oscillation_shape.py`).
+# 그래서 감쇠 경로는 실덱에서 아직 한 번도 안 열렸고, 이 스텁 다섯이 그 경로가
+# 무엇을 하고 무엇을 안 하는지를 붙들고 있는 유일한 것이다.
+
+
+def _gauge_sequence_stub(monkeypatch, next_table):
+    """`_simulate_raid_once`를 게이지 표만 내는 스텁으로 갈아끼운다.
+
+    `next_table(입력표)`가 그 패스의 출력 표다. 다른 두 수렴축(풀 버스트 확장 ·
+    늦은 flat_max_hp)은 빈 채로 두어 첫 패스부터 자기 입력을 재생산한다 - 이
+    스텁이 묻는 것은 게이지 축뿐이다.
+
+    돌려주는 리스트에 패스마다 들어온 게이지 표가 순서대로 쌓인다.
+    """
+    from app import raid_simulator
+
+    seen = []
+
+    def once(*args, gauge_charge_overrides=None, **kwargs):
+        seen.append(dict(gauge_charge_overrides))
+        return ({"pass_index": len(seen)}, {}, (),
+                dict(next_table(gauge_charge_overrides)))
+
+    monkeypatch.setattr(raid_simulator, "_simulate_raid_once", once)
+    return seen
+
+
+def _alternating(first, second):
+    """A -> B -> A -> B로 영원히 번갈아 뛰는 사상. 빈 시드는 A로 간다."""
+    return lambda current: second if current == first else first
+
+
+def test_a_period_two_gauge_oscillation_settles_on_the_slower_fill_each_cycle(
+        monkeypatch):
+    """진짜 고정점이 격자점 둘 사이에 있으면 양자화된 사상에는 고정점이 **아예
+    없다** - 값이 A와 B를 영원히 오가고, 어느 쪽이 답으로 나가는지는 패스 수가
+    정한다(즉 임의다). 진동을 감지한 뒤 **사이클마다 느린 쪽**으로 표 하나를
+    만들어 한 패스 더 돌리고, 그 패스의 답을 쓴다.
+
+    A와 B가 사이클마다 **서로 반대 방향**이라(사이클 1은 B가 느리고 사이클 2는 A가
+    느리다) 답인 `{1: 3.1, 2: 4.1}`은 A도 B도 아니다 - 「둘 중 하나를 고른다」와
+    「사이클마다 빠른 쪽을 고른다」가 여기서 함께 갈린다. 느린 쪽인 이유는 이
+    기능이 **게이지를 못 채우는 덱을 걸러내려고** 존재하기 때문이다.
+    """
+    a = {1: 3.0, 2: 4.1}
+    b = {1: 3.1, 2: 4.0}
+    seen = _gauge_sequence_stub(monkeypatch, _alternating(a, b))
+
+    result = simulate_raid()
+
+    # 시드 -> A -> B(여기서 주기 2가 보인다) -> 사이클별 느린 쪽.
+    assert seen == [{}, a, b, {1: 3.1, 2: 4.1}]
+    assert result["full_burst_passes"] == {
+        "passes": 4, "converged": False, "gauge_oscillation_damped": True}
+    assert result["pass_index"] == 4, "감쇠한 표로 돈 패스의 답이 나가야 한다"
+
+
+def test_a_gauge_that_jumps_far_between_passes_is_not_damped_but_warned(monkeypatch):
+    """가드. Fienn의 질문이 갈리는 자리다 - 「덱의 버스트 충전 시간이 4초, 3.9초,
+    4초, 2.5초로 변동이 심하면 어떻게 되지?」
+
+    그 변동이 **한 번의 런 안에서 사이클마다** 다른 것이라면(사이클1=4.0,
+    사이클2=3.9, 사이클3=4.0, …) 히스테리시스는 **아무것도 안 한다.** 그건 진짜
+    물리다 - 재장전 위상이 사이클마다 다르다 - 그리고 여기 비교는 **같은 사이클
+    인덱스를 패스 사이에서** 하는 것이라 그 축을 아예 안 본다.
+
+    그 변동이 **패스 사이**에서 같은 사이클이 4.0 -> 2.5로 뛰는 것이라면 1.5초는
+    격자 한 칸(0.1초)의 열다섯 배다 - 가드가 걸려 감쇠하지 않고, 예전과 같이
+    상한까지 돌다가 경고가 뜬다. **감춰지지 않는다**는 것이 이 가드의 존재
+    이유다: 없으면 히스테리시스가 진짜 불안정을 숫자 하나로 덮는다.
+    """
+    from app.raid_simulator import (
+        MAX_FULL_BURST_PASSES,
+        FullBurstConvergenceWarning,
+    )
+
+    a = {1: 4.0, 2: 2.5}
+    b = {1: 3.9, 2: 4.0}
+    seen = _gauge_sequence_stub(monkeypatch, _alternating(a, b))
+
+    with pytest.warns(FullBurstConvergenceWarning):
+        result = simulate_raid()
+
+    assert result["full_burst_passes"] == {
+        "passes": MAX_FULL_BURST_PASSES, "converged": False}
+    # 감쇠했다면 사이클별 느린 쪽 표가 한 번은 입력으로 들어갔을 것이다. A도 B도
+    # 아닌 표라, 안 들어갔다는 것이 곧 안 감쇠했다는 것이다.
+    assert {1: 4.0, 2: 4.0} not in seen
+    assert len(seen) == MAX_FULL_BURST_PASSES
+    assert seen[1:5] == [a, b, a, b], "감쇠 없이 A와 B를 계속 오간다"
+
+
+def test_a_gauge_walking_toward_its_fixed_point_is_not_frozen_at_the_first_value(
+        monkeypatch):
+    """이 설계의 핵심 주장. **순진한 히스테리시스**(「새 값이 현재 값과 한 격자
+    이내면 현재 값을 유지」)를 쓰면 진짜 고정점을 향해 0.1초씩 걸어 내려가는 덱이
+    **첫 값에서 얼어붙는다** - 4.0에 멈춰 1.0초 오차를 안고 「수렴」이라 답한다.
+    그래서 감쇠는 **실제 진동을 감지한 뒤에만** 한다.
+
+    이 수열에는 주기 2가 없으므로 감지가 아예 안 걸리고, 루프는 감쇠가 없던 때와
+    똑같이 3.0까지 걸어가 거기서 자기 입력을 재생산한다.
+    """
+    walk = [4.0, 3.9, 3.8, 3.7, 3.6, 3.5, 3.4, 3.3, 3.2, 3.1, 3.0]
+
+    def next_table(current):
+        if not current:
+            return {1: walk[0]}
+        return {1: walk[min(walk.index(current[1]) + 1, len(walk) - 1)]}
+
+    seen = _gauge_sequence_stub(monkeypatch, next_table)
+
+    result = simulate_raid()
+
+    assert result["full_burst_passes"] == {"passes": len(walk) + 1, "converged": True}
+    assert seen[-1] == {1: 3.0}, "고정점까지 걸어가야 한다 - 첫 값에서 얼면 1.0초 틀린다"
+
+
+def test_the_damping_guard_widens_with_the_gauge_grid(monkeypatch):
+    """가드의 폭은 `burst_gauge.GAUGE_QUANTUM_SEC`에서 **호출 시점에** 읽는다.
+    0.1을 박아 두면 `check_gauge_convergence.py --quantum`이 격자를 갈아끼운
+    스윕에서 가드만 옛 격자로 남아, 굵은 격자에서의 정상적인 한 칸 차이를 「진짜
+    불안정」으로 오독하고 감쇠를 거부한다."""
+    from app import burst_gauge
+
+    monkeypatch.setattr(burst_gauge, "GAUGE_QUANTUM_SEC", 0.5)
+    a = {1: 3.0, 2: 4.5}
+    b = {1: 3.5, 2: 4.0}
+    seen = _gauge_sequence_stub(monkeypatch, _alternating(a, b))
+
+    result = simulate_raid()
+
+    assert seen[-1] == {1: 3.5, 2: 4.5}
+    assert result["full_burst_passes"]["gauge_oscillation_damped"] is True
+
+
+def test_a_settled_gauge_does_not_cut_short_another_axis_still_converging(monkeypatch):
+    """게이지가 세 패스째 같은 값이어도 그것은 진동이 아니다 - 주기 2는 값이
+    **번갈아 뛸** 때만이다. 게이지가 이미 멈춘 채 풀 버스트 확장 축이 아직
+    걸어가는 중인데 그것을 진동으로 읽으면, 루프가 확장 축의 고정점 **전에**
+    감쇠 패스 하나로 끊긴다."""
+    from app import raid_simulator
+
+    stages = [{}, {"a": 1}, {"a": 2}, {"a": 3}, {"a": 4}, {"a": 5}, {"a": 5}]
+    seen = []
+
+    def once(*args, full_burst_stage_overrides=None, gauge_charge_overrides=None,
+             **kwargs):
+        seen.append(dict(full_burst_stage_overrides))
+        return ({"pass_index": len(seen)},
+                dict(stages[min(len(seen), len(stages) - 1)]), (), {1: 3.0})
+
+    monkeypatch.setattr(raid_simulator, "_simulate_raid_once", once)
+
+    result = simulate_raid()
+
+    assert result["full_burst_passes"] == {"passes": 6, "converged": True}
+    assert seen[-1] == {"a": 5}
+
+
 def test_target_grants_are_absent_unless_asked_for():
     # 계측이 기본 off라는 것이 탐색 핫패스 무변경의 증거다.
     result = simulate_raid(
