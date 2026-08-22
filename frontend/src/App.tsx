@@ -386,7 +386,16 @@ function App() {
             니케 {validRoster.length}/{drafts.length}기 준비 완료
           </span>
         )}
-        <PrivacyNotice />
+
+        {/* 큐브 가정을 방침 토글과 같은 줄에 둔다 - 둘 다 「이 앱이 무엇을
+            전제하는가」에 대한 고지이고, 접힌 안쪽에 넣으면 펼쳐야 보이는
+            고지가 된다. */}
+        <div className="app__footer-line">
+          <PrivacyNotice />
+          <p className="app__note">
+            <HelpText>{HELP.app.cubeAssumption}</HelpText>
+          </p>
+        </div>
 
         {/* 출처 고지는 접지 않는다 - 펼쳐야 보이는 고지는 고지가 아니다. */}
         <p className="app__attribution">

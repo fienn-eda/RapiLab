@@ -63,6 +63,19 @@ describe('App', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'RapiLab' })).toBeInTheDocument()
   })
 
+  it('states the harmony cube assumption in the footer, outside the privacy fold', async () => {
+    // The 계산기 tab asks which cube the unit wears, so an unqualified "every
+    // Nikke wears a reload cube" is a claim the app contradicts on that screen.
+    //
+    // It moved out of the masthead on 2026-08-22, and where it landed is the
+    // point: beside the privacy toggle but NOT inside it. A disclosure you have
+    // to expand is not a disclosure - the same rule the attribution lines keep.
+    await renderSettled(<App />)
+    const footer = screen.getByRole('contentinfo')
+    const note = within(footer).getByText(HELP.app.cubeAssumption)
+    expect(note.closest('details')).toBeNull()
+  })
+
   it('prompts to sync and hides the roster/recommend panel when there is no active profile', async () => {
     await renderSettled(<App />)
     expect(screen.getByText(HELP.app.noProfiles)).toBeInTheDocument()
