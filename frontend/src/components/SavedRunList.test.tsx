@@ -174,11 +174,13 @@ describe('SavedRunList 열다가 터졌을 때', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  // 열 수 없는 보관물을 손에 쥔 유저에게 남는 유일한 수가 이것이다. 이것이 없으면
-  // localStorage를 통째로 지우는 것 말고는 빠져나올 길이 없다.
-  it('안내에서 그 보관물을 지울 수 있다', async () => {
+  // 열 수 없는 보관물을 손에 쥔 유저에게 남는 유일한 수가 삭제다. 이것이 없으면
+  // localStorage를 통째로 지우는 것 말고는 빠져나올 길이 없다. 그 버튼은 울타리
+  // **바깥**에 있어야 살아남는다 - 안쪽에 있으면 폴백이 그것까지 걷어낸다.
+  it('안내가 떠도 그 보관물을 지우는 길이 남아 있다', async () => {
     const user = userEvent.setup()
     const onDelete = vi.fn()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(
       <SavedRunList
         runs={[run({ id: 'bad', name: '깨진 보관물' })]}
@@ -190,9 +192,28 @@ describe('SavedRunList 열다가 터졌을 때', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /깨진 보관물/ }))
-    await user.click(screen.getByRole('button', { name: '이 보관물 삭제' }))
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '삭제' }))
 
     expect(onDelete).toHaveBeenCalledWith('bad')
+  })
+
+  // 같은 자리에 삭제가 둘이면 안 된다 - 하나만 확인을 묻는 상태로 갈리기 때문이다.
+  it('안내가 삭제 버튼을 하나 더 만들지 않는다', async () => {
+    const user = userEvent.setup()
+    render(
+      <SavedRunList
+        runs={[run({ id: 'bad', name: '깨진 보관물' })]}
+        renderRun={() => <Boom />}
+        onRestore={noop}
+        onRename={noop}
+        onDelete={noop}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /깨진 보관물/ }))
+
+    expect(screen.getAllByRole('button', { name: /삭제/ })).toHaveLength(1)
   })
 
   // 이번 사고를 가른 정보가 정확히 이것이었다: 그 덱이 실제로 무슨 키를 갖고

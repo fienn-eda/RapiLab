@@ -131,8 +131,12 @@ export function SavedRunList({
                   들어오는 것은 구조적으로 막을 수 없고(로스터 재동기화에도 앱
                   업데이트에도 살아남는 것이 이 기능의 요점이다), 2026-08-22에는
                   그것이 트리 전체를 언마운트시켜 검은 화면이 됐다. 울타리를
-                  항목마다 두는 이유가 그것이다 - 하나가 못 열려도 나머지는
-                  열리고, 유저에게는 빠져나올 수(삭제)가 남는다. */}
+                  항목마다 두는 이유가 그것이다 - 하나가 못 열려도 나머지는 열린다.
+
+                  빠져나올 수는 울타리가 따로 주지 않는다: 위 saved-runs__actions
+                  줄이 울타리 **바깥**이라 못 열리는 항목에서도 살아 있고, 거기
+                  삭제는 확인 대화상자를 거친다. 울타리가 삭제를 하나 더 달면 같은
+                  자리에 버튼이 둘이 되고 그중 하나만 확인을 안 묻는다. */}
               <ErrorBoundary
                 title={`「${run.name}」은(는) 열 수 없습니다`}
                 context={{
@@ -145,11 +149,6 @@ export function SavedRunList({
                     '덱이 가진 키': deckFieldNames(run),
                   },
                 }}
-                actions={
-                  <button type="button" className="btn" onClick={() => onDelete(run.id)}>
-                    이 보관물 삭제
-                  </button>
-                }
               >
                 {renderRun(run)}
               </ErrorBoundary>
