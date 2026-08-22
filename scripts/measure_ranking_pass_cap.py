@@ -85,6 +85,63 @@ def _inversions(order, totals):
     return bad
 
 
+def _allocation_ab(specs, boss, units, num_decks):
+    """추천 한 판을 캡 없이 / 캡 있이 돌려 벽시계와 **추천 결과 자체**를 대조한다.
+
+    덱 표집이 답하는 것은 「점수의 순위가 같은가」지 「추천이 같은가」가 아니다.
+    할당은 프루닝 · 캐스케이드 · 그리디 · 스왑 힐클라임을 거치며 매 단계가 랭킹
+    점수를 읽으므로, 오차가 어디선가 증폭될 수도 상쇄될 수도 있다 - 그건 통째로
+    돌려 봐야 안다.
+
+    **직렬로** 돈다: 워커는 자기 인터프리터에서 `app.deck_search`를 다시
+    import하므로 부모가 바꾼 `RANKING_MAX_PASSES`를 못 본다. 풀을 쓰면 「캡 없음」
+    팔이 실제로는 캡을 쓰게 되어 A/B가 조용히 무너진다. 직렬이라 전체 로스터는
+    몇 시간이므로 `units`개로 줄여 쓴다 - 전달 가능한 값은 절대 시간이 아니라
+    **비율과 「추천이 같았는가」**다.
+    """
+    import random
+
+    import app.deck_search as ds
+    from app.deck_allocation import allocate_decks
+
+    # 알파벳 앞쪽을 자르면 표본이 한쪽으로 쏠린다(그 함정에 한 번 빠졌다) -
+    # 시드 고정 무작위 부분집합을 쓰고, 세 티어가 다 남았는지 확인한다.
+    subset = random.Random(FIT_SEED).sample(specs, min(units, len(specs)))
+    if {u.burst_tier for u in subset} < {1, 2, 3}:
+        raise SystemExit(f"--end-to-end {units}: 부분집합에 티어가 다 없다 - 늘릴 것")
+
+    shipped = ds.RANKING_MAX_PASSES
+    runs = {}
+    for label, cap in (("uncapped", None), (f"cap {shipped}", shipped)):
+        ds.RANKING_MAX_PASSES = cap
+        t0 = time.perf_counter()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", FullBurstConvergenceWarning)
+            result = allocate_decks(subset, boss, num_decks=num_decks)
+        runs[label] = (time.perf_counter() - t0, result)
+    ds.RANKING_MAX_PASSES = shipped
+
+    print(f"\nend-to-end A/B: {len(subset)} units, {num_decks} decks, serial")
+    for label, (elapsed, result) in runs.items():
+        total = sum(d["total_damage"] for d in result["decks"])
+        print(f"  {label:>10}: {elapsed:7.1f}s   allocation damage {total:,.0f}")
+    (slow, before), (fast, after) = runs.values()
+    print(f"  speedup {slow / fast:.2f}x")
+    same = ([d["deck"] for d in before["decks"]]
+            == [d["deck"] for d in after["decks"]])
+    print(f"  same recommendation: {same}")
+    if not same:
+        # 편성이 갈렸으면 총딜 차이가 그 대가다 - 두 총딜 모두 보고 경로(고정점)에서
+        # 나오므로 비교 가능한 값이다.
+        loss = (sum(d["total_damage"] for d in before["decks"])
+                - sum(d["total_damage"] for d in after["decks"]))
+        print(f"  damage given up by the capped run: {loss:,.0f} "
+              f"({loss / sum(d['total_damage'] for d in before['decks']) * 100:+.3f}%)")
+        for label, result in (("uncapped", before), ("capped", after)):
+            for i, deck in enumerate(result["decks"]):
+                print(f"    {label:>8} deck {i}: {deck['deck']}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     add_roster_argument(parser)
@@ -99,6 +156,14 @@ def main():
                         choices=["Fire", "Water", "Wind", "Iron", "Electric"])
     parser.add_argument("--enemy-def", type=float, default=31784.0)
     parser.add_argument("--duration", type=float, default=180.0)
+    parser.add_argument("--end-to-end", type=int, metavar="UNITS", default=None,
+                        help="덱 표집 대신(또는 뒤이어) 추천 한 판을 캡 없이/있이 "
+                             "돌려 벽시계와 추천 결과 자체를 대조한다. 직렬 A/B라 "
+                             "로스터를 UNITS개로 줄여 쓴다")
+    parser.add_argument("--end-to-end-decks", type=int, default=2,
+                        help="--end-to-end가 배분할 덱 수 (기본 2)")
+    parser.add_argument("--skip-sampling", action="store_true",
+                        help="덱 표집 대조를 건너뛴다 (--end-to-end만 볼 때)")
     args = parser.parse_args()
 
     states = real_roster(args.roster)
@@ -107,9 +172,14 @@ def main():
     specs, _ = load_roster(states)
     boss = BossProfile(element=args.element, core_hittable=True,
                        enemy_def=args.enemy_def, fight_duration=args.duration)
+    print(f"roster {len(specs)} usable; boss {args.element} {args.duration:.0f}s")
+    if args.skip_sampling:
+        if args.end_to_end is None:
+            raise SystemExit("--skip-sampling은 --end-to-end와 함께 쓸 때만 뜻이 있다")
+        _allocation_ab(specs, boss, args.end_to_end, args.end_to_end_decks)
+        return
     decks = sample_feasible_combinations(specs, args.decks, seed=FIT_SEED)
-    print(f"roster {len(specs)} usable; boss {args.element} {args.duration:.0f}s; "
-          f"{len(decks)} sampled decks (seed {FIT_SEED})\n")
+    print(f"{len(decks)} sampled decks (seed {FIT_SEED})\n")
 
     base_totals, base_passes, base_t, base_stalled = _score(decks, boss, None)
     n = len(decks)
@@ -142,6 +212,9 @@ def main():
               f"top-{args.top_n} set kept: {set(order[:args.top_n]) == base_top}")
         print(f"  inversions {_inversions(base_order, totals)}/{pairs}   "
               f"largest rank move {moved}")
+
+    if args.end_to_end is not None:
+        _allocation_ab(specs, boss, args.end_to_end, args.end_to_end_decks)
 
 
 if __name__ == "__main__":
