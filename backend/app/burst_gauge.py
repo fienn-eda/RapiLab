@@ -70,6 +70,19 @@ def energy_per_hit(weapon_stats, *, full_charge):
     return energy * multiplier if multiplier > 1 else energy
 
 
+def _skill_hit(entry):
+    """스킬 타격 하나를 `(시각, 타격 수, 선언된 에너지 또는 None)`로 편다.
+
+    형식이 둘인 이유는 **선언이 예외이기 때문**이다. 「스킬이 만드는 타격은 그
+    유닛 무기의 기본값을 준다」를 세운 실측 셋(헬름 애장품 추댐 · 리버렐리오
+    라이더 · 헤비암즈 오토파이어)은 전부 **자기 무기와 같은 종류의 타격**이었고,
+    그 셋이 안 덮는 것 - **다른 무기로 발사되는 발사체** - 만 값을 스스로
+    말한다. 라피: 레드 후드의 부착형 유탄이 그것이다(MG를 든 그녀가 런처로
+    쏜다). 2튜플은 「기본값을 쓴다」는 뜻이고, 오늘 대부분의 호출자가 그것이다.
+    """
+    return entry[0], entry[1], (entry[2] if len(entry) > 2 else None)
+
+
 def quantize(seconds):
     """채움 시간을 고정점이 멈출 수 있는 격자로 내린다."""
     return round(seconds / GAUGE_QUANTUM_SEC) * GAUGE_QUANTUM_SEC
@@ -83,14 +96,22 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     `shots_by_slug`는 `{슬러그: [(시각, 톡톡이 여부), ...]}`. 대미지 경로와
     직교한다 - 코어히트도 크리티컬도 ATK도 적 DEF도 여기 안 들어온다.
 
-    `skill_hits_by_slug`(`{슬러그: [(시각, 타격 수), ...]}`)는 **무기가 쏘지
-    않은** 타격이다 - 라이더(자기 타격에 얹히는 추가 대미지)·드론·오토파이어·
+    `skill_hits_by_slug`(`{슬러그: [(시각, 타격 수[, 에너지]), ...]}`)는 **무기가
+    쏘지 않은** 타격이다 - 라이더(자기 타격에 얹히는 추가 대미지)·드론·오토파이어·
     주기 타격. 값은 유닛별 표가 아니라 **그 유닛 무기의 기본 에너지** 하나이고,
     세 유닛이 독립적으로 그것을 준다(헬름의 애장품 추댐 1.000x · 리버렐리오의
     5회 라이더 1.015x/1.035x · 헤비암즈의 오토파이어 1.015x; measurements/
     burst-gauge-fill.md 「정정」·「증분만으로 한 전수 검산」). 풀차지 배율은
     **그 유닛의 무기가 쏜 샷**에만 붙으므로 여기 있는 타격은 배율을 안 받고,
     탄약을 안 쓰므로 아군 누적 소모탄 카운터에 0을 기여한다.
+
+    **셋째 원소는 그 기본값을 덮는 선언이다**(`_skill_hit`). 위 실측 셋이 전부
+    **자기 무기와 같은 종류의 타격**이라 그것이 안 덮는 경우 - **다른 무기로
+    발사되는 발사체** - 만 자기 값을 말한다. 오늘 그것은 라피: 레드 후드의
+    부착형 유탄 하나이고(MG를 든 그녀가 런처로 쏜다, 12,500), 실측이 값을
+    가뒀다(단독편성 840발 + 부착 직전 174px). 선언된 에너지도 **게이지 충전 속도
+    배율은 그대로 받는다** - 그 배율은 「게이지가 차는 속도」이지 「무기 타격의
+    속도」가 아니라서다.
 
     `bonus_fills`는 무기 타격과 다른 채움원 - 「어떤 트리거에 게이지의 X%를
     얹는다」 - 목록이다. 원소가 **어느 키를 갖는가**가 트리거 종류를 말한다.
@@ -201,7 +222,7 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
     # **이름으로** 말한다 - 스킬 타격을 톡톡이 불리언에 태우면 값은 맞지만 읽는
     # 사람이 「이건 부분 차지 샷이구나」로 틀린다.
     merged = sorted(
-        [(time, slug, "tap" if is_tap else "charged", 1, rounds)
+        [(time, slug, "tap" if is_tap else "charged", 1, rounds, None)
          for slug, shots in shots_by_slug.items()
          # `strict=True`: 두 목록은 같은 `shot_records`에서 나오므로 프로덕션에선
          # 항상 나란하다. 어긋나는 날 `zip`이 잘라 버리면 **게이지에서만** 샷이
@@ -209,9 +230,9 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
          for (time, is_tap), rounds in zip(
              shots, ammo_rounds_by_slug.get(slug) or [1.0] * len(shots),
              strict=True)]
-        + [(time, slug, "skill", count, 0.0)
+        + [(time, slug, "skill", count, 0.0, declared)
            for slug, hits in (skill_hits_by_slug or {}).items()
-           for time, count in hits]
+           for time, count, declared in map(_skill_hit, hits)]
     )
     # 트리거 종류로 미리 갈라 둔다 - 샷마다 두 종류를 다시 판별하지 않고,
     # 아군 소모탄 원이 없는 덱은 아래 누적합도 아예 안 만든다.
@@ -232,15 +253,17 @@ def fill_times(shots_by_slug, full_burst_ends, *, weapon_stats, fight_duration,
         # 가득 차는 순간에 덮어쓴다. 안 덮이면 그 사이클은 전투가 끝날 때까지
         # 못 채운다는 뜻이고, 무한대가 그것을 스케줄러에 말하는 방식이다.
         out[cycle_index + 1] = float("inf")
-        for time, slug, kind, hits, rounds in merged:
+        for time, slug, kind, hits, rounds, declared in merged:
             if time < end:
                 continue
             if time >= fight_duration:
                 break
             base, charged = per_hit.get(slug, (0.0, 0.0))
             # 풀차지 배율은 **그 유닛의 무기가 쏜** 샷에만 붙는다 - 톡톡이도
-            # 스킬 타격도 기본값이다.
-            energy = charged if kind == "charged" else base
+            # 스킬 타격도 기본값이다. 다만 스킬 타격이 **자기 무기가 아닌 것으로**
+            # 발사되면 그 값을 스스로 선언한다(`_skill_hit`).
+            energy = declared if declared is not None else (
+                charged if kind == "charged" else base)
             gauge += energy * hits * speed_multiplier_at(slug, time)
             if ally_round_fills:
                 before = ally_rounds

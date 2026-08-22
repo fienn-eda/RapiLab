@@ -334,6 +334,43 @@ def test_skill_hits_never_take_the_charge_multiplier():
                       skill_hits_by_slug=hits) == {1: pytest.approx(3.0)}
 
 
+def test_skill_hit_can_declare_its_own_energy():
+    """자기 무기와 **다른 종류**로 발사되는 타격은 그 무기의 기본값이 아니다.
+
+    「스킬이 만드는 타격은 그 유닛 무기의 기본값을 준다」를 세운 실측 셋(헬름
+    애장품 추댐 · 리버렐리오 라이더 · 헤비암즈 오토파이어)은 전부 **자기 무기와
+    같은 종류의 타격**이었다. 라피: 레드 후드의 부착형 유탄은 MG를 든 그녀가
+    **런처로 쏘는 것**이고, 단독편성 840발 실측이 MG값 500이 아니라 12,500을
+    요구한다(docs/measurements/burst-gauge-fill.md).
+
+    선언이 **없으면** 기존대로 그 유닛 무기의 기본값을 쓴다 - 위 테스트들이
+    그것을 지킨다.
+    """
+    stats = {"a": {"burst_energy_pershot": 100_000, "charge_damage_percent": 250.0}}
+    # 기본값(100,000)으로 세면 두 타격은 200,000이라 한참 모자라고, 선언된
+    # 250,000으로 세야 두 번째 타격에서 정확히 가득 찬다.
+    got = fill_times({"a": []}, [10.0], weapon_stats=stats, fight_duration=60.0,
+                     skill_hits_by_slug={"a": [(11.0, 1, 250_000),
+                                               (12.0, 1, 250_000)]})
+    assert got == {1: pytest.approx(2.0)}
+
+
+def test_declared_skill_hit_energy_still_takes_the_fill_speed_multiplier():
+    """선언된 에너지도 「버스트 게이지 충전 속도」 배율을 받는다.
+
+    배율은 **게이지가 차는 속도**에 걸리는 것이지 「무기 타격의 속도」가 아니다
+    (기존 결정 D6). 선언 경로만 배율을 건너뛰면 아니스가 있는 덱에서 라피의
+    유탄만 조용히 느려진다.
+    """
+    stats = {"a": {"burst_energy_pershot": 100_000, "charge_damage_percent": 250.0}}
+    hits = {"a": [(11.0, 1, 200_000), (12.0, 1, 200_000), (13.0, 1, 200_000)]}
+    assert fill_times({"a": []}, [10.0], weapon_stats=stats, fight_duration=60.0,
+                      skill_hits_by_slug=hits) == {1: pytest.approx(3.0)}
+    assert fill_times({"a": []}, [10.0], weapon_stats=stats, fight_duration=60.0,
+                      skill_hits_by_slug=hits,
+                      speed_multiplier_at=lambda slug, time: 1.5) == {1: pytest.approx(2.0)}
+
+
 def test_skill_hits_take_the_gauge_fill_speed_multiplier():
     """「버스트 게이지 충전 속도」가 무기 타격만 빠르게 한다고 볼 근거가 없다 -
     스킬 타격에도 같은 배율이 걸린다(컨트롤러 결정 D6).

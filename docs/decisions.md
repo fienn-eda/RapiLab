@@ -5,6 +5,38 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## A skill hit may DECLARE its gauge energy, instead of always taking the unit's own
+- Date: 2026-08-22
+- Context: The gauge gives every skill-made hit the caster's own weapon base energy.
+  The three readings that established that rule (Helm's favourite-item rider,
+  Rebellion's 5-hit rider, Heavy Arms' Auto Fire) are all hits of **the same weapon
+  kind the unit carries**, so they say nothing about a skill that fires something
+  else. Rapi: Red Hood carries an MG (500) but her Attachable Projectiles skill
+  **launches a grenade**, and a solo reading (840 shots = 7 grenades; the 7th's
+  attach flipping short-of-full to full; the pre-attach bar at 174px) pins its
+  energy to [12,150, 12,623] — 25x the value the engine was using.
+- Decision: Let the recording site declare it — a `gauge_energy` key on the
+  scheduled-nuke spec rides `record()` into the `damage_log` row, and
+  `_gauge_skill_hits` emits `(time, count, energy)` triples that `fill_times` uses
+  in place of the base value. Omitting it changes nothing.
+  `rapi_red_hood.ATTACHMENT_GAUGE_ENERGY = 12_500`, the only value the collected RL
+  set holds inside the measured band.
+- Why: The alternative was to fold the ratio into the existing `gauge_hits`
+  multiplier (declare the grenade as 25 hits). That needs no engine change at all,
+  but it writes an energy ratio into a field whose name and docstring say **hit
+  count**, and it only works because 12,500 happens to divide by 500 — the next
+  unit would not be so lucky. Declaring the energy says what is true.
+- Consequences: `skill_hits_by_slug` entries are now `(time, count)` OR
+  `(time, count, energy)`; `_skill_hit` normalises them, so every existing caller is
+  untouched. Log rows carry `gauge_energy` (None almost always), which broke seven
+  `test_raid_simulator.py` tests that compare whole rows — that is the guard working,
+  and their expectations were updated. The declared energy still takes the
+  fill-speed multiplier. **Not declared on hits that land inside the Full Burst
+  window** (Red Hood's explosion is "When entering Full Burst"), where it would be
+  dead code that reads as live. Deck 1's fill goes 2.692 → 2.662s. **A census is
+  owed**: nobody has checked which other skills fire a weapon the caster does not
+  carry.
+
 ## 게이지 진동은 **감지한 뒤에만** 감쇠한다 — 순진한 히스테리시스는 기각, 가드는 필수
 
 - Date: 2026-08-22

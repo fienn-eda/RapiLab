@@ -151,6 +151,26 @@ def build_battlefield_assessment_rules(values: dict) -> list[SkillRule]:
     ]
 
 
+# 부착 타격 하나가 게이지에 넣는 에너지. **그녀의 MG값(500)이 아니다** - 부착형
+# 유탄은 MG가 아니라 **런처로 발사되는 발사체**이고, 「스킬이 만드는 타격은 그 유닛
+# 무기의 기본값을 준다」를 세운 실측 셋(헬름 애장품 추댐 · 리버렐리오 라이더 ·
+# 헤비암즈 오토파이어)은 전부 자기 무기와 **같은 종류**의 타격이라 이 경우를 안
+# 덮는다.
+#
+# 실측이 값을 가둔다(Fienn, 2026-08-22, docs/measurements/burst-gauge-fill.md):
+# 단독편성 840발(= 유탄 정확히 7개)에서 7번째 부착 **직전은 미달 · 직후는 완충**
+# 이므로 `840 x 500 + 7X >= 500,000`과 `840 x 500 + 6X < 500,000`이 X를
+# [11,429, 13,333)로 가두고, 부착 **직전** 게이지 174px(176px 척도)이 그것을
+# **[12,150, 12,623]**으로 좁힌다. 그 범위 안에서 RL 무기군에 실재하는 값은
+# 12,500 하나다(수집 86정: 2,250 · 7,500 · 12,500 · 14,000 x6 · 14,500 ·
+# 15,000 x2 · 18,200 · 34,500).
+#
+# **라피의 데이터에는 근거가 없다** - 그녀의 `detail`엔 `shot_detail`이 MG 하나
+# 뿐이고(`burst_energy_pershot=500`) 유탄 레코드가 아예 없어서, 이 값은 실측으로만
+# 정해진다. 더 정밀한 판독이 오면 이 상수 하나만 고치면 된다.
+ATTACHMENT_GAUGE_ENERGY = 12_500
+
+
 def build_attachable_projectiles_rules(values: dict) -> list[SkillRule]:
     projectile_attachment_up = float(values["description_value_01"]) / 100
     projectile_explosion_up = float(values["description_value_02"]) / 100
@@ -214,7 +234,11 @@ def build_attachable_projectiles_scheduled_nukes(
 
     return [
         {"schedule": attach_times, "percent": attach_percent,
-         "damage_type": "projectile_attachment"},
+         "damage_type": "projectile_attachment",
+         "gauge_energy": ATTACHMENT_GAUGE_ENERGY},
+        # 폭발은 선언하지 않는다 - 원문이 "When entering Full Burst, the
+        # projectiles explode"라 창 **안**에서 터지고 게이지는 창 밖에서만 찬다.
+        # 값을 붙이면 세어지지 않는 타격에 붙는 것이라 조용히 죽는 코드가 된다.
         {"schedule": explosion_times, "percent": explosion_percent,
          "damage_type": "projectile_explosion"},
     ]

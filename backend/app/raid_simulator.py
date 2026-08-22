@@ -281,7 +281,13 @@ UNTIL_NEXT_OWN_BURST = "until_next_own_burst"
 
 
 def _gauge_skill_hits(damage_log):
-    """{슬러그: [(시각, 타격 수), ...]} - 무기가 쏘지 않은, 게이지를 채우는 타격.
+    """{슬러그: [(시각, 타격 수, 선언된 에너지), ...]} - 무기가 쏘지 않은,
+    게이지를 채우는 타격.
+
+    셋째는 거의 언제나 `None`이고, 그것은 「그 유닛 무기의 기본값을 쓴다」는
+    뜻이다. 값을 말하는 것은 **자기 무기가 아닌 것으로** 발사되는 타격뿐이다 -
+    오늘은 라피: 레드 후드의 부착형 유탄 하나(`ATTACHMENT_GAUGE_ENERGY`).
+    기록하는 자리에서 선언하지 `damage_type`으로 추론하지 않는다.
 
     라이더·드론·오토파이어·주기 타격은 전부 여기서 나온다. 63슬러그짜리 손 표를
     쓰지 않는 이유는 `damage_log`가 이미 「누가 언제 몇 번 때렸는가」를 알기
@@ -309,7 +315,8 @@ def _gauge_skill_hits(damage_log):
         # `.get`으로 읽는 것은 나중에 다른 경로가 행을 만들 때 `KeyError`보다
         # 「1타로 센다」로 넘어가는 쪽이 맞기 때문이다.
         hits.setdefault(entry["slug"], []).append(
-            (entry["time"], entry.get("gauge_hits", 1)))
+            (entry["time"], entry.get("gauge_hits", 1),
+             entry.get("gauge_energy")))
     return hits
 
 
@@ -1581,6 +1588,7 @@ def _simulate_raid_once(
         weapon=None,
         damage_type_gate=None,
         gauge_hits=1,
+        gauge_energy=None,
     ):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
@@ -1591,6 +1599,13 @@ def _simulate_raid_once(
             # what `percent` already expresses. Declared at the recording site,
             # never inferred from `damage_type`.
             "gauge_hits": gauge_hits,
+            # 이 타격이 게이지에 넣는 에너지. `None` = 그 유닛 무기의 기본값을
+            # 쓴다(오늘 거의 전부). 값을 말하는 것은 **자기 무기가 아닌 것으로**
+            # 발사되는 타격뿐이다 - 라피: 레드 후드의 부착형 유탄이 MG를 든
+            # 그녀가 런처로 쏘는 것이라 12,500을 선언한다(실측 2026-08-22,
+            # docs/measurements/burst-gauge-fill.md). 기록하는 자리에서 선언하지
+            # `damage_type`으로 추론하지 않는다 - `gauge_hits`와 같은 이유다.
+            "gauge_energy": gauge_energy,
             "damage_type": damage_type, "extra_charge_bonus": extra_charge_bonus,
             "resource_gate": resource_gate, "extra_flat_atk": extra_flat_atk,
             # Whether `damage_type` actually applies to this instance, answered
@@ -2606,7 +2621,8 @@ def _simulate_raid_once(
                     continue
                 record(slug, spec["percent"], hit_time, "scheduled",
                        damage_type=damage_type, resource_gate=resource_gate,
-                       core_eligible_override=spec.get("core_eligible"))
+                       core_eligible_override=spec.get("core_eligible"),
+                       gauge_energy=spec.get("gauge_energy"))
 
     def _normal_attack_percent(ev):
         # Normal Attack Damage Multiplier is a Final ATK modifier on the
@@ -2662,6 +2678,7 @@ def _simulate_raid_once(
                 "source": ev["source"],
                 "damage_type": damage_type,
                 "gauge_hits": ev["gauge_hits"],
+                "gauge_energy": ev["gauge_energy"],
             }
 
         pierces = (

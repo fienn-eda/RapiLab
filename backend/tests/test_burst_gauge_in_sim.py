@@ -285,6 +285,49 @@ def test_skill_hits_charge_the_gauge_and_the_declared_count_multiplies():
     assert logged == {8}
 
 
+def _every_second(context, fight_duration):
+    return [float(t) for t in range(1, int(fight_duration))]
+
+
+def test_a_scheduled_hit_can_declare_its_own_gauge_energy():
+    """자기 무기가 **아닌 것**으로 발사되는 타격은 자기 게이지 값을 선언한다.
+
+    「스킬이 만드는 타격은 그 유닛 무기의 기본값을 준다」를 세운 실측 셋(헬름
+    애장품 추댐 · 리버렐리오 라이더 · 헤비암즈 오토파이어)은 전부 자기 무기와
+    같은 종류의 타격이었다. 라피: 레드 후드의 부착형 유탄은 MG(500)를 든 그녀가
+    **런처로 쏘는 것**이고 단독편성 840발 실측이 12,500을 요구한다
+    (docs/measurements/burst-gauge-fill.md).
+
+    스펙에 키만 싣고 `record`나 `fill_times`가 안 읽는 구현은 두 게이지가 같아져
+    여기서 걸린다 - 그것이 이 배선의 유일한 실패 모드다.
+    """
+    deck_and_stats = _synthetic_deck("MG", burst_energy=500)
+    deck, _ = deck_and_stats
+    spec = {"schedule": _every_second, "percent": 100.0}
+    plain = _computed_gauge(deck_and_stats,
+                            scheduled_nukes={deck[0]["slug"]: [dict(spec)]})
+    declared = _computed_gauge(
+        deck_and_stats,
+        scheduled_nukes={deck[0]["slug"]: [dict(spec, gauge_energy=12_500)]})
+    assert plain and declared
+    assert min(declared.values()) < min(plain.values())
+
+
+def test_a_declared_gauge_energy_reaches_the_damage_log():
+    """선언이 로그 행까지 실린다 - `fill_times`가 읽는 자리가 거기다."""
+    deck_and_stats = _synthetic_deck("MG", burst_energy=500)
+    deck, _ = deck_and_stats
+    result = _synthetic_result(deck_and_stats, scheduled_nukes={
+        deck[0]["slug"]: [{"schedule": _every_second, "percent": 100.0,
+                           "gauge_energy": 12_500}]})
+    declared = {entry.get("gauge_energy") for entry in result["damage_log"]
+                if entry["source"] == "scheduled"}
+    assert declared == {12_500}
+    # 평타는 선언하지 않는다 - 무기 자기 값을 쓴다.
+    assert {entry.get("gauge_energy") for entry in result["damage_log"]
+            if entry["source"] == "normal_attack"} == {None}
+
+
 def test_a_dot_tick_charges_nothing_but_a_distributed_hit_charges():
     """`GAUGE_INERT_DAMAGE_TYPES`가 실제로 갈라내는가 - **양쪽으로** 본다.
 

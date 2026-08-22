@@ -8,6 +8,7 @@ from app.raid_simulator import simulate_raid
 from app.skill_rules.rapi_red_hood import (
     SKILL_VALUE_MANIFESTS,
     build_attachable_projectiles_rules,
+    ATTACHMENT_GAUGE_ENERGY,
     build_attachable_projectiles_scheduled_nukes,
     build_battlefield_assessment_rules,
     build_power_of_inheritance_rules,
@@ -282,6 +283,27 @@ def test_stage3_cut_disabled_uses_flat_120_requirement():
         full_burst_windows=[],
     )
     assert attach["schedule"](context, 180.0)[0] == 12.0     # 창 무시, 120 고정
+
+
+def test_attachment_hits_declare_the_launcher_gauge_energy():
+    """부착 타격은 그녀의 MG값(500)이 아니라 **런처 값**으로 게이지를 채운다.
+
+    「스킬이 만드는 타격은 그 유닛 무기의 기본값을 준다」를 세운 실측 셋(헬름
+    애장품 추댐 · 리버렐리오 라이더 · 헤비암즈 오토파이어)은 전부 자기 무기와
+    같은 종류의 타격이었다. 부착형 유탄은 **런처로 발사되는 것**이고, 라피
+    단독편성 실측이 그것을 확정했다 - 840발(유탄 7개)에서 7번째 부착 **직전은
+    미달, 직후는 완충**이고 부착 직전 게이지가 174px이라 값이
+    `[12,150, 12,623]`으로 가둬진다(docs/measurements/burst-gauge-fill.md).
+
+    **폭발은 선언하지 않는다** - 원문이 "When entering Full Burst, the
+    projectiles explode"라 창 **안**에서 터지고, 게이지는 창 밖에서만 찬다.
+    선언하면 안 세어지는 타격에 값을 붙이는 것이라 조용히 죽는 코드가 된다.
+    """
+    specs = build_attachable_projectiles_scheduled_nukes(RAPI_VALUES)
+    by_type = {spec["damage_type"]: spec for spec in specs}
+    assert by_type["projectile_attachment"]["gauge_energy"] == ATTACHMENT_GAUGE_ENERGY
+    assert 12_150 <= ATTACHMENT_GAUGE_ENERGY <= 12_623
+    assert "gauge_energy" not in by_type["projectile_explosion"]
 
 
 def test_power_of_inheritance_burst_rider_buffs_attachment_window():

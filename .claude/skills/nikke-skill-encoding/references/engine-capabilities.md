@@ -1776,8 +1776,9 @@ not a projectile; **unmeasured**, and named separately from
 `distributed` DOES charge — those are individual hits spread over an area, not
 a DoT. Deriving beats a table because a newly-encoded unit is picked up with no
 declaration at all, and because `damage_log`'s `slug` is always the CASTER's own
-roster slug (drones and summons included), so `weapon_stats[slug]` is already
-the right energy. That DoT exclusion currently costs nothing either way
+roster slug (drones and summons included), so `weapon_stats[slug]` is usually
+the right energy — see the launcher exception two paragraphs down for when it
+is not. That DoT exclusion currently costs nothing either way
 (measured 2026-08-22): emptying the constant so DoT ticks DO charge leaves the
 gauge table and total damage bit-identical on all five measured decks, because
 those ticks are anchored on Full Burst entry or on a burst cast and so land
@@ -1797,6 +1798,29 @@ it. Sakura: Bloom in Summer folds ten hits the same way but is typed
 `sustained`, so the DoT exclusion already covers her. Damage sources that fold
 by TIME rather than by count are untouched: burst-source N-hit volleys and
 `dynamic_hit_count_nuke` are all recorded at the cast.
+
+**A hit fired by a DIFFERENT weapon must DECLARE its energy.** The "use the
+unit's own base energy" rule rests on three readings — Helm's favourite-item
+rider, Rebellion's 5-hit rider, Heavy Arms' Auto Fire — and **all three are hits
+of the same weapon kind the unit carries**. They say nothing about a skill that
+fires something else. Rapi: Red Hood's Attachable Projectiles is exactly that:
+she carries an MG (500) but the skill **launches** a grenade, and a solo reading
+puts its energy at **12,500** (`rapi_red_hood.ATTACHMENT_GAUGE_ENERGY`; 840
+shots = 7 grenades, the 7th's attach flipping short-of-full to full, with the
+pre-attach bar at 174px pinning it to [12,150, 12,623] — the only value the
+collected RL set holds in that band). Declare it with a **`gauge_energy` key on
+the scheduled-nuke spec** (or `record(gauge_energy=...)` directly); it rides the
+log row into `_gauge_skill_hits`, which emits `(time, count, energy)` triples,
+and `fill_times` uses the declared value in place of the base one. Omit the key
+and nothing changes — that is what every other call site does. **The declared
+energy still takes the fill-speed multiplier**, for the same reason skill hits
+do. **Do NOT declare it on hits that land inside the Full Burst window** (Red
+Hood's explosion is "When entering Full Burst", so the gauge never sees it) —
+the value would be dead code that reads as live. **The unit's own data will not
+tell you the number**: Red Hood's `detail` carries one `shot_detail` (the MG)
+and no record for the grenade, so this kind of value comes from a reading only.
+More units may need it; nobody has census'd which skills fire a weapon the
+caster does not carry.
 
 **Whether a cast-time row can charge the very fill that scheduled it depends on
 the TIER, and only tier 3 is safe.** `fill_times` has no "inside a Full Burst

@@ -88,7 +88,7 @@ def test_battle_start_buff_is_active_by_the_time_the_burst_fires():
     assert len(result["damage_log"]) == 1
     entry = result["damage_log"][0]
     assert entry == {"slug": "attacker", "time": 5.0, "damage": 150000.0, "source": "burst",
-                     "damage_type": "attack", "gauge_hits": 1}
+                     "damage_type": "attack", "gauge_hits": 1, "gauge_energy": None}
     assert result["total_damage"] == 150000.0
 
 
@@ -656,7 +656,7 @@ def test_instant_damage_pulse_deals_damage_at_full_burst_enter_using_casters_own
     assert fb_factor(result, instant_hits[0]["time"]) == 1.5
     assert {k: v for k, v in instant_hits[0].items() if k != "time"} == {
         "slug": "buffer", "damage": 10000.0 * 1.5, "source": "instant_nuke",
-        "damage_type": "attack", "gauge_hits": 1}
+        "damage_type": "attack", "gauge_hits": 1, "gauge_energy": None}
 
 
 def test_instant_damage_pulse_deals_damage_at_battle_start():
@@ -682,7 +682,7 @@ def test_instant_damage_pulse_deals_damage_at_battle_start():
     instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
     assert instant_hits == [{"slug": "buffer", "time": 0.0, "damage": 500.0,
                              "source": "instant_nuke", "damage_type": "attack",
-                             "gauge_hits": 1}]
+                             "gauge_hits": 1, "gauge_energy": None}]
 
 
 def test_instant_damage_pulse_deals_damage_at_full_burst_end():
@@ -711,7 +711,7 @@ def test_instant_damage_pulse_deals_damage_at_full_burst_end():
     assert instant_hits[0]["time"] == pytest.approx(15.0)
     assert {k: v for k, v in instant_hits[0].items() if k != "time"} == {
         "slug": "buffer", "damage": 2000.0, "source": "instant_nuke",
-        "damage_type": "attack", "gauge_hits": 1}
+        "damage_type": "attack", "gauge_hits": 1, "gauge_energy": None}
 
 
 def test_instant_damage_pulse_from_own_burst_activate_stacks_with_burst_nuke():
@@ -739,10 +739,11 @@ def test_instant_damage_pulse_from_own_burst_activate_stacks_with_burst_nuke():
     burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
     instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
     assert burst_hits == [{"slug": "attacker", "time": 5.0, "damage": 5000.0,
-                           "source": "burst", "damage_type": "attack", "gauge_hits": 1}]
+                           "source": "burst", "damage_type": "attack",
+                           "gauge_hits": 1, "gauge_energy": None}]
     assert instant_hits == [{"slug": "attacker", "time": 5.0, "damage": 1000.0,
                              "source": "instant_nuke", "damage_type": "attack",
-                             "gauge_hits": 1}]
+                             "gauge_hits": 1, "gauge_energy": None}]
 
 
 def test_instant_damage_pulse_from_ally_burst_activate_lands_at_that_burst():
@@ -779,7 +780,7 @@ def test_instant_damage_pulse_from_ally_burst_activate_lands_at_that_burst():
     instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
     assert instant_hits == [{"slug": "buffer", "time": 5.0, "damage": 3000.0,
                              "source": "instant_nuke", "damage_type": "attack",
-                             "gauge_hits": 1}]
+                             "gauge_hits": 1, "gauge_energy": None}]
 
 
 def test_periodic_nuke_fires_repeatedly_on_its_own_fixed_cooldown():
@@ -831,7 +832,7 @@ def test_periodic_nuke_uses_the_casters_own_atk_and_live_buffs():
     # atk 1000 * (1 + 1.0 atk_percent buff) * 100% coefficient = 2000
     assert periodic_hits == [{"slug": "buffer", "time": 4.0, "damage": 2000.0,
                               "source": "periodic", "damage_type": "attack",
-                              "gauge_hits": 1}]
+                              "gauge_hits": 1, "gauge_energy": None}]
 
 
 def test_periodic_nuke_damage_type_gates_which_damage_up_buff_applies():
