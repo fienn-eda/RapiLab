@@ -5,6 +5,55 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 구조는 선이 아니라 채움이 진다 — 상자는 「물건」에만 남긴다
+
+- Date: 2026-08-22
+- Context: Fienn이 「테두리 요소가 너무 많아 투박해 보인다」고 했다. 실측하니
+  선을 그리는 선언은 82곳인데 **2px 상자를 두르는 셀렉터는 여섯 개**였다:
+  `.card` `.group` `.guide-card` `.unit-filter` `.draft-editor__deck`
+  `.core-measure`. 그리고 탭 패널 네 개(솔로·유니온·계산기 둘)가 `.card`를
+  둘렀기 때문에 한 화면에 **2px 상자가 상자를 감싸고 그 안에서 컨트롤이 또
+  선을 긋는 세 겹**이 생겼다. 니케 풀 탭만 `.card`를 패널로 쓰지 않아 혼자
+  깔끔했고, Fienn이 가리킨 기준 화면이 그것이다.
+  `index.css`는 이미 「구획을 나누기만 하는 선은 3:1 아래여도 되지만, 무언가가
+  컨트롤임을 알리는 선은 안 된다」고 선언해 두고서도, 정작 컨테이너가
+  `--border`(#666, 컨트롤 등급)를 빌려 쓰고 있었다 — **토큰은 맞고 배정이
+  뒤집혀 있었다.**
+- Decision: **상자는 「물건」에만, 구획은 머리글과 여백으로.** `.card`는
+  레이아웃 전용(세로 스택 + `--sp-5` 간격)이 되고, `.group`은 상자를 버리고
+  머리글 붙은 구획이 된다(니케 풀의 `.roster__group`이 쓰던 언어). 물건으로
+  남는 것들(`.guide-card` `.deck-results__item` `.saved-runs__item`
+  `.draft-editor__deck` `.draft-editor__usage`)은 테두리 대신 `--surface`
+  채움으로 선다. 버튼은 `--raised`/`--raised-hover`(반투명 흰색 오버레이)로
+  선다. **보존**: 니케 카드(`.roster-card`)와 니케 팔레트(`.palette__item`)의
+  테두리 — Fienn이 지정했고, 둘 다 속성 색을 나르는 선이라 근거도 같다.
+  상태를 알리는 빨강 테두리(활성 덱·활성 탭·드롭 타겟)와 떠 있는 팝오버의
+  가장자리도 남는다.
+- Alternatives considered:
+  **(a) 컨테이너 선을 지우지 않고 한 단 어둡게만** — 처음 제안. Fienn이 더 걷기를
+  택했다.
+  **(b) 채움 사다리를 밝혀 단을 벌리기** — **불가능해서 기각.** `--surface-2`를
+  #1c1c1c로 한 칸만 올려도 `--accent`가 4.49:1로 4.5 하한을 잃고, `--border`도
+  3:1을 잃는다(둘 다 지금 각각 0.08·0.03 여유로 통과 중이다).
+  **(c) 컨트롤 테두리까지 전부 제거** — 기각. `--surface-2` 위의 `--raised`는
+  1.18:1이라 「여기가 컨트롤이다」를 만들지 못한다. 대신 `.chip-toggle`을
+  `--border-strong`(5.04)에서 `--border`(3.03)로 낮췄다.
+  **(d) 근접한 두 행을 인과로 묶어 보이기**(알집 생성 2·62·127 ↔ 부위파괴
+  3·63·128) — 기각. 타임스탬프로 인과를 추론하지 않는다.
+- Why: 분리를 만든 것은 단을 벌린 것이 **아니라** 바깥 채움을 걷은 것이다.
+  패널이 `--surface`를 놓아 `--bg`가 되면서 그 위에 얹힌 것들이 비로소
+  떠오른다 — 전에는 패널도 `--surface`라 얹힌 것이 같은 밝기여서 선이 없으면
+  아무것도 안 보였다. `--bg`는 #0a0a0a → #060606으로 내렸는데, 바닥을 어둡게
+  하는 것은 모든 대비를 올리기만 하므로 어떤 하한도 건드리지 않는다.
+- Consequences: 2px 이상으로 남은 선은 넷뿐이고 전부 의도한 것이다(니케 카드,
+  팔레트 속성 띠, 활성 덱 빨강, 활성 탭 빨강). 회색 크롬 상자는 0.
+  `check_palette_contrast.py`가 `--raised` 위의 글자까지 재도록 확장됐고
+  (최악 4.72:1), 「the borders carry depth」라고 적혀 있던 설명문 두 곳이
+  이제 거짓이라 고쳤다. **테스트는 이 변경을 거의 보증하지 못한다** — vitest는
+  `css: false`라 CSS를 안 본다(1034개 전부 통과했지만 그 초록은 이 건에 대해
+  거의 무의미하다). 확인은 앱을 띄워 다섯 탭을 눈으로 보고, DOM에서 남은
+  테두리를 전수로 세어서 했다.
+
 ## 게이지 진동은 **감지한 뒤에만** 감쇠한다 — 순진한 히스테리시스는 기각, 가드는 필수
 
 - Date: 2026-08-22
