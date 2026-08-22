@@ -1,4 +1,4 @@
-"""실측 덱의 채움율이 무기만으로 도달 가능한가 - 천장과 개전으로 가른다.
+"""실측 덱의 채움율이 무기만으로 도달 가능한가 - 천장으로 가른다.
 
 `check_gauge_convergence.py`가 「고정점이 멈추는가」를 묻는다면 이쪽은 **「엔진이
 낼 수 있는 최대가 실측에 닿기는 하는가」**를 묻는다. 둘은 다른 실패를 잡는다.
@@ -9,15 +9,27 @@
 그것마저 넘으면 남은 설명은 「무기 밖 채움원이 있다」 하나뿐이다. 크기 일치가
 아니라 **부등식**이라 어떤 위상 이야기로도 빠져나갈 수 없다.
 
-2026-08-22에 이 논증이 덱1의 갭을 갈랐다: 무기 천장 183,879/초에 실측 요구는
-244,141/초라 33% 모자랐고, 그 차이가 아니스 별똥별의 착탄율(59,360/초)과 1.5%
-안에서 같았다. 상세는 `docs/measurements/burst-gauge-fill.md`의 「후속 분석」.
+2026-08-22에 이 논증이 덱1의 갭을 갈랐다. 상세는
+`docs/measurements/burst-gauge-fill.md`의 「후속 분석」과 그 뒤 「철회」 절.
 
-**개전 대조가 같이 붙어 있는 이유.** 사이클 채움은 재장전 위상·버프·창 경계가
-섞여 있어 「엔진이 왜 느린가」를 못 가른다. 개전은 전원이 탄창 만재로 t=0에
-시작하고 버스트 버프가 없고 위상이 확정적이라, 발사 모델 자체가 맞는지를 **혼자**
-답한다. 개전이 맞고 사이클만 틀리면 원인은 「버스트가 끝난 뒤에만 존재하는 것」
-으로 좁혀진다.
+**천장에 무엇을 넣고 무엇을 빼는가.**
+
+- **무기 샷**: 케이던스 중앙값의 역수 x 풀차지 발당 에너지.
+- **발당 라이더**: 무기 샷과 **1:1로 붙는** 비무기 타격(아니스: 스타의 스킬1
+  풀차지 추댐처럼). `damage_log`의 소스별 행 수가 그 좌석의 무기 샷 수와 같을
+  때만 라이더로 읽는다 - 손 표가 아니라 그 판의 로그에서 세는 것이라 새로
+  인코딩되는 유닛이 저절로 들어온다.
+- **그 밖의 스킬 타격은 안 넣는다**(별똥별·드론·주기 타격). 이것들은 케이던스에
+  안 묶여 있어 「이상적 발사」로 환산할 근거가 없고, **창 밖에 얼마나 들어오는지는
+  실측이 정해야 하는 양**이다. 그래서 이 스크립트의 천장은 **그 몫만큼 낮다** -
+  「천장을 넘는다」가 나오면 초과분은 **그 타격들 + 아직 모르는 것**의 합이다.
+  넣었다가는 그 판의 실현값(F2 누수 별똥별 포함)을 천장이라 부르게 된다.
+
+**개전 대조는 여기 없다.** 2026-08-22에 한 번 넣었다가 뺐다: 엔진의 첫 풀버스트
+창은 게이지 표가 아니라 **보스 시드**(`gauge_charge_time`)로 열리므로, 개전
+완충 시각을 재면 그 뒤 누적이 **창 안**으로 넘어간다. 게임은 창 안에서 게이지가
+안 차니 두 값은 애초에 같은 것을 재지 않는다. 개전으로 발사 모델을 검증하려면
+창이 열리지 않는 편성(단독편성)이라야 한다.
 
 **언제 쓰나:** 채움이 실측과 어긋날 때 **가장 먼저**. 무엇을 고칠지 정하기 전에
 「고칠 수 있는 것인가」를 먼저 답해야 한다 - 천장을 넘는 갭은 케이던스·재장전을
@@ -27,7 +39,6 @@
 
 - `실측/천장 <= 1`: 무기만으로 설명된다. 갭이 있다면 위상이나 재장전이다.
 - `실측/천장 > 1`: **무기 밖 채움원이 반드시 있다.** 아래에 그 크기를 찍는다.
-- 개전 `엔진/실측`이 1 근처면 발사 모델은 무죄다.
 
 Usage (any cwd):
     python3 scripts/check_gauge_ceiling.py
@@ -36,6 +47,7 @@ Usage (any cwd):
 천장을 넘는 덱이 하나라도 있으면 종료 코드 1.
 """
 import argparse
+import collections
 import statistics
 import sys
 import warnings
@@ -53,8 +65,6 @@ from app.user_roster import load_roster  # noqa: E402
 from raid_record import RECORD_BOSS, RECORD_CUBES  # noqa: E402
 from roster_fixture import real_roster  # noqa: E402
 
-FB_LEN = 10.133
-
 # `docs/measurements/burst-gauge-fill.md`의 「원본 - 덱 단위」와 「원본 - 덱1 버스트
 # 사이클」. 덱1만 14사이클 전부의 시각이 있어 평균이 정밀하고, 나머지는 1분 눈대중
 # 이라 판독을 그대로 싣고 평균을 쓴다. 덱4·5는 판독이 시간이 아니라 「쿨타임에 거의
@@ -64,7 +74,6 @@ MEASURED_DECKS = {
         "slugs": ["anis-star", "brid-silent-track", "crown", "rapi-red-hood",
                   "diesel-winter-sweets-highlight"],
         "fills": [2.048],
-        "opening": 3.117,        # 전투 시작 21.000 -> 첫 충전완료 24.117
     },
     2: {
         "slugs": ["little-mermaid", "mast-romantic-maid", "mint",
@@ -90,7 +99,7 @@ def _owner(states, slug):
 
 
 def _run(slugs):
-    """이 덱을 한 번 돌리고 `fill_times`가 받은 입력을 통째로 잡아 온다."""
+    """이 덱을 한 번 돌리고 `fill_times`가 받은 입력과 결과를 함께 잡아 온다."""
     captured = {}
     real = burst_gauge.fill_times
 
@@ -107,7 +116,7 @@ def _run(slugs):
     order = list(feasible_orderings(specs))[0]
     burst_gauge.fill_times = spy
     try:
-        simulate_raid(
+        result = simulate_raid(
             **assemble_simulation_inputs(order), enemy_def=boss.enemy_def,
             gauge_charge_time=boss.gauge_charge_time,
             fight_duration=boss.fight_duration, mode=boss.mode,
@@ -119,42 +128,29 @@ def _run(slugs):
             core_diameter_px=boss.core_diameter_px)
     finally:
         burst_gauge.fill_times = real
-    return captured, boss
+    return captured, result, boss
 
 
-def _energy_events(captured, boss):
-    """(시각, 슬러그, 에너지) - 무기 샷과 스킬 타격을 게이지가 세는 대로 합친다."""
-    kw = captured["kw"]
-    stats = kw["weapon_stats"]
-    speed_at = kw.get("speed_multiplier_at") or (lambda slug, time: 1.0)
-    out = []
-    for slug, rec in captured["shots"].items():
-        st = stats.get(slug) or {}
-        if not st.get("burst_energy_pershot"):
+def _riders_per_shot(damage_log, shots_by_slug):
+    """{슬러그: 발당 라이더 수} - 무기 샷과 **1:1로 붙는** 비무기 타격만.
+
+    소스별 타격 수가 그 좌석의 무기 샷 수와 **정확히** 같을 때만 라이더로 읽는다.
+    별똥별처럼 케이던스와 무관한 타격은 이 문을 통과하지 못하고, 그것이 의도다 -
+    천장은 「이상적 발사」의 함수라야 하는데 그런 타격은 발사에 안 묶여 있다.
+    """
+    riders = {}
+    for slug, shots in shots_by_slug.items():
+        if not shots:
             continue
-        base = burst_gauge.energy_per_hit(st, full_charge=False)
-        charged = burst_gauge.energy_per_hit(st, full_charge=True)
-        out += [(t, slug, (base if tap else charged) * speed_at(slug, t))
-                for t, tap in rec if t < boss.fight_duration]
-    for slug, hits in (kw.get("skill_hits_by_slug") or {}).items():
-        st = stats.get(slug) or {}
-        if not st.get("burst_energy_pershot"):
-            continue
-        base = burst_gauge.energy_per_hit(st, full_charge=False)
-        out += [(t, slug, base * n * speed_at(slug, t))
-                for t, n in hits if t < boss.fight_duration]
-    out.sort()
-    return out
-
-
-def _opening_fill(captured, boss):
-    """개전 게이지가 가득 차는 시각. 못 채우면 None."""
-    total = 0.0
-    for time, _, energy in _energy_events(captured, boss):
-        total += energy
-        if total >= burst_gauge.GAUGE_FULL:
-            return time
-    return None
+        kinds = collections.Counter()
+        for entry in damage_log:
+            if entry["slug"] != slug or entry["source"] == "normal_attack":
+                continue
+            if entry["damage_type"] in burst_gauge.GAUGE_INERT_DAMAGE_TYPES:
+                continue
+            kinds[entry["source"]] += entry.get("gauge_hits", 1)
+        riders[slug] = sum(1 for n in kinds.values() if n == len(shots))
+    return riders
 
 
 def _bonus_ceiling(captured, cadences):
@@ -169,8 +165,6 @@ def _bonus_ceiling(captured, cadences):
     if not fills:
         return 0.0
     rounds_by_slug = kw.get("ammo_rounds_by_slug") or {}
-    # 이상적 발사에서의 스쿼드 라운드 소모율. 한 샷이 회계하는 라운드 수는
-    # 좌석마다 다르다(탄약 주머니를 쓰는 아군은 한 발이 수백 라운드다).
     ally_rounds_per_sec = 0.0
     for slug, cadence in cadences.items():
         rounds = rounds_by_slug.get(slug) or []
@@ -190,7 +184,7 @@ def _bonus_ceiling(captured, cadences):
 
 
 def check(number, spec):
-    captured, boss = _run(spec["slugs"])
+    captured, result, boss = _run(spec["slugs"])
     kw = captured["kw"]
     stats = kw["weapon_stats"]
     speed_at = kw.get("speed_multiplier_at") or (lambda slug, time: 1.0)
@@ -199,20 +193,15 @@ def check(number, spec):
     engine = [v for v in table.values() if v != float("inf")]
     measured = statistics.mean(spec["fills"])
     energy = burst_gauge.GAUGE_FULL
+    riders = _riders_per_shot(result["damage_log"], captured["shots"])
+    when = (ends[0] + 1.0) if ends else 1.0
 
     print(f"\n=== 덱 {number}: {', '.join(spec['slugs'])}")
     print(f"  실측 채움 {measured:.3f}초 = {energy / measured:,.0f}/초"
           f"   엔진 {statistics.mean(engine):.3f}초 = "
           f"{energy / statistics.mean(engine):,.0f}/초")
 
-    if spec.get("opening"):
-        got = _opening_fill(captured, boss)
-        if got:
-            print(f"  개전 채움  엔진 {got:.3f}초  실측 {spec['opening']:.3f}초"
-                  f"  → 엔진/실측 {got / spec['opening']:.2f}"
-                  f"   ({'발사 모델 무죄' if abs(got / spec['opening'] - 1) < 0.15 else '발사 모델도 어긋난다'})")
-
-    print(f"  {'좌석':34s} {'케이던스':>9s} {'발당':>10s} {'천장/초':>11s}")
+    print(f"  {'좌석':34s} {'케이던스':>9s} {'무기 발당':>10s} {'라이더':>9s} {'천장/초':>11s}")
     ceiling = 0.0
     cadences = {}
     for slug in spec["slugs"]:
@@ -226,55 +215,31 @@ def check(number, spec):
         # 중앙값은 재장전·스핀업이 아니라 **그 무기가 연속 발사할 때의** 간격이다.
         cadence = statistics.median(gaps) if gaps else float("inf")
         cadences[slug] = cadence
-        per = (burst_gauge.energy_per_hit(st, full_charge=True)
-               * speed_at(slug, (ends[0] + 1.0) if ends else 1.0))
-        rate = per / cadence if cadence else 0.0
+        per = burst_gauge.energy_per_hit(st, full_charge=True) * speed_at(slug, when)
+        rider = (burst_gauge.energy_per_hit(st, full_charge=False)
+                 * speed_at(slug, when) * riders.get(slug, 0))
+        rate = (per + rider) / cadence if cadence else 0.0
         ceiling += rate
-        print(f"  {slug:34s} {cadence:9.3f} {per:10,.0f} {rate:11,.0f}")
-
-    # 스킬 타격은 **창 밖에 남는 몫만** 천장에 얹는다 - 창 안 타격은 게이지가 안 센다.
-    windows = [(e - FB_LEN, e) for e in ends]
-    outside = boss.fight_duration - sum(
-        min(b, boss.fight_duration) - a for a, b in windows
-        if a < boss.fight_duration)
-    skill_rate = 0.0
-    for slug, hits in (kw.get("skill_hits_by_slug") or {}).items():
-        st = stats.get(slug) or {}
-        if not st.get("burst_energy_pershot"):
-            continue
-        base = burst_gauge.energy_per_hit(st, full_charge=False)
-        count = sum(n for t, n in hits
-                    if t < boss.fight_duration
-                    and not any(a <= t <= b for a, b in windows))
-        skill_rate += base * count * speed_at(slug, 1.0) / outside
-    if skill_rate:
-        print(f"  {'(창 밖 스킬 타격)':34s} {'':9s} {'':10s} {skill_rate:11,.0f}")
+        print(f"  {slug:34s} {cadence:9.3f} {per:10,.0f} {rider:9,.0f} {rate:11,.0f}")
 
     bonus_rate = _bonus_ceiling(captured, cadences)
     if bonus_rate:
-        print(f"  {'(스킬이 선언한 플랫 충전)':34s} {'':9s} {'':10s} {bonus_rate:11,.0f}")
+        print(f"  {'(스킬이 선언한 플랫 충전)':34s} {'':9s} {'':10s} {'':9s}"
+              f" {bonus_rate:11,.0f}")
 
-    total = ceiling + skill_rate + bonus_rate
+    total = ceiling + bonus_rate
     need = energy / measured
     over = need > total
     print(f"  천장 합계 {total:,.0f}/초   실측 요구 {need:,.0f}/초"
           f"   → 실측/천장 = {need / total:.2f}")
-
-    # **천장은 엔진이 실제로 낸 값보다 낮을 수 없다.** 낮다면 이 스크립트가 채움원을
-    # 하나 안 세고 있다는 뜻이고, 그러면 「천장을 넘는다」는 결론이 통째로 무효다 -
-    # 이 가드가 없던 첫 판에서 덱3이 `bonus_fills` 누락으로 그 자리에 앉았다.
-    engine_rate = energy / statistics.mean(engine)
-    if total < engine_rate:
-        print(f"  ⚠ 천장({total:,.0f})이 엔진 실효율({engine_rate:,.0f})보다 낮다 —"
-              " 이 스크립트가 채움원을 빠뜨렸다. 위 판정을 믿지 말 것")
-        return "broken"
-
     if over:
         missing = (need - total) * measured
-        print(f"  ★ 천장을 {need / total - 1:.0%} 넘는다 — 무기 밖 채움원이 사이클마다"
-              f" {missing:,.0f} (게이지의 {missing / energy:.1%}) 있어야 한다")
+        print(f"  ★ 천장을 {need / total - 1:.0%} 넘는다 — 케이던스에 안 묶인 채움원이"
+              f" 사이클마다 {missing:,.0f} (게이지의 {missing / energy:.1%}) 있어야 한다")
+        print("     (그 몫에는 별똥별 같은 비무기 타격이 **의도적으로** 안 들어 있다 —"
+              " 위 docstring 참조)")
     else:
-        print(f"  천장 안 ({need / total:.0%}) — 무기만으로 설명된다")
+        print(f"  천장 안 ({need / total:.0%}) — 무기와 발당 라이더만으로 설명된다")
     return over
 
 
@@ -286,13 +251,7 @@ def main():
     warnings.simplefilter("ignore")
 
     numbers = [args.deck] if args.deck else sorted(MEASURED_DECKS)
-    results = {n: check(n, MEASURED_DECKS[n]) for n in numbers}
-    broken = [n for n, r in results.items() if r == "broken"]
-    over = [n for n, r in results.items() if r is True]
-    if broken:
-        print(f"\n천장이 엔진보다 낮게 나온 덱: {broken} — 판정 이전에 이 스크립트를"
-              " 고쳐야 한다")
-        return 2
+    over = [n for n in numbers if check(n, MEASURED_DECKS[n])]
     if over:
         print(f"\n천장을 넘는 덱: {over} — 이 덱들의 갭은 케이던스·재장전을 만져서"
               " 못 닫는다")
