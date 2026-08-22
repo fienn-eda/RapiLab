@@ -350,33 +350,42 @@ SEARCH_SIM_BUDGET = 1200
 # **5.96 passes** - but the MEDIAN is 2. 215 of 400 decks settle in two passes
 # and the rest smear out to 32, so a minority of decks own most of the clock.
 #
-# Cap / speedup / mean damage error / top-5 set kept / rank inversions of 79,800:
-#     1    6.08x   1.968%   NO    1396
-#     2    3.05x   0.560%   yes    435
-#     3    2.48x   0.298%   yes    218
-#     4    2.12x   0.235%   yes    180
+# Cap / speedup / mean error / max error / top-5 kept / inversions / worst rank move,
+# on the full roster (400 decks, 79,800 pairs) and a 46-unit subset (200, 19,900):
+#     1   6.08x  1.968%  24.33%   NO  1396/79800  65      5.77x  1.522%  16.15%  359  23
+#     2   3.05x  0.560%  12.95%  yes   435/79800  26      2.86x  0.528%  17.51%  143  20
+#     3   2.48x  0.298%   7.47%  yes   218/79800  16      2.35x  0.254%   2.75%   54   6
+#     4   2.12x  0.235%   6.28%  yes   180/79800  18      1.99x  0.233%   4.91%   61   8
 #
 # One is rejected outright: it drops a deck out of the top 5, which is the one
-# thing a ranking may not do. Two is the floor that survives, because pass 1
-# always starts from an EMPTY gauge table and pass 2 is the first that sees a
-# real one - so a cap of 1 scores every deck on a table it then throws away,
-# and 0 of 400 decks were exact.
+# thing a ranking may not do. The reason is structural rather than bad luck -
+# pass 1 always starts from an EMPTY gauge table and pass 2 is the first that
+# sees a real one, so a cap of 1 scores every deck on a table it then discards
+# and 0 of 400 decks came out exact.
+#
+# Three rather than two costs 18% of the speedup and buys back roughly half of
+# every error measure - and on the subset far more than half: worst-case damage
+# error 17.51% -> 2.75%, worst rank move 20 -> 6. Four is NOT a further
+# improvement (2.75% -> 4.91%, 54 -> 61 inversions): later passes overshoot the
+# fixed point and come back, so accuracy in the cap is not monotone and three is
+# a real local optimum rather than a point on a curve.
 #
 # The error is confined to the tail by construction: a deck that truly settles
-# inside the cap is scored EXACTLY, and at a cap of 2 that is 54% of them. The
-# decks that do get approximated are the ones whose answer wobbles on the gauge
-# grid anyway (period-2 limit cycles, see simulate_raid; 2 of these 400 never
-# converged at all) - the most expensive passes buy the least trustworthy
-# digits.
+# inside the cap is scored EXACTLY, and that is 57-59% of them. The decks that
+# do get approximated are the ones whose answer wobbles on the gauge grid anyway
+# (period-2 limit cycles, see simulate_raid; 2 decks in each sample never
+# converged at all) - the most expensive passes buy the least trustworthy digits.
 #
 # Numbers measured on a SYNTHETIC roster understated this by ~3x (0.189% mean
 # error over 30 decks). Uniform stats make same-tier units interchangeable,
 # which is exactly the condition that hides ranking error - re-measure on a real
 # roster before trusting any of these figures (scripts/roster_fixture.py).
+# Measuring on a narrow subset hides things too: a cap of 1 keeps the top 5 on
+# the 46-unit subset and loses it on the full roster.
 #
 # Ranking only. The decks actually shown to the player are re-scored to the
 # fixed point by `evaluate_deck_best_seating`, exactly as seating already works.
-RANKING_MAX_PASSES = 2
+RANKING_MAX_PASSES = 3
 
 
 def shape_combinations(roster, deck_filter=None):
