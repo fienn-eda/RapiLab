@@ -85,6 +85,56 @@ def _inversions(order, totals):
     return bad
 
 
+def _season_subset(specs, path):
+    """제외 목록(한글 표시명, 한 줄에 하나, `#`는 주석)을 뺀 로스터.
+
+    캡 값 자체는 **전체 로스터**로 정해야 한다 - 상수는 모두에게 나가고, 탐색이
+    실제로 채점하는 덱은 전체 로스터에서 나온 풀이다. 이 부분집합은 그 다음
+    질문에 답한다: 「내가 이번 시즌 실제로 쓸 유닛들 안에서도 캡이 편성을 안
+    바꾸는가.」
+
+    이름 -> 슬러그는 `app.display_names`가 유일한 출처이고, 「같은 캐릭터인가」는
+    `deck_search.character_of`가 답한다. 접두사 문자열로 판정하면 안 된다:
+    「브래디(지딜)」은 브래디와 **같은 캐릭터**(모드 변형)지만 「레이(가칭)」은
+    「레이」와 **다른 캐릭터**다. 한 목록에 둘 다 들어 있었고, 접두사 규칙은 한쪽을
+    반드시 틀린다.
+
+    못 찾은 이름이 하나라도 있으면 멈춘다. 조용히 빠뜨리면 제외했다고 믿은 유닛이
+    편성에 들어간 결과를 재게 되고, 그 결과는 아무것도 안 말한다.
+    """
+    import unicodedata
+
+    from app.deck_search import character_of
+    from app.display_names import DISPLAY_NAMES
+
+    def norm(name):
+        # 「은화: 택티컬 업」과 「엠마:택티컬 업」이 콜론 뒤 공백에서만 갈린다.
+        return unicodedata.normalize("NFC", name).replace(" ", "").strip()
+
+    by_name = {}
+    for slug, korean in DISPLAY_NAMES.items():
+        if korean:
+            by_name.setdefault(norm(korean), []).append(slug)
+
+    wanted = [line.strip()
+              for line in Path(path).read_text(encoding="utf-8").splitlines()]
+    wanted = [name for name in wanted if name and not name.startswith("#")]
+    characters, missing = set(), []
+    for name in wanted:
+        slugs = by_name.get(norm(name))
+        if not slugs:
+            missing.append(name)
+            continue
+        characters.update(character_of(slug) for slug in slugs)
+    if missing:
+        raise SystemExit(f"제외 목록에서 못 찾은 이름 {len(missing)}개 - "
+                         f"추측하지 않는다: {', '.join(missing)}")
+    kept = [unit for unit in specs if character_of(unit.slug) not in characters]
+    print(f"제외 목록 {len(wanted)}개 -> 캐릭터 {len(characters)}명; "
+          f"로스터 {len(specs)} -> 시즌 셋 {len(kept)}유닛")
+    return kept
+
+
 def _allocation_ab(specs, boss, units, num_decks):
     """추천 한 판을 캡 없이 / 캡 있이 돌려 벽시계와 **추천 결과 자체**를 대조한다.
 
@@ -164,6 +214,11 @@ def main():
                         help="--end-to-end가 배분할 덱 수 (기본 2)")
     parser.add_argument("--skip-sampling", action="store_true",
                         help="덱 표집 대조를 건너뛴다 (--end-to-end만 볼 때)")
+    parser.add_argument("--exclude", metavar="PATH", default=None,
+                        help="이번 시즌 안 쓸 니케의 한글 표시명 목록 파일 "
+                             "(한 줄에 하나, #은 주석). 캡 값은 전체 로스터로 "
+                             "정하고, 이 옵션은 「내 시즌 셋 안에서도 편성이 "
+                             "같은가」를 확인할 때 쓴다")
     args = parser.parse_args()
 
     states = real_roster(args.roster)
@@ -173,6 +228,8 @@ def main():
     boss = BossProfile(element=args.element, core_hittable=True,
                        enemy_def=args.enemy_def, fight_duration=args.duration)
     print(f"roster {len(specs)} usable; boss {args.element} {args.duration:.0f}s")
+    if args.exclude:
+        specs = _season_subset(specs, args.exclude)
     if args.skip_sampling:
         if args.end_to_end is None:
             raise SystemExit("--skip-sampling은 --end-to-end와 함께 쓸 때만 뜻이 있다")
