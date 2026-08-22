@@ -424,12 +424,12 @@ export function BossProfileField({
                   onChange({ ...value, hold_fire_despite_adds: checked })
                 }
                 help={
-                  <HelpTip label="잡몹 무시하고 홀드">
+                  <HelpTip label="애미하라 택틱">
                     <HelpText>{HELP.boss.holdFireDespiteAdds}</HelpText>
                   </HelpTip>
                 }
               >
-                잡몹 무시하고 홀드
+                애미하라 택틱
               </ToggleChip>
             )}
 

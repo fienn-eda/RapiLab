@@ -977,7 +977,7 @@ describe('BossProfileField 잡몹 홀드 오버라이드', () => {
       <BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />,
     )
 
-    expect(screen.queryByRole('checkbox', { name: /홀드/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: /애미하라/ })).not.toBeInTheDocument()
   })
 
   it('잡몹 생성을 켜면 칩이 나오고 선언이 나간다', async () => {
@@ -990,7 +990,7 @@ describe('BossProfileField 잡몹 홀드 오버라이드', () => {
       />,
     )
 
-    await user.click(screen.getByRole('checkbox', { name: /홀드/ }))
+    await user.click(screen.getByRole('checkbox', { name: /애미하라/ }))
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ hold_fire_despite_adds: true }),
     )
