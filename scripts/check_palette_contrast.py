@@ -89,6 +89,20 @@ FOREGROUNDS = [
     ("border-strong", "border-strong", 3.0, "emphasised edge"),
     ("star", "star", 4.5, "breakthrough stars (game data)"),
     ("favorite", "favorite-item", 4.5, "favourite-item heart (game data)"),
+    # 속성 5색은 오래 테두리와 아이콘으로만 쓰여 3:1이면 됐다. 2026-08-22에
+    # 유니온 덱 라벨이 고른 덱의 보스 이름을 이 색으로 켜면서 **글자**가 됐고,
+    # 글자는 4.5가 필요하다. 그래서 여기 4.5로 적는다 - 테두리 쪽 쓰임에는
+    # 과한 잣대지만, 둘 중 엄한 쪽을 못 넘으면 보이는 것이 맞다.
+    #
+    # el-fire가 지금 --surface에서 4.13으로 LOW다. 값을 올리지 않은 것은 그
+    # 빨강이 「철갑의 금색으로 안 읽히게」 일부러 어둡게 고른 색이기 때문이다
+    # (index.css, Fienn 2026-07-28). 고치려면 --accent-on-light처럼 글자 전용
+    # 변종을 두는 쪽이지, 이 색을 밝히는 쪽이 아니다.
+    ("el-fire", "el-fire", 4.5, "작열 - 덱 라벨에서 글자로 쓰인다"),
+    ("el-water", "el-water", 4.5, "수냉 - 같음"),
+    ("el-wind", "el-wind", 4.5, "풍압 - 같음"),
+    ("el-iron", "el-iron", 4.5, "철갑 - 같음"),
+    ("el-electric", "el-electric", 4.5, "전격 - 같음"),
 ]
 
 # Filled surfaces referenced directly, beyond GROUND_TOKENS/FOREGROUNDS above.

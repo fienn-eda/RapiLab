@@ -1,5 +1,32 @@
 /* Layout and component styles for the ShiftyPad investment-data input UI. */
 
+/* 속성 색 배선. data-element를 단 것은 무엇이든 --element를 갖고, 그 색을 쓰고
+   싶은 컴포넌트가 `var(--element, 폴백)`으로 읽어 간다.
+
+   컴포넌트마다 같은 다섯 줄을 복사해 두고 있었다(unit-filter__chip ·
+   roster-card · element-picker__option · palette__item — 네 벌, 스무 줄).
+   매핑이 넷 다 똑같았고 다섯 번째가 필요해져서 한 곳으로 합쳤다
+   (덱 라벨, Fienn 2026-08-22).
+
+   속성 선택자만으로 거는 것이 안전한 이유: 이 규칙은 커스텀 속성을 세우기만
+   하고 아무것도 안 그린다. 읽는 쪽이 클래스로 한정돼 있어서, data-element가
+   달렸다는 이유만으로 없던 색이 생기지 않는다. */
+[data-element='Fire'] {
+  --element: var(--el-fire);
+}
+[data-element='Water'] {
+  --element: var(--el-water);
+}
+[data-element='Wind'] {
+  --element: var(--el-wind);
+}
+[data-element='Iron'] {
+  --element: var(--el-iron);
+}
+[data-element='Electric'] {
+  --element: var(--el-electric);
+}
+
 /* 창 폭을 그대로 쓴다. 로스터 그리드와 유닛 팔레트는 열 수로 폭을 받아내고,
    문장은 --measure가 따로 잡는다. */
 .app {
@@ -435,22 +462,6 @@
   border-color: var(--element, var(--accent));
   color: var(--text);
   background: var(--surface);
-}
-
-.unit-filter__chip[data-element='Fire'] {
-  --element: var(--el-fire);
-}
-.unit-filter__chip[data-element='Water'] {
-  --element: var(--el-water);
-}
-.unit-filter__chip[data-element='Wind'] {
-  --element: var(--el-wind);
-}
-.unit-filter__chip[data-element='Iron'] {
-  --element: var(--el-iron);
-}
-.unit-filter__chip[data-element='Electric'] {
-  --element: var(--el-electric);
 }
 
 .unit-filter__status {
@@ -919,22 +930,6 @@
   padding: var(--sp-2);
 }
 
-.roster-card[data-element='Fire'] {
-  --element: var(--el-fire);
-}
-.roster-card[data-element='Water'] {
-  --element: var(--el-water);
-}
-.roster-card[data-element='Wind'] {
-  --element: var(--el-wind);
-}
-.roster-card[data-element='Iron'] {
-  --element: var(--el-iron);
-}
-.roster-card[data-element='Electric'] {
-  --element: var(--el-electric);
-}
-
 .roster-card:has(.roster-card__use) {
   cursor: pointer;
 }
@@ -1243,22 +1238,6 @@
 /* "약점 없음"에는 아이콘이 없으므로 아이콘 자리만큼 높이를 맞춘다. */
 .element-picker__option--none {
   justify-content: center;
-}
-
-.element-picker__option[data-element='Fire'] {
-  --element: var(--el-fire);
-}
-.element-picker__option[data-element='Water'] {
-  --element: var(--el-water);
-}
-.element-picker__option[data-element='Wind'] {
-  --element: var(--el-wind);
-}
-.element-picker__option[data-element='Iron'] {
-  --element: var(--el-iron);
-}
-.element-picker__option[data-element='Electric'] {
-  --element: var(--el-electric);
 }
 
 /* 회차 보스 카드. 아이콘과 이름 한 줄뿐이라 카드 높이가 서로 같고, 이름 길이는
@@ -2479,25 +2458,9 @@
   border: 1px solid var(--rule);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  /* Set per element below; the neutral border is the fallback. */
+  /* --element는 파일 맨 위의 data-element 배선이 세운다; 중립 테두리가 폴백이다. */
   border-left: 3px solid var(--element, var(--border));
   cursor: pointer;
-}
-
-.palette__item[data-element='Fire'] {
-  --element: var(--el-fire);
-}
-.palette__item[data-element='Water'] {
-  --element: var(--el-water);
-}
-.palette__item[data-element='Wind'] {
-  --element: var(--el-wind);
-}
-.palette__item[data-element='Iron'] {
-  --element: var(--el-iron);
-}
-.palette__item[data-element='Electric'] {
-  --element: var(--el-electric);
 }
 
 /* Five rows beside the art, top to bottom: breakthrough, core, S1, S2, B.
@@ -2831,8 +2794,13 @@
   cursor: pointer;
 }
 
+/* 고른 덱의 이름은 그 덱이 맡은 보스의 약점 속성 색으로 켜진다 - 바로 옆
+   아이콘과 같은 색이라 둘이 한 사실을 말한다(Fienn, 2026-08-22).
+
+   폴백이 --accent인 것은 보스를 아직 안 고른 덱 때문이다. 그때는 라벨이
+   「덱 N」이고 속성이 없어서 --element도 없다. */
 .draft-editor__deck-pick[aria-pressed='true'] {
-  color: var(--accent);
+  color: var(--element, var(--accent));
 }
 
 .draft-editor__deck-pick:focus-visible {
@@ -2840,23 +2808,35 @@
   outline-offset: 2px;
 }
 
+/* 아이콘 · 이름 · 경고는 왼쪽에 붙고 좌석 수만 오른쪽으로 간다. space-between은
+   자식 수가 늘면 그 사이를 벌리므로, 아이콘이 붙는 덱에서는 이름이 가운데로
+   흘러갔다 - 세는 것은 「끝에 하나」라 auto 여백이 맞다.
+
+   baseline이 아니라 center인 것은 22px 아이콘 때문이다. baseline이면 아이콘
+   아래끝이 13px 글자의 baseline에 앉아 줄 전체가 위로 들뜬다. */
 .draft-editor__deck-title {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--sp-2);
   font-size: 13px;
   font-weight: 600;
   margin: 0;
 }
 
+/* 이 아이콘이 「이 덱이 어느 보스를 맡는가」를 말한다 - 이름 옆에 붙은 장식이
+   아니라 덱을 가르는 표지다. 16px일 때는 회차 카드(28) · 버스트 머리(22) 옆에서
+   혼자 작아 그 역할이 안 읽혔다(Fienn, 2026-08-22).
+
+   부모가 align-items: baseline이라 vertical-align은 안 먹는다 - flex 아이템에는
+   적용되지 않는다. 22px에서 아이콘 아래끝이 13px 글자의 baseline에 앉으면 줄이
+   위로 들뜨므로, 정렬은 .draft-editor__deck-title 쪽에서 잡는다. */
 .draft-editor__deck-icon {
-  width: 16px;
-  height: 16px;
-  vertical-align: -2px;
+  width: 22px;
+  height: 22px;
 }
 
 .draft-editor__deck-count {
+  margin-left: auto;
   font-size: 11px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
