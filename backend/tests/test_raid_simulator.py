@@ -4720,3 +4720,79 @@ def test_a_conversion_with_no_late_max_hp_resolves_in_exactly_one_pass():
     result = _run_max_hp_conversion_sim()
     assert result["full_burst_passes"] == {"passes": 1, "converged": True}
     assert _attacker_burst_damage(result) == pytest.approx(10000 + 8000)
+
+
+def test_a_deliberate_pass_cap_stops_early_and_says_so(monkeypatch):
+    """`max_passes`는 **일부러** 고정점 전에 끊는다 - 탐색의 랭킹 경로가 쓴다.
+
+    순위를 매기는 데는 정확한 총딜이 필요 없고, 고정점 반복이 비용을 지배한다
+    (실측: 할당 런 한 판에서 `evaluate_deck`당 7.41패스, 덱당 851ms). 48%의 덱은
+    두 패스에 진짜로 수렴하므로 캡이 그들에게는 아무 일도 안 하고, 근사는 게이지가
+    무는 꼬리 덱에만 갇힌다.
+
+    `capped`를 따로 싣는 이유: `converged: False` 하나로는 「일부러 끊었다」와
+    「엔진이 상한까지 갔는데도 못 수렴했다」가 바이트 동일해진다. 뒤엣것은 조사할
+    신호이고 앞엣것은 정상 동작이라, 값(패스 수가 캡과 같은지)으로 판별하게 두면
+    캡 값이 바뀌는 날 조용히 뒤집힌다.
+    """
+    a = {1: 3.0, 2: 4.1}
+    b = {1: 3.1, 2: 4.0}
+    seen = _gauge_sequence_stub(monkeypatch, _alternating(a, b))
+
+    result = simulate_raid(max_passes=2)
+
+    # 시드 -> A까지만 돌고 끊긴다. 감쇠(패스 4)는 아예 도달하지 않는다.
+    assert seen == [{}, a]
+    assert result["full_burst_passes"] == {
+        "passes": 2, "converged": False, "capped": True}
+
+
+def test_a_deliberate_pass_cap_does_not_warn(monkeypatch, recwarn):
+    """캡에서 끊긴 것은 경고 사유가 아니다.
+
+    `FullBurstConvergenceWarning`은 「이 덱은 엔진이 못 푼다」는 신호고,
+    `backend/pytest.ini`의 `filterwarnings = error` 아래서는 테스트 실패다. 캡은
+    수렴을 시도하지도 않은 것이므로 그 경고를 내면 랭킹 경로가 스위트를 통째로
+    빨갛게 만들고, 진짜 안 수렴하는 덱의 신호도 그 소음에 묻힌다.
+    """
+    a = {1: 3.0, 2: 4.1}
+    b = {1: 3.1, 2: 4.0}
+    _gauge_sequence_stub(monkeypatch, _alternating(a, b))
+
+    simulate_raid(max_passes=2)
+
+    assert list(recwarn.list) == []
+
+
+def test_a_cap_the_deck_converges_inside_is_invisible(monkeypatch):
+    """캡보다 먼저 수렴하면 결과는 캡이 없을 때와 **바이트 동일**하다.
+
+    48%의 덱이 여기 해당한다 - 그들에게 캡은 근사가 아니라 아무 일도 아니다.
+    `capped` 키가 붙으면 안 되는 이유이기도 하다: 안 일어난 일을 키로 알리지
+    않는다(`_full_burst_passes_record` 참조).
+    """
+    table = {1: 3.0}
+    # 첫 패스가 표를 내고, 두 번째 패스가 같은 표를 재생산해 수렴한다.
+    seen = _gauge_sequence_stub(monkeypatch, lambda current: table)
+
+    result = simulate_raid(max_passes=8)
+
+    assert seen == [{}, table]
+    assert result["full_burst_passes"] == {"passes": 2, "converged": True}
+
+
+def test_the_pass_cap_defaults_to_the_engines_own_ceiling(monkeypatch):
+    """`max_passes`를 안 주면 오늘과 완전히 같다 - 보고 경로가 그대로 정확하다."""
+    from app.raid_simulator import (MAX_FULL_BURST_PASSES,
+                                    FullBurstConvergenceWarning)
+
+    a = {1: 4.0, 2: 2.5}
+    b = {1: 3.9, 2: 4.0}
+    seen = _gauge_sequence_stub(monkeypatch, _alternating(a, b))
+
+    with pytest.warns(FullBurstConvergenceWarning):
+        result = simulate_raid()
+
+    assert len(seen) == MAX_FULL_BURST_PASSES
+    assert result["full_burst_passes"]["converged"] is False
+    assert "capped" not in result["full_burst_passes"]

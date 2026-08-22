@@ -23,7 +23,7 @@ class Unit:
 def patch_scorer(monkeypatch, scorer):
     # best_completions only calls evaluate_deck via deck_search's own module
     # binding (through _score_batch/_summarize), so patching it here suffices.
-    def fake_evaluate(ordered_deck, boss):
+    def fake_evaluate(ordered_deck, boss, **kwargs):
         return {"total_damage": scorer({u.slug for u in ordered_deck}),
                 "damage_log": []}
 

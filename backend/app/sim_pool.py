@@ -20,7 +20,7 @@ import os
 from concurrent.futures import CancelledError, ProcessPoolExecutor
 
 from app.cancellation import Cancelled
-from app.deck_search import evaluate_deck
+from app.deck_search import evaluate_deck, ranking_damage
 
 SPAWN_THRESHOLD = 32
 
@@ -51,8 +51,11 @@ def _slim_summary(deck_slugs, result):
 
 
 def _score_slugs(slugs):
+    # `score_many` only ever yields a number to compare decks BY, so it is a
+    # ranking path by construction and takes the pass cap. `_summarize_slugs`
+    # below is the report path and must not.
     deck = [_WORKER_SPECS[s] for s in slugs]
-    return evaluate_deck(deck, _WORKER_BOSS)["total_damage"]
+    return ranking_damage(deck, _WORKER_BOSS)
 
 
 def _summarize_slugs(slugs):
@@ -91,7 +94,7 @@ class SimPool:
     def score_many(self, decks):
         return self._map(
             _score_slugs,
-            lambda deck: evaluate_deck(deck, self._boss)["total_damage"],
+            lambda deck: ranking_damage(deck, self._boss),
             decks,
         )
 

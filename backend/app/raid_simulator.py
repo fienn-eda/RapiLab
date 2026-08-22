@@ -957,8 +957,15 @@ def _slower_fill_each_cycle(one, other):
             for cycle_index, seconds in one.items()}
 
 
-def _full_burst_passes_record(count, *, converged, gap_quanta, damped):
+def _full_burst_passes_record(count, *, converged, gap_quanta, damped,
+                              capped=False):
     """`full_burst_passes` 한 줄.
+
+    `capped`는 **호출자가 일부러 끊었다**는 것이다(`simulate_raid`의
+    `max_passes`). `converged: False` 하나로는 그것과 「엔진이 상한까지 갔는데도
+    못 수렴했다」가 바이트 동일해지는데, 뒤엣것은 조사할 신호이고 앞엣것은 정상
+    동작이다. 패스 수가 캡과 같은지로 판별하게 두면 캡 값이 바뀌는 날 조용히
+    뒤집히므로 플래그로 선언한다.
 
     진동을 아예 안 만난 덱은 **예전 그대로 두 키 dict**를 받는다 - 이 결과를 읽는
     소비자가 있고, 안 일어난 일을 키로 알리지 않는다.
@@ -970,6 +977,8 @@ def _full_burst_passes_record(count, *, converged, gap_quanta, damped):
     말하고, `scripts/check_gauge_convergence.py`가 그것을 읽어 정지를 둘로 가른다.
     """
     record = {"passes": count, "converged": converged}
+    if capped:
+        record["capped"] = True
     if gap_quanta is not None:
         record["gauge_oscillation_detected"] = True
         record["max_gap_quanta"] = gap_quanta
@@ -978,9 +987,18 @@ def _full_burst_passes_record(count, *, converged, gap_quanta, damped):
     return record
 
 
-def simulate_raid(*args, **kwargs):
+def simulate_raid(*args, max_passes=None, **kwargs):
     """한 번의 레이드 시뮬레이션. 대부분의 덱에서는 `_simulate_raid_once`를 정확히
     한 번 부르는 것과 같다.
+
+    `max_passes`는 고정점 반복을 **일부러** 그 패스 수에서 끊는다 - 탐색의 랭킹
+    경로가 쓰고(`deck_search.RANKING_MAX_PASSES`), 안 주면 오늘과 완전히 같다.
+    순위를 매기는 데는 정확한 총딜이 필요 없는데 이 반복이 비용을 지배하기
+    때문이다: 실측 할당 런에서 `evaluate_deck`당 **7.41패스 · 덱당 851ms**였고,
+    패스당 115ms로 거의 순수 비례라 캡이 곧 배수다. 끊긴 결과는
+    `full_burst_passes`에 `capped: True`를 달고, 경고는 **안 뜬다** - 수렴을
+    시도하지도 않은 것이라 `FullBurstConvergenceWarning`의 사유가 아니고, 그걸
+    내면 진짜 안 수렴하는 덱의 신호가 그 소음에 묻힌다.
 
     풀 버스트 창 길이가 자원 상태에 달린 유닛(소다: 트윙클링 바니)이 덱에 있으면
     고정점까지 반복한다: 창 길이가 그 사이클 진입 시점의 골든칩으로 정해지는데,
@@ -1054,7 +1072,8 @@ def simulate_raid(*args, **kwargs):
     # 들어가면 매 두 패스마다 같은 값이 다시 나오므로 최댓값을 들고 있는다.
     oscillation_gap_quanta = None
     result = None
-    for attempt in range(MAX_FULL_BURST_PASSES):
+    ceiling = MAX_FULL_BURST_PASSES if max_passes is None else max_passes
+    for attempt in range(ceiling):
         result, resolved, resolved_max_hp, resolved_gauge = _simulate_raid_once(
             *args, **kwargs, full_burst_stage_overrides=overrides,
             late_flat_max_hp=late_max_hp, gauge_charge_overrides=gauge,
@@ -1093,8 +1112,13 @@ def simulate_raid(*args, **kwargs):
         late_max_hp = resolved_max_hp
         gauge = resolved_gauge
     result["full_burst_passes"] = _full_burst_passes_record(
-        MAX_FULL_BURST_PASSES, converged=False,
-        gap_quanta=oscillation_gap_quanta, damped=False)
+        ceiling, converged=False, gap_quanta=oscillation_gap_quanta,
+        damped=False, capped=max_passes is not None)
+    # 캡에서 끊긴 것은 경고 사유가 아니다 - 호출자가 고정점을 **요구하지 않았다.**
+    # 여기서 경고를 내면 랭킹 경로가 덱마다 하나씩 뿜어 `filterwarnings = error`
+    # 아래 스위트를 통째로 깨뜨리고, 진짜 안 수렴하는 덱의 신호도 묻힌다.
+    if max_passes is not None:
+        return result
     # `converged: False`만으로는 아무도 못 본다 - 이 플래그를 읽는 하류가 없다.
     # 질의 헬퍼를 하나 더 만들어도 `scripts/`의 소비자 16개 중 2개만 부르는
     # `deck_search.never_full_bursts`의 전철을 밟는다. 경고는 소비자가 아무것도

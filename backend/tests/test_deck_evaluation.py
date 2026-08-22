@@ -15,7 +15,7 @@ def patch_boss_aware_scorer(monkeypatch, scorer):
     """`scorer(slugs, boss) -> float`. best_ordering_summary는 evaluate_deck을
     직접(da 바인딩) 그리고 _score_batch를 통해(ds 바인딩) 모두 부르므로 둘 다
     패치한다 - tests/test_deck_allocation.py의 patch_scorer와 같은 이유."""
-    def fake_evaluate(ordered_deck, boss):
+    def fake_evaluate(ordered_deck, boss, **kwargs):
         return {"total_damage": scorer({u.slug for u in ordered_deck}, boss),
                 "damage_log": []}
 
@@ -66,7 +66,7 @@ def test_returned_deck_is_the_best_intra_tier_ordering(monkeypatch):
     def score(slugs, boss):
         return 10.0
 
-    def fake_evaluate(ordered_deck, boss):
+    def fake_evaluate(ordered_deck, boss, **kwargs):
         order = [u.slug for u in ordered_deck]
         bonus = 5.0 if order.index("t3a1") < order.index("t3a2") else 0.0
         return {"total_damage": 10.0 + bonus, "damage_log": []}

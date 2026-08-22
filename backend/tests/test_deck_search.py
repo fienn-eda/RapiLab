@@ -332,7 +332,7 @@ def _fake_scorer(scores_by_key):
     # Stand-in for evaluate_deck: scores keyed by (frozenset of slugs, tuple of
     # slugs) with fallbacks, so tests can rank combinations and orderings
     # without running 103ms sims.
-    def fake_evaluate(ordered_deck, boss):
+    def fake_evaluate(ordered_deck, boss, **kwargs):
         key_exact = tuple(u.slug for u in ordered_deck)
         key_set = frozenset(key_exact)
         total = scores_by_key.get(key_exact, scores_by_key.get(key_set, 1.0))
@@ -411,7 +411,7 @@ def test_prune_swap_in_never_measures_two_variants_together(monkeypatch):
 
     seen_decks = []
 
-    def scorer(ordered_deck, boss):
+    def scorer(ordered_deck, boss, **kwargs):
         seen_decks.append([u.slug for u in ordered_deck])
         return {"total_damage": 1.0, "damage_log": []}
 
@@ -466,7 +466,7 @@ def test_prune_cross_tier_variant_never_breaks_shape_or_clashes(monkeypatch):
 
     seen_decks = []
 
-    def scorer(ordered_deck, boss):
+    def scorer(ordered_deck, boss, **kwargs):
         seen_decks.append(list(ordered_deck))
         return {"total_damage": 1.0, "damage_log": []}
 
@@ -509,7 +509,7 @@ def test_prune_measures_cross_tier_sibling_instead_of_starving_it(monkeypatch):
 
     seen_decks = []
 
-    def scorer(ordered_deck, boss):
+    def scorer(ordered_deck, boss, **kwargs):
         seen_decks.append(list(ordered_deck))
         return {"total_damage": 1.0, "damage_log": []}  # constant -> every delta is 0.0
 
@@ -551,7 +551,7 @@ def test_cross_tier_reference_rejects_an_alternative_that_clashes_elsewhere(monk
 
     seen_decks = []
 
-    def scorer(ordered_deck, boss):
+    def scorer(ordered_deck, boss, **kwargs):
         seen_decks.append(list(ordered_deck))
         return {"total_damage": 1.0, "damage_log": []}  # constant -> keeps the pass single
 
@@ -571,7 +571,7 @@ def test_prune_keeps_synergy_partners_together(monkeypatch):
     roster = _big_fake_roster()
     roster += [FakeSpec("mint", 2), FakeSpec("prika", 2)]
 
-    def scorer(ordered_deck, boss):
+    def scorer(ordered_deck, boss, **kwargs):
         slugs = [u.slug for u in ordered_deck]
         # Prika must burst before Mint for Encore to fire - the pair only
         # measures its synergy when prika precedes mint in burst order.
@@ -601,7 +601,7 @@ def test_a_synergy_pair_does_not_outrank_the_tier_on_scale_alone(monkeypatch):
     roster += [FakeSpec("strong-a", 2, base_stats={"atk": 500.0}),
                FakeSpec("strong-b", 2, base_stats={"atk": 500.0})]
 
-    def scorer(ordered_deck, boss):
+    def scorer(ordered_deck, boss, **kwargs):
         slugs = {u.slug for u in ordered_deck}
         total = 100.0 + 50.0 * ("strong-a" in slugs) + 30.0 * ("strong-b" in slugs)
         return {"total_damage": total, "damage_log": []}
@@ -740,7 +740,7 @@ def test_search_scores_every_intra_tier_ordering_of_every_combination(monkeypatc
     roster = fake_roster([1, 2, 2, 3, 3, 3])
     scored = []
 
-    def recording_evaluate(ordered_deck, boss):
+    def recording_evaluate(ordered_deck, boss, **kwargs):
         scored.append(tuple(u.slug for u in ordered_deck))
         return {"total_damage": 1.0, "damage_log": []}
 
@@ -1047,3 +1047,74 @@ def test_orderings_within_budget_never_pulls_the_full_generator(monkeypatch):
 
     assert pulled == sim_budget + 1  # stopped the instant the budget was crossed
     assert pulled < full
+
+
+def _recorded_max_passes(monkeypatch):
+    """`simulate_raid`이 받은 `max_passes`를 패스마다 쌓는 리스트.
+
+    `evaluate_deck`이 실제로 부르는 바인딩(`deck_search`의 모듈 전역)을 갈아끼운다
+    - 정의부인 `raid_simulator.simulate_raid`를 패치하면 이 모듈이 import 시점에
+    잡아 둔 참조는 안 바뀌어서, 배선이 끊겨 있어도 테스트가 초록이 된다.
+    """
+    import app.deck_search as ds
+
+    seen = []
+
+    def fake(*args, max_passes=None, **kwargs):
+        seen.append(max_passes)
+        return {"total_damage": 1.0, "damage_log": [], "events": []}
+
+    monkeypatch.setattr(ds, "simulate_raid", fake)
+    return seen
+
+
+def test_the_ranking_path_caps_convergence_passes(monkeypatch):
+    """순위만 필요한 경로는 고정점까지 안 간다.
+
+    탐색 한 판의 비용은 (시뮬 수) x (시뮬당 패스 수)인데 실측에서 뒤 항이 7.41이라
+    캡이 곧 배수다. 48%의 덱은 애초에 두 패스에 수렴하므로 캡이 그들에게는 아무
+    일도 안 한다.
+    """
+    import app.deck_search as ds
+
+    seen = _recorded_max_passes(monkeypatch)
+    deck = next(iter(feasible_orderings(real_five_roster())))
+
+    ds._score_batch([deck], short_boss(), None)
+
+    assert seen == [ds.RANKING_MAX_PASSES]
+
+
+def test_the_report_path_still_runs_to_the_fixed_point(monkeypatch):
+    """플레이어에게 **보여 주는** 숫자는 캡이 안 걸린다.
+
+    랭킹과 보고가 다른 측정이라는 것은 이 모듈이 이미 시팅에서 받아들인 성질이다
+    (`_report` 참조: 랭킹은 `neighbor_slugs`의 싼 정책, 보고는 전 좌석 측정).
+    캡도 같은 선을 탄다 - 상위 몇 덱만 정확히 재면 되고, 그 비용은 요청당
+    한 줌이다.
+    """
+    import app.deck_search as ds
+
+    seen = _recorded_max_passes(monkeypatch)
+    deck = next(iter(feasible_orderings(real_five_roster())))
+
+    ds.evaluate_deck_best_seating(deck, short_boss())
+
+    assert seen == [None], "보고 경로가 캡을 넘기면 표시되는 총딜이 고정점이 아니다"
+
+
+def test_evaluate_deck_forwards_an_explicit_pass_cap(monkeypatch):
+    """캡은 `evaluate_deck`의 인자로 흐른다 - 전역 상수를 몽키패치하지 않는다.
+
+    워커 프로세스는 자기 인터프리터에서 모듈을 다시 import하므로 부모가 바꾼
+    전역을 못 본다. 인자로 흘리면 `SimPool`의 워커든 인라인 경로든 같은 값을
+    받는다.
+    """
+    import app.deck_search as ds
+
+    seen = _recorded_max_passes(monkeypatch)
+    deck = next(iter(feasible_orderings(real_five_roster())))
+
+    ds.evaluate_deck(deck, short_boss(), max_passes=3)
+
+    assert seen == [3]

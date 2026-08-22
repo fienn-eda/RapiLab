@@ -43,7 +43,7 @@ def patch_scorer(monkeypatch, scorer):
     # search_best_decks (deck_search's own module binding) - patch both.
     import app.deck_search as ds
 
-    def fake_evaluate(ordered_deck, boss):
+    def fake_evaluate(ordered_deck, boss, **kwargs):
         return {"total_damage": scorer({u.slug for u in ordered_deck}),
                 "damage_log": []}
 
