@@ -1,5 +1,32 @@
 /* Layout and component styles for the ShiftyPad investment-data input UI. */
 
+/* 속성 색 배선. data-element를 단 것은 무엇이든 --element를 갖고, 그 색을 쓰고
+   싶은 컴포넌트가 `var(--element, 폴백)`으로 읽어 간다.
+
+   컴포넌트마다 같은 다섯 줄을 복사해 두고 있었다(unit-filter__chip ·
+   roster-card · element-picker__option · palette__item — 네 벌, 스무 줄).
+   매핑이 넷 다 똑같았고 다섯 번째가 필요해져서 한 곳으로 합쳤다
+   (덱 라벨, Fienn 2026-08-22).
+
+   속성 선택자만으로 거는 것이 안전한 이유: 이 규칙은 커스텀 속성을 세우기만
+   하고 아무것도 안 그린다. 읽는 쪽이 클래스로 한정돼 있어서, data-element가
+   달렸다는 이유만으로 없던 색이 생기지 않는다. */
+[data-element='Fire'] {
+  --element: var(--el-fire);
+}
+[data-element='Water'] {
+  --element: var(--el-water);
+}
+[data-element='Wind'] {
+  --element: var(--el-wind);
+}
+[data-element='Iron'] {
+  --element: var(--el-iron);
+}
+[data-element='Electric'] {
+  --element: var(--el-electric);
+}
+
 /* 창 폭을 그대로 쓴다. 로스터 그리드와 유닛 팔레트는 열 수로 폭을 받아내고,
    문장은 --measure가 따로 잡는다. */
 .app {
@@ -32,9 +59,9 @@
 
 .app__sidebar-toggle {
   appearance: none;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-sm);
-  background: none;
+  background: var(--raised);
   color: var(--text-muted);
   font: inherit;
   line-height: 1;
@@ -142,7 +169,6 @@
   max-width: var(--measure);
   margin-top: var(--sp-3);
   padding: var(--sp-3);
-  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
   font-size: 13px;
@@ -253,12 +279,15 @@
    foreground and background rather than merely tinting - both directions
    measure 17.68 (scripts/check_palette_contrast.py, "on the primary button").
    aria-pressed carries the same fact for anyone the colour does not reach. */
+/* 꺼짐과 켜짐이 둘 다 채움이다. 전에는 꺼짐이 흰 테두리였는데, 상시 떠 있는
+   버튼에 흰 선을 두르면 눌린 상태(흰 채움)와 같은 색으로 두 번 말하게 된다.
+   이제 바닥 밝기 한 단이 꺼짐이고 흰 채움이 켜짐이다. */
 .roster__mode-toggle {
   padding: var(--sp-1) var(--sp-3);
-  border: 1px solid var(--primary);
+  border: 0;
   border-radius: var(--radius-sm);
-  background: var(--primary-contrast);
-  color: var(--primary);
+  background: var(--raised);
+  color: var(--text);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
@@ -271,7 +300,13 @@
 }
 
 .roster__mode-toggle:hover {
-  border-color: var(--primary-hover);
+  background: var(--raised-hover);
+}
+
+/* 켜져 있을 때의 호버는 흰 채움을 유지해야 한다 - 위의 규칙이 그대로 먹으면
+   눌린 버튼이 손만 올려도 꺼진 것처럼 어두워진다. */
+.roster__mode-toggle[aria-pressed='true']:hover {
+  background: var(--primary-hover);
 }
 
 /* Unit filter toolbar ----------------------------------------------------- */
@@ -301,8 +336,9 @@
   flex-direction: column;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-3);
-  border: 2px solid var(--border);
   border-radius: var(--radius);
+  /* 도구 막대는 --surface-2로 선다. 안에 든 검색·선택 칸이 --surface-2였다가
+     아래에서 --raised로 옮겨 가므로, 막대와 그 안의 컨트롤이 한 단씩 갈린다. */
   background: var(--surface-2);
 }
 
@@ -428,22 +464,6 @@
   background: var(--surface);
 }
 
-.unit-filter__chip[data-element='Fire'] {
-  --element: var(--el-fire);
-}
-.unit-filter__chip[data-element='Water'] {
-  --element: var(--el-water);
-}
-.unit-filter__chip[data-element='Wind'] {
-  --element: var(--el-wind);
-}
-.unit-filter__chip[data-element='Iron'] {
-  --element: var(--el-iron);
-}
-.unit-filter__chip[data-element='Electric'] {
-  --element: var(--el-electric);
-}
-
 .unit-filter__status {
   display: flex;
   align-items: baseline;
@@ -497,15 +517,25 @@
   color: var(--text-muted);
 }
 
+/* 세로로 쌓는 자리일 뿐, 상자가 아니다.
+ *
+ * 전에는 여기에 --surface 채움과 2px 상자가 있었고, 탭 패널 네 개(솔로·유니온·
+ * 계산기 둘)가 그 상자를 둘렀다. 그 상자가 화면에서 가장 큰 테두리였고, 안에
+ * 다시 .group 상자가 들어가면서 같은 목소리가 겹쳤다. 니케 풀 탭만 .card를
+ * 패널로 쓰지 않아 혼자 깔끔했는데, 그쪽이 맞는 쪽이었다(Fienn, 2026-08-22).
+ *
+ * 채움을 놓는 것이 곧 분리를 만든다: 패널이 --bg가 되면서 그 위에 얹힌
+ * .guide-card, .deck-results__item 같은 것들이 --surface로 떠오른다. 전에는
+ * 패널도 --surface라 얹힌 것이 같은 밝기여서 선이 없으면 아무것도 안 보였다.
+ *
+ * .roster-card는 여전히 상자다 - 니케 카드는 패널이 아니라 물건이고, 그
+ * 테두리는 속성 색을 나른다. 그래서 여기서 잃은 것을 저기서 명시적으로 되찾는다. */
 .card {
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: var(--sp-5);
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  /* 구획을 가르는 것이 선에서 여백으로 넘어왔으므로 --sp-4로는 모자란다.
+     --sp-5는 니케 풀의 .roster가 그룹 사이에 쓰는 값과 같다. */
+  gap: var(--sp-5);
 }
 
 .card__header {
@@ -888,26 +918,16 @@
 
 /* Roster card ------------------------------------------------------------- */
 
+/* 니케 카드는 물건이라 상자를 유지한다(Fienn, 2026-08-22). 채움과 테두리를
+ * .card에서 물려받고 있었는데 그쪽이 레이아웃 전용이 되면서 여기로 옮겨 왔다 -
+ * 보이는 결과는 전과 같다. 위쪽 3px가 속성 색을 나르므로 border 다음에 온다. */
 .roster-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  border-top: 3px solid var(--element, var(--border));
   gap: var(--sp-2);
   padding: var(--sp-2);
-  border-top: 3px solid var(--element, var(--border));
-}
-
-.roster-card[data-element='Fire'] {
-  --element: var(--el-fire);
-}
-.roster-card[data-element='Water'] {
-  --element: var(--el-water);
-}
-.roster-card[data-element='Wind'] {
-  --element: var(--el-wind);
-}
-.roster-card[data-element='Iron'] {
-  --element: var(--el-iron);
-}
-.roster-card[data-element='Electric'] {
-  --element: var(--el-electric);
 }
 
 .roster-card:has(.roster-card__use) {
@@ -1123,13 +1143,23 @@
   gap: var(--sp-2);
 }
 
+/* 꺼짐은 가이드 뱃지(.guide-badge)와 같은 모습이다 - 알약, --raised 채움, 선 없음.
+   켜짐은 채우지 않고 흰 테두리만 켠다(Fienn, 2026-08-22).
+
+   흰 채움을 쓰지 않는 이유: 이 칩들은 여럿이 동시에 켜져 있고(코어 타격 가능 +
+   부위파괴 기믹 + 잡몹 생성…) 상시 화면에 떠 있다. 켤 때마다 흰 덩어리가 하나씩
+   늘면 보스 설정이 화면에서 가장 밝은 구역이 된다 - 읽을 곳이 아니라 고르는
+   곳인데.
+
+   테두리는 꺼짐에서도 1px 투명으로 자리를 잡아 둔다. 0으로 두면 켤 때 칩이
+   2px씩 움직여 줄 전체가 흔들린다. */
 .chip-toggle {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--raised);
 }
 
 /* 설명 버튼이 있는 칩만 오른쪽에 자리를 낸다 - 없으면 라벨이 상자를 다 쓴다. */
@@ -1143,16 +1173,10 @@
   cursor: pointer;
 }
 
+/* 켜짐은 테두리만. 바닥과 글자는 꺼짐 그대로라, 줄을 훑을 때 달라 보이는 것이
+   윤곽 하나뿐이다. 흰색(--primary)인 것은 「누르는 것은 흰색」 규칙 그대로다. */
 .chip-toggle:has(input:checked) {
-  background: var(--primary);
   border-color: var(--primary);
-  color: var(--primary-contrast);
-}
-
-/* 흰 바닥 위에서는 설명 버튼의 회색 테두리와 글자가 사라진다. */
-.chip-toggle:has(input:checked) .help-tip__button {
-  color: var(--primary-contrast);
-  border-color: var(--primary-contrast);
 }
 
 .chip-toggle:has(input:focus-visible) {
@@ -1216,22 +1240,6 @@
   justify-content: center;
 }
 
-.element-picker__option[data-element='Fire'] {
-  --element: var(--el-fire);
-}
-.element-picker__option[data-element='Water'] {
-  --element: var(--el-water);
-}
-.element-picker__option[data-element='Wind'] {
-  --element: var(--el-wind);
-}
-.element-picker__option[data-element='Iron'] {
-  --element: var(--el-iron);
-}
-.element-picker__option[data-element='Electric'] {
-  --element: var(--el-electric);
-}
-
 /* 회차 보스 카드. 아이콘과 이름 한 줄뿐이라 카드 높이가 서로 같고, 이름 길이는
    제각각이라 폭은 내용에 맡긴다 — 속성 선택(.element-picker)과 같은 배치다. */
 .rotation-picker {
@@ -1278,8 +1286,10 @@
    식구로 읽힌다. 안쪽은 상자를 또 세우지 않고 --rule 한 줄로 띠를 가른다 -
    .core-measure가 왼쪽 선 하나로 「설정이 아니라 재료」를 말하는 것과 같은
    방식이고, 한 화면에 2px 상자를 넷 세우지 않기 위해서다. */
+/* 패널이 --bg가 됐으므로 --surface 채움만으로 떠오른다. 전에는 패널도
+   --surface여서 같은 밝기끼리 겹쳤고, 그래서 2px 상자가 필요했다. */
 .guide-card {
-  border: 2px solid var(--border);
+  background: var(--surface);
   border-radius: var(--radius-sm);
   padding: var(--sp-4);
   display: flex;
@@ -1287,9 +1297,11 @@
   gap: var(--sp-3);
 }
 
+/* .group__legend와 같은 급이다 - 「40시즌 가이드」도 「모드」도 한 구획의 이름이라
+   같은 크기로 읽혀야 한다. */
 .guide-card__title {
   margin: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -1302,10 +1314,12 @@
 
 /* 읽는 것이지 누르는 것이 아니다 - 그래서 채우지 않고 테두리만 쓴다. 같은
    화면의 .chip-toggle은 선택되면 흰색으로 채워지므로 둘이 갈린다. */
+/* 읽는 사실이지 누르는 것이 아니라 채움으로 선다. 흰 테두리 넉 줄이 이 카드에서
+   가장 시끄러웠는데, 뱃지가 카드 제목보다 세게 말할 이유가 없다. */
 .guide-badge {
-  border: 1px solid var(--text);
   border-radius: 999px;
   padding: 1px var(--sp-2) 2px;
+  background: var(--raised);
   font-size: 13px;
   font-weight: 550;
 }
@@ -1400,6 +1414,9 @@
   padding: var(--sp-1) 0;
 }
 
+/* 레일은 --rule이다. --border는 「무언가가 컨트롤임을 알리는」 등급이고 이 선은
+   구획을 나누기만 하므로 그 등급이 필요 없다. 열다섯 행을 관통하는 #666 막대가
+   빠지면서 마커가 비로소 도드라진다. */
 .timeline__row::before {
   content: '';
   position: absolute;
@@ -1407,7 +1424,7 @@
   bottom: 0;
   left: calc(4rem + var(--sp-2) + var(--sp-4) / 2);
   width: 1px;
-  background: var(--border);
+  background: var(--rule);
 }
 
 /* 축은 전투 시작에서 시작해 종료에서 끝난다 - 그 바깥으로 삐져나가면 선이
@@ -1420,8 +1437,10 @@
   bottom: 50%;
 }
 
-/* 시각에 매이지 않는 항목은 축 위에 없다. */
-.timeline__row--always::before {
+/* 시각에 매이지 않는 항목은 축 위에 없다. 마커까지 지우는 이유: 레일 없이 점만
+   남기면 축에서 떨어진 점 하나가 뜨는데, 그 점이 무엇의 위치인지가 없다. */
+.timeline__row--always::before,
+.timeline__row--always::after {
   display: none;
 }
 
@@ -1440,22 +1459,35 @@
   background: var(--surface);
 }
 
-/* 축의 두 끝. 점이 아니라 선의 시작과 끝이라 속을 채운다. */
+/* 세 종류를 채움이 아니라 모양으로 가른다. 같은 원의 속만 다르면 열다섯 행에서
+   무엇이 무엇인지 읽히지 않는다.
+
+   축의 두 끝은 사건이 아니라 축의 시작과 끝이라 점이 아닌 가로 캡이다. */
 .timeline__row--edge::after {
+  width: 13px;
+  height: 2px;
+  border: 0;
+  border-radius: 0;
   background: var(--border-strong);
 }
 
-/* 보스 설정에서 자동으로 오는 파괴 시각. 사람이 적은 것과 갈리게 채운다. */
+/* 보스 설정에서 자동으로 오는 파괴 시각. 이 표에서 유일하게 사람이 못 고치는
+   행이라 - 엔진이 읽는 입력이다 - 마름모로 따로 세운다. */
 .timeline__row--auto::after {
+  border-radius: 1px;
+  transform: rotate(45deg);
   background: var(--text);
   border-color: var(--text);
 }
 
+/* 시계는 이 표의 목소리다. 12px 흐린 글씨로 두면 옆의 문장에 묻혀 「몇 분에
+   무엇」이 한눈에 안 들어온다. tabular-nums여야 m:ss가 세로로 줄을 맞춘다. */
 .timeline__time {
   grid-column: 1;
   grid-row: 1;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   text-align: right;
 }
@@ -1464,6 +1496,7 @@
   grid-column: 3;
   grid-row: 1;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .timeline__remove {
@@ -1471,9 +1504,12 @@
   grid-row: 1;
 }
 
+/* 사람이 적은 이벤트가 이 표의 본문이고, 축의 끝과 자동으로 오는 행은 그 배경이다.
+   앞의 500과 갈리게 굵기까지 내린다. */
 .timeline__row--edge .timeline__text,
 .timeline__row--auto .timeline__text {
   color: var(--text-muted);
+  font-weight: 400;
 }
 
 /* 읽을 때는 그냥 글로 보이고 클릭하면 그 자리에서 고쳐진다 - 카드 본문과 같은
@@ -1489,14 +1525,18 @@
   width: 100%;
 }
 
+/* 위의 `font: inherit`가 굵기와 자릿수 정렬까지 되돌리므로 여기서 다시 못박는다 -
+   안 그러면 같은 행이 읽을 때와 고칠 때 다른 글씨가 된다. */
 .timeline__time--input {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
 .timeline__text--input {
   font-size: 14px;
+  font-weight: 500;
   line-height: 1.5;
   resize: none;
   overflow: hidden;
@@ -1538,39 +1578,37 @@
   color: var(--text);
 }
 
+/* 눌리는 자리를 선이 아니라 바닥으로 알린다. .btn이 이미 1px 투명 테두리를
+   잡아 두므로 자리는 그대로고 선만 사라진다. */
 .timeline__add {
   align-self: start;
   margin-left: calc(4rem + var(--sp-2));
   font-size: 13px;
   font-weight: 400;
   padding: var(--sp-1) var(--sp-3);
-  background: none;
-  border: 1px solid var(--border);
+  background: var(--raised);
   color: var(--text-muted);
 }
 
 .timeline__add:hover {
   color: var(--text);
-  border-color: var(--border-strong);
+  background: var(--raised-hover);
 }
 
 /* Groups (fieldsets) --------------------------------------------------- */
 
+/* 상자가 아니라 머리글 붙은 구획이다. 니케 풀의 .roster__group이 쓰는 언어를
+   그대로 가져왔다 - 그 탭이 유일하게 상자를 안 쓰고도 읽혔고, Fienn이 가리킨
+   것이 그 화면이다(2026-08-22).
+
+   구획을 가르는 것은 이제 선이 아니라 부모의 gap(--sp-4)과 머리글이다. */
 .group {
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: var(--sp-4);
+  border: 0;
+  padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-}
-
-/* 접힌 그룹은 legend 한 줄이 전부다. 펼쳤을 때의 세로 여백이 남으면 머리 아래
-   빈 상자가 그려지고, 그건 접힌 것이 아니라 못 그린 것으로 읽힌다. */
-.group--collapsed {
-  padding-top: 0;
-  padding-bottom: 0;
 }
 
 /* 접이식 그룹의 요약문은 문장이라 읽기 폭을 넘지 않는다. */
@@ -1578,16 +1616,32 @@
   max-width: var(--measure);
 }
 
-/* 접힌 요약은 값이 아니라 값이 있는 곳을 가리키는 표지다. */
-.boss-profile__folded > summary {
-  cursor: pointer;
-  margin-top: var(--sp-2);
+/* 보스 설정 본문. 회차 보스 카드 · 적정거리 · 칩 줄 · 기타 설정이 세로로 쌓이는데
+   전에는 이 자리에 간격이 없어 항목끼리 붙어 있었다. 상자가 사라진 뒤로는
+   여백이 항목을 가르는 유일한 수단이라 더 티가 난다(Fienn, 2026-08-22). */
+.boss-profile__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
 }
 
+/* 접힌 요약은 값이 아니라 값이 있는 곳을 가리키는 표지다. 위쪽 여백은 이제
+   .boss-profile__body의 gap이 준다 - 여기 margin-top을 남기면 이중이 된다. */
+.boss-profile__folded > summary {
+  cursor: pointer;
+}
+
+/* 상자가 없어졌으니 좌우 여백도 없다 - 그 여백은 legend가 테두리를 끊고 앉도록
+   내주던 자리였다. 색은 --text 그대로 둔다: 구획을 알리는 것이 이제 이 한 줄
+   뿐이라, 니케 풀의 흐린 머리글까지 따라가면 너무 조용해진다.
+
+   15px인 이유도 같다(Fienn, 2026-08-22). 13px는 본문(14px)보다 작아서, 상자가
+   있을 때는 테두리가 「여기부터 새 구획」을 말해 줬지만 상자가 없으니 본문에
+   묻혔다. 카드 제목 18px과 본문 14px 사이에 앉는다. */
 .group__legend {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
-  padding: 0 var(--sp-2);
+  padding: 0;
   color: var(--text);
 }
 
@@ -1796,20 +1850,21 @@
   color: var(--text-muted);
 }
 
+/* 눌리는 자리를 바닥으로 알린다. 글자를 --accent에서 --text로 되돌린 것은
+   따라온 결과가 아니라 규칙을 지킨 것이다 - 「누르는 것은 흰색, 빨강은 앱이
+   가리키는 것」인데 이 버튼은 상시 떠 있는 보조 동작이지 경고가 아니다.
+   덤으로 --raised 위에서 accent가 4.34:1로 4.5를 못 넘는 문제도 사라진다. */
 .btn--ghost {
-  background: transparent;
-  color: var(--accent);
-  border-color: var(--border-strong);
+  background: var(--raised);
+  color: var(--text);
   align-self: flex-start;
   font-size: 14px;
 }
 
-/* The soft red fill already carries the hover state, so the label switches to
-   --text instead of staying --accent: red on --accent-soft measures too thin
-   a contrast margin to depend on. */
+/* 호버도 중립이다. 이 버튼이 하는 일은 북마크릿 주소 복사이고, 빨강은 앱이
+   무언가를 가리킬 때의 색이라 여기 쓸 자리가 아니었다. */
 .btn--ghost:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--raised-hover);
   color: var(--text);
 }
 
@@ -1914,7 +1969,6 @@
   max-width: 720px;
   max-height: 55vh;
   padding: var(--sp-3);
-  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
   font-size: 13px;
@@ -1947,11 +2001,13 @@
   margin: 0;
 }
 
+/* 안내용 스크린샷의 액자. 컨트롤이 아니라 그림의 끝을 알리는 선이므로
+   구획 등급(--rule)이면 충분하다 - 스크린샷 자체가 밝아서 이 선이 셀 이유가 없다. */
 .sync-help__shot {
   display: block;
   max-width: min(300px, 100%);
   margin-top: var(--sp-2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--rule);
   border-radius: var(--radius-sm);
 }
 
@@ -2080,7 +2136,7 @@
 }
 
 .deck-results__item {
-  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: var(--radius-sm);
   padding: var(--sp-3) var(--sp-4);
   display: flex;
@@ -2259,7 +2315,7 @@
 }
 
 .saved-runs__item {
-  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: var(--radius-sm);
 }
 
@@ -2402,25 +2458,9 @@
   border: 1px solid var(--rule);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  /* Set per element below; the neutral border is the fallback. */
+  /* --element는 파일 맨 위의 data-element 배선이 세운다; 중립 테두리가 폴백이다. */
   border-left: 3px solid var(--element, var(--border));
   cursor: pointer;
-}
-
-.palette__item[data-element='Fire'] {
-  --element: var(--el-fire);
-}
-.palette__item[data-element='Water'] {
-  --element: var(--el-water);
-}
-.palette__item[data-element='Wind'] {
-  --element: var(--el-wind);
-}
-.palette__item[data-element='Iron'] {
-  --element: var(--el-iron);
-}
-.palette__item[data-element='Electric'] {
-  --element: var(--el-electric);
 }
 
 /* Five rows beside the art, top to bottom: breakthrough, core, S1, S2, B.
@@ -2616,7 +2656,7 @@
    칸을 아래로 밀어 스크롤이 길어진다. 접혔을 때 이 박스가 곧 summary이므로
    테두리 안 어디를 눌러도 열린다. */
 .draft-editor__usage {
-  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: var(--radius-sm);
   padding: var(--sp-2) var(--sp-3);
 }
@@ -2713,8 +2753,12 @@
   gap: var(--sp-3);
 }
 
+/* 평소에는 채움으로만 서고, 테두리는 자리만 잡아 둔다 - 아래 두 상태가 이 선을
+   빨강으로 칠하기 때문이다. 투명이 아니라 0으로 두면 상태가 켜질 때 덱이 2px씩
+   움직인다. */
 .draft-editor__deck {
-  border: 2px solid var(--border);
+  background: var(--surface);
+  border: 2px solid transparent;
   border-radius: var(--radius-sm);
   padding: var(--sp-3);
   display: flex;
@@ -2750,8 +2794,13 @@
   cursor: pointer;
 }
 
+/* 고른 덱의 이름은 그 덱이 맡은 보스의 약점 속성 색으로 켜진다 - 바로 옆
+   아이콘과 같은 색이라 둘이 한 사실을 말한다(Fienn, 2026-08-22).
+
+   폴백이 --accent인 것은 보스를 아직 안 고른 덱 때문이다. 그때는 라벨이
+   「덱 N」이고 속성이 없어서 --element도 없다. */
 .draft-editor__deck-pick[aria-pressed='true'] {
-  color: var(--accent);
+  color: var(--element, var(--accent));
 }
 
 .draft-editor__deck-pick:focus-visible {
@@ -2759,23 +2808,35 @@
   outline-offset: 2px;
 }
 
+/* 아이콘 · 이름 · 경고는 왼쪽에 붙고 좌석 수만 오른쪽으로 간다. space-between은
+   자식 수가 늘면 그 사이를 벌리므로, 아이콘이 붙는 덱에서는 이름이 가운데로
+   흘러갔다 - 세는 것은 「끝에 하나」라 auto 여백이 맞다.
+
+   baseline이 아니라 center인 것은 22px 아이콘 때문이다. baseline이면 아이콘
+   아래끝이 13px 글자의 baseline에 앉아 줄 전체가 위로 들뜬다. */
 .draft-editor__deck-title {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--sp-2);
   font-size: 13px;
   font-weight: 600;
   margin: 0;
 }
 
+/* 이 아이콘이 「이 덱이 어느 보스를 맡는가」를 말한다 - 이름 옆에 붙은 장식이
+   아니라 덱을 가르는 표지다. 16px일 때는 회차 카드(28) · 버스트 머리(22) 옆에서
+   혼자 작아 그 역할이 안 읽혔다(Fienn, 2026-08-22).
+
+   부모가 align-items: baseline이라 vertical-align은 안 먹는다 - flex 아이템에는
+   적용되지 않는다. 22px에서 아이콘 아래끝이 13px 글자의 baseline에 앉으면 줄이
+   위로 들뜨므로, 정렬은 .draft-editor__deck-title 쪽에서 잡는다. */
 .draft-editor__deck-icon {
-  width: 16px;
-  height: 16px;
-  vertical-align: -2px;
+  width: 22px;
+  height: 22px;
 }
 
 .draft-editor__deck-count {
+  margin-left: auto;
   font-size: 11px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -2801,13 +2862,15 @@
   gap: var(--sp-1);
 }
 
+/* 덱과 같은 규칙: 좌석은 채움으로 서고 테두리는 자리만 잡는다. 아래 두 상태가
+   이 선을 빨강으로 칠하므로 폭을 유지해야 좌석이 안 움직인다. */
 .draft-editor__slot {
   position: relative;
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--surface-2);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
 }
 
 /* Dropping here trades with this unit rather than seating alongside it, so

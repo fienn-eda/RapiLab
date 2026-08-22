@@ -638,13 +638,34 @@ so a newly encoded granter is covered the day it lands rather than the day
 someone remembers a table.
 
 The ENCOUNTER half is `BossProfile.spawns_adds` (2026-08-20): against a boss
-that keeps producing adds the player has to keep shooting, so the tactic is not
-on the board however good the deck's buffs are — solo-40's 「사치스러운 거미」 is
-the first (Fienn). It is a boss fact, not a unit one, so it lands on the boss
-profile beside `part_destructible` and reaches the chooser through
-`evaluate_deck_hold_fire_options(ordered_deck, boss)`. Nothing else reads it:
-how much damage the adds take, and how many rounds clearing them costs, are not
-modeled.
+that keeps producing adds the player normally has to keep shooting, so the
+tactic is off the board however good the deck's buffs are — solo-40's
+「사치스러운 거미」 is the first (Fienn). It is a boss fact, not a unit one, so it
+lands on the boss profile beside `part_destructible` and reaches the chooser
+through `evaluate_deck_hold_fire_options(ordered_deck, boss)`.
+
+That fact sets the DEFAULT, not the verdict (2026-08-22). Whether the adds can
+be absorbed is down to how the player is actually playing, and there are boards
+where they can be — so `BossProfile.hold_fire_despite_adds` is the player
+declaring it, and the encounter gate reads `spawns_adds and not
+hold_fire_despite_adds`. Two fields rather than one because they answer
+different questions: the first is read off the announcement (rotation data
+fills it), the second is a play decision that resets whenever a rotation boss is
+picked. Collapsing them would mean the only way to reach the tactic is to claim
+the boss has no adds, which leaves the screen saying one thing while the
+calculation assumes another. It opens the ENCOUNTER gate only — the deck gate
+still applies, since holding with no round buff to preserve is a straight loss
+either way.
+
+Nothing else reads either flag: how much damage the adds take, and how many
+rounds clearing them costs, are not modeled. That is what makes a score under
+`hold_fire_despite_adds` a CEILING — it assumes the player really does absorb
+the adds for free.
+
+The chosen hold is carried out to the caller as `_summarize`'s
+`hold_fire_slugs`, the same contract as `hold_burst_slugs` / `tap_fire_slugs` /
+`seating`: a play instruction the deck list alone cannot express, and without
+which the reported number is not the one the player gets.
 
 **A hold needs the unit's damage model to survive being fired ONCE.** Ada Wong
 was blocked on exactly this until 2026-08-18: her Special Modification is

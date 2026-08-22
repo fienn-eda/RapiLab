@@ -343,8 +343,8 @@ describe('DraftEditor', () => {
         nameFor={nameFromSlug}
         burstTiersFor={() => []}
         deckLabels={[
-          { text: '인디비리아', iconSrc: '/elements/water.png' },
-          { text: '수냉', iconSrc: '/elements/water.png' },
+          { text: '인디비리아', iconSrc: '/elements/water.png', weakness: 'Water' },
+          { text: '수냉', iconSrc: '/elements/water.png', weakness: 'Water' },
         ]}
       />,
     )
@@ -358,6 +358,28 @@ describe('DraftEditor', () => {
     expect(screen.getByRole('heading', { name: /덱 1/ })).toBeInTheDocument()
   })
 
+  // 덱 이름이 켜질 때 쓰는 색이 여기서 나온다. CSS는 테스트가 못 보므로
+  // (vitest는 css: false) 색 자체가 아니라 색을 세우는 배선을 검사한다.
+  it('덱 라벨의 약점 속성이 data-element로 실린다', () => {
+    const { container } = render(
+      <DraftEditor
+        numDecks={2}
+        value={makeEmptyDraft(2)}
+        onChange={() => {}}
+        portraitFor={() => null}
+        nameFor={nameFromSlug}
+        burstTiersFor={() => []}
+        deckLabels={[{ text: '인디비리아', iconSrc: '/elements/water.png', weakness: 'Water' }]}
+      />,
+    )
+
+    const decks = container.querySelectorAll('.draft-editor__deck')
+    expect(decks[0]).toHaveAttribute('data-element', 'Water')
+    // 라벨이 없는 덱은 속성도 없다 - 빈 문자열이 아니라 속성 자체가 없어야
+    // --element가 안 선다.
+    expect(decks[1]).not.toHaveAttribute('data-element')
+  })
+
   // 좌석 컨트롤은 자리 번호를 유지한다 - 「인디비리아의 Crown」은 어느
   // 자리인지 말하지 않는다.
   it('좌석 컨트롤은 덱 라벨과 무관하게 자리 번호로 말한다', () => {
@@ -369,7 +391,7 @@ describe('DraftEditor', () => {
         portraitFor={() => null}
         nameFor={nameFromSlug}
         burstTiersFor={(slug) => (slug === 'crown' ? [1] : [])}
-        deckLabels={[{ text: '인디비리아', iconSrc: '/elements/water.png' }]}
+        deckLabels={[{ text: '인디비리아', iconSrc: '/elements/water.png', weakness: 'Water' }]}
       />,
     )
     // 그립·고정 두 컨트롤 다 확인한다 - 덱 라벨이 있어도 좌석 컨트롤은

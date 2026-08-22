@@ -89,6 +89,20 @@ FOREGROUNDS = [
     ("border-strong", "border-strong", 3.0, "emphasised edge"),
     ("star", "star", 4.5, "breakthrough stars (game data)"),
     ("favorite", "favorite-item", 4.5, "favourite-item heart (game data)"),
+    # 속성 5색은 오래 테두리와 아이콘으로만 쓰여 3:1이면 됐다. 2026-08-22에
+    # 유니온 덱 라벨이 고른 덱의 보스 이름을 이 색으로 켜면서 **글자**가 됐고,
+    # 글자는 4.5가 필요하다. 그래서 여기 4.5로 적는다 - 테두리 쪽 쓰임에는
+    # 과한 잣대지만, 둘 중 엄한 쪽을 못 넘으면 보이는 것이 맞다.
+    #
+    # el-fire가 지금 --surface에서 4.13으로 LOW다. 값을 올리지 않은 것은 그
+    # 빨강이 「철갑의 금색으로 안 읽히게」 일부러 어둡게 고른 색이기 때문이다
+    # (index.css, Fienn 2026-07-28). 고치려면 --accent-on-light처럼 글자 전용
+    # 변종을 두는 쪽이지, 이 색을 밝히는 쪽이 아니다.
+    ("el-fire", "el-fire", 4.5, "작열 - 덱 라벨에서 글자로 쓰인다"),
+    ("el-water", "el-water", 4.5, "수냉 - 같음"),
+    ("el-wind", "el-wind", 4.5, "풍압 - 같음"),
+    ("el-iron", "el-iron", 4.5, "철갑 - 같음"),
+    ("el-electric", "el-electric", 4.5, "전격 - 같음"),
 ]
 
 # Filled surfaces referenced directly, beyond GROUND_TOKENS/FOREGROUNDS above.
@@ -99,6 +113,10 @@ FILLED_SURFACE_TOKENS = [
     "accent-contrast",
     "accent-soft",
     "accent-on-light",
+    # 상자를 걷은 뒤 버튼이 서는 바닥. 반투명이라 얹히는 곳마다 값이 달라지므로
+    # accent-soft와 같이 바닥별로 합성해서 잰다.
+    "raised",
+    "raised-hover",
 ]
 
 
@@ -152,7 +170,12 @@ def main():
             cells += f"{r:>8.2f} {mark:<3}"
         print(f"{name:{width}}{cells}  (needs {need}) - {what}")
 
-    print("\nGrounds are barely separated by design - the borders carry depth:")
+    # 2026-08-22까지는 여기에 "the borders carry depth"라고 적혀 있었다. 이제는
+    # 반대다 - 채움이 구조를 지고 상자는 걷혔다. 그런데 이 단들은 여전히 좁고,
+    # 좁은 것이 게으름이 아니라 아래 두 하한 때문이다: --surface-2를 한 칸만
+    # 올려도 accent가 4.5를, --border가 3.0을 잃는다. 그래서 분리는 단을 벌려서가
+    # 아니라 탭 패널이 채움을 놓아 그 위의 것들이 떠오르게 해서 얻는다.
+    print("\nGrounds are close by necessity - see index.css for why they cannot open up:")
     names = list(grounds)
     for i in range(len(names) - 1):
         a, b = grounds[names[i]], grounds[names[i + 1]]
@@ -181,6 +204,18 @@ def main():
         what = f"accent on accent-soft, over --{ground_label}"
         filled.append((tokens["accent"], composite, what))
 
+    # 버튼 라벨이 앉는 바닥. --raised는 어느 면 위에도 얹힐 수 있으므로 세 바닥
+    # 전부에서 재고, 라벨로 실제 쓰이는 두 색을 본다. 여기가 LOW로 떨어지면
+    # 오버레이 알파를 올릴 것이 아니라 라벨 색을 --text로 올려야 한다 -
+    # 바닥을 밝히면 그 위의 --border가 3:1을 잃는다.
+    for label_token in ("text", "text-muted"):
+        for raised_token in ("raised", "raised-hover"):
+            raised_rgb, raised_alpha = parse_rgba(tokens[raised_token])
+            for ground_label, ground_hex in grounds.items():
+                composite = blend(raised_rgb, raised_alpha, to_rgb(ground_hex))
+                what = f"{label_token} on {raised_token}, over --{ground_label}"
+                filled.append((tokens[label_token], composite, what))
+
     for fg, bg, what in filled:
         r = ratio(fg, bg)
         fg_label = fg if isinstance(fg, str) else to_hex(fg)
@@ -188,8 +223,10 @@ def main():
         mark = "ok" if r >= 4.5 else "LOW"
         print(f"  {fg_label} on {bg_label}: {r:>6.2f} {mark}  - {what}")
 
-    # In this direction the borders ARE the structure, so the one on controls has
-    # to clear 3:1 against the lightest ground it ever sits on.
+    # 상자는 걷혔지만 컨트롤의 가장자리는 남는다 - 사람이 값을 치거나 고르는
+    # 칸은 테두리가 곧 「여기가 컨트롤이다」라서, 채움만으로는 3:1을 못 만든다
+    # (--surface-2 위의 --raised는 1.18이다). 그 선은 여전히 가장 밝은 바닥에서
+    # 3:1을 넘어야 한다.
     worst = max(grounds.values(), key=luminance)
     for target, label in ((3.0, "component edge"), (3.0, "emphasised edge")):
         grey = next(

@@ -335,6 +335,10 @@ export function DraftEditor({
                 picksDeck && activeDeck === deckIndex ? 'draft-editor__deck--active' : '',
                 pressable ? 'draft-editor__deck--pressable' : '',
               ].filter(Boolean).join(' ')}
+              // 이 덱이 맡은 보스의 약점 속성. App.css 맨 위의 배선이 이걸 보고
+              // --element를 세우고, 덱 이름이 켜질 때 그 색을 읽는다. 보스를
+              // 아직 안 고른 덱은 속성이 없어 --element도 안 선다.
+              data-element={label?.weakness ?? undefined}
               key={deckIndex}
               // Only preventDefault for a real unit drag: the default action is
               // what refuses the drop, and refusing is right for anything else.

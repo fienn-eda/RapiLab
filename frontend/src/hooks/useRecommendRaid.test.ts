@@ -21,6 +21,7 @@ const request: RecommendRaidRequest = {
     part_destructible: false,
     part_destruction_times: [],
     spawns_adds: false,
+    hold_fire_despite_adds: false,
     core_diameter_px: null,
     effective_range_band: null,
     elemental_interrupt_required: false,
@@ -49,7 +50,7 @@ describe('useRecommendRaid', () => {
         total_damage: 100,
         burst_damage: 60,
         normal_attack_damage: 40,
-        skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {},
+        skill_damage: 0, hold_burst_slugs: [], hold_fire_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {},
         pinned_slugs: [],
       },
       {
@@ -57,7 +58,7 @@ describe('useRecommendRaid', () => {
         total_damage: 80,
         burst_damage: 50,
         normal_attack_damage: 30,
-        skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {},
+        skill_damage: 0, hold_burst_slugs: [], hold_fire_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {},
         pinned_slugs: [],
       },
     ]
@@ -93,13 +94,13 @@ describe('useRecommendRaid', () => {
         total_damage: 100,
         burst_damage: 60,
         normal_attack_damage: 40,
-        skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {},
+        skill_damage: 0, hold_burst_slugs: [], hold_fire_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {},
         pinned_slugs: ['a'],
       },
     ]
     const withinDraft = {
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 90, burst_damage: 55, normal_attack_damage: 35, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {}, pinned_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 90, burst_damage: 55, normal_attack_damage: 35, skill_damage: 0, hold_burst_slugs: [], hold_fire_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {}, pinned_slugs: [] },
       ],
       combined_total_damage: 90,
       leftover_slugs: [],

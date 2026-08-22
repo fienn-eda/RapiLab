@@ -71,6 +71,9 @@ class BossProfileIn(BaseModel):
     # 후보에서 지우는 데만 쓰인다 - 나오는 잡몹을 치워야 하므로 자기 풀 버스트
     # 동안 평타를 멈출 수 없다. 자세한 것은 BossProfile.spawns_adds.
     spawns_adds: bool = False
+    # See BossProfile.hold_fire_despite_adds - 잡몹이 나와도 홀드 파이어를 두겠다는
+    # 플레이어의 선언. `spawns_adds`가 거짓이면 아무것도 안 바꾼다.
+    hold_fire_despite_adds: bool = False
     # How far away this boss is fought. The band decides WHICH weapons are
     # inside their effective range and collect +0.30 on their normal attacks:
     # near pays SG/SMG, mid pays AR/MG, far pays SR, and a Rocket Launcher is
@@ -255,6 +258,11 @@ class DeckRecommendation(BaseModel):
     gauge_delay_seconds: float = 0.0
     gauge_bound_cycles: int = 0
     total_cycles: int = 0
+    # 자기 풀 버스트 동안 평타를 멈춰야 하는 좌석(deck_search의 `hold_fire`). 위
+    # 셋과 같은 성격의 플레이 지시다 - 이 수를 두지 않으면 위 수치가 안 나온다.
+    # 잡몹이 나오는 보스에서 이 목록이 비어 있지 않다면 그것은 플레이어가
+    # `hold_fire_despite_adds`로 잡몹을 감당하겠다고 선언했다는 뜻이다.
+    hold_fire_slugs: list[str] = []
 
 
 class RecommendResponse(BaseModel):
@@ -548,6 +556,7 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
                 gauge_delay_seconds=r["gauge_delay_seconds"],
                 gauge_bound_cycles=r["gauge_bound_cycles"],
                 total_cycles=r["total_cycles"],
+                hold_fire_slugs=r["hold_fire_slugs"],
             )
             for r in results
         ],
@@ -599,6 +608,7 @@ def _to_recs(decks, pinned_by_deck=None):
             gauge_delay_seconds=d["gauge_delay_seconds"],
             gauge_bound_cycles=d["gauge_bound_cycles"],
             total_cycles=d["total_cycles"],
+            hold_fire_slugs=d["hold_fire_slugs"],
             pinned_slugs=pinned,
         )
         for d, pinned in zip(decks, pinned_by_deck)
@@ -735,7 +745,8 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
             seating=seating_view(d["seating"]),
             gauge_delay_seconds=d["gauge_delay_seconds"],
             gauge_bound_cycles=d["gauge_bound_cycles"],
-            total_cycles=d["total_cycles"]) for d in out["decks"]],
+            total_cycles=d["total_cycles"],
+            hold_fire_slugs=d["hold_fire_slugs"]) for d in out["decks"]],
         combined_total_damage=out["combined_total_damage"],
         excluded_slugs=excluded,
         engine_version=engine_version(),

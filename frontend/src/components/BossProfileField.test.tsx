@@ -2,7 +2,6 @@
 // 버튼이 설정 자체를 건드리지 않는다는 것 - 체크박스 라벨 안에 있으면
 // 설명을 열려는 클릭이 보스 프로필을 바꾼다.
 
-import { useState } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -445,19 +444,29 @@ describe('BossProfileField 회차 보스 피커', () => {
     expect(screen.queryByRole('button', { name: '회차 보스 설명' })).not.toBeInTheDocument()
   })
 
-  it('약점을 손으로 바꾸면 카드 선택이 풀린다', async () => {
-    // 카드는 「이 보스로 계산 중」이라고 말한다. 속성이 그 보스와 달라진 뒤에도
-    // 체크가 남아 있으면 화면이 거짓말을 한다.
-    const user = userEvent.setup()
-    const Harness = () => {
-      const [draft, setDraft] = useState(makeDefaultBossProfileDraft())
-      return <BossProfileField value={draft} onChange={setDraft} rotation={rotation} />
-    }
-    render(<Harness />)
-    await user.click(screen.getByRole('radio', { name: '전격선바스' }))
+  it('카드 체크는 draft를 따라간다 — boss_name이 비면 선택도 풀린다', () => {
+    // 카드는 「이 보스로 계산 중」이라고 말한다. draft가 그 보스를 안 가리키게 된
+    // 뒤에도 체크가 남아 있으면 화면이 거짓말을 한다.
+    //
+    // 전에는 약점을 손으로 바꿔서 이 상황을 만들었는데, 회차 목록이 있으면 약점
+    // 피커를 그리지 않게 되어 그 경로가 없어졌다. 지키려는 것은 원래 경로가 아니라
+    // 「체크가 자기 상태를 따로 들고 있지 않다」는 쪽이므로 draft를 직접 바꿔 잰다.
+    const view = render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), element: 'Fire', boss_name: '선바스' }}
+        onChange={vi.fn()}
+        rotation={rotation}
+      />,
+    )
     expect(screen.getByRole('radio', { name: '전격선바스' })).toBeChecked()
 
-    await user.click(screen.getByRole('radio', { name: '작열' }))
+    view.rerender(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), element: 'Fire', boss_name: null }}
+        onChange={vi.fn()}
+        rotation={rotation}
+      />,
+    )
     expect(screen.getByRole('radio', { name: '전격선바스' })).not.toBeChecked()
   })
 })
@@ -481,6 +490,10 @@ describe('BossProfileField 보스 이름', () => {
 
   // 라벨이 거짓말하지 않게 하는 가드. 이름은 그 속성의 보스를 가리켜 붙은 것이라,
   // 속성을 손으로 바꾸면 가리킬 대상이 없어진다.
+  //
+  // rotation을 안 넘기는 것이 이 두 건의 핵심 조건이다: 회차 보스 목록이 있으면
+  // 약점 피커 자체를 그리지 않는다(보스가 약점을 정한다). 손으로 고르는 길은
+  // 목록이 없을 때만 열리므로, 그 규칙도 그 설정에서만 검사할 수 있다.
   it('속성을 직접 바꾸면 보스 이름을 버린다', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
@@ -488,7 +501,6 @@ describe('BossProfileField 보스 이름', () => {
       <BossProfileField
         value={{ ...makeDefaultBossProfileDraft(), element: 'Fire', boss_name: '선바스' }}
         onChange={onChange}
-        rotation={rotation}
       />,
     )
 
@@ -504,13 +516,27 @@ describe('BossProfileField 보스 이름', () => {
       <BossProfileField
         value={{ ...makeDefaultBossProfileDraft(), element: 'Fire', boss_name: '선바스' }}
         onChange={onChange}
-        rotation={rotation}
       />,
     )
 
     await user.click(screen.getByRole('radio', { name: '약점 없음' }))
 
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ boss_name: null }))
+  })
+
+  // 위 두 건의 반대편. 목록이 있으면 같은 값을 정하는 자리가 둘이 되지 않는다.
+  it('회차 보스 목록이 있으면 약점 피커를 그리지 않는다', () => {
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={vi.fn()}
+        rotation={rotation}
+      />,
+    )
+
+    expect(screen.queryByRole('radiogroup', { name: '보스 약점 속성' })).not.toBeInTheDocument()
+    // 목록 자체는 그대로 있어야 한다 - 약점을 정하는 입구가 이쪽으로 옮겨간 것이다.
+    expect(screen.getByRole('radio', { name: /선바스/ })).toBeInTheDocument()
   })
 })
 
@@ -967,3 +993,55 @@ describe('BossProfileField 코어 지름', () => {
     expect(input.checkValidity()).toBe(true)
   })
 })
+
+describe('BossProfileField 잡몹 홀드 오버라이드', () => {
+  // 잡몹이 나오는 보스에서도 플레이어의 조작에 따라 평타를 멈출 수 있는 판이 있다.
+  // 그 선언은 보스의 사실이 아니라 플레이어 것이므로, 사실 쪽을 꺼서 택틱을 여는
+  // 길밖에 없으면 화면에는 「잡몹 없는 보스」라고 적힌 채로 계산이 돈다.
+  it('잡몹이 안 나오는 보스에는 칩이 없다', () => {
+    render(
+      <BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />,
+    )
+
+    expect(screen.queryByRole('checkbox', { name: /애미하라/ })).not.toBeInTheDocument()
+  })
+
+  it('잡몹 생성을 켜면 칩이 나오고 선언이 나간다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), spawns_adds: true }}
+        onChange={onChange}
+      />,
+    )
+
+    await user.click(screen.getByRole('checkbox', { name: /애미하라/ }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ hold_fire_despite_adds: true }),
+    )
+  })
+
+  it('잡몹 생성을 끄면 선언도 같이 꺼진다', async () => {
+    // 코어 타격 가능 ↔ 관통과 같은 규칙: 폼에서 모순 상태를 아예 만들지 않는다.
+    // 값을 남겨 두면 화면에서 사라진 칩이 계산에는 살아 있다.
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{
+          ...makeDefaultBossProfileDraft(),
+          spawns_adds: true,
+          hold_fire_despite_adds: true,
+        }}
+        onChange={onChange}
+      />,
+    )
+
+    await user.click(screen.getByRole('checkbox', { name: '잡몹 생성' }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ spawns_adds: false, hold_fire_despite_adds: false }),
+    )
+  })
+})
+

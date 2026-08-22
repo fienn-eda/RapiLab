@@ -230,7 +230,7 @@ export function BossProfileField({
   return (
     // 접히면 legend만 남는다. .group의 세로 여백이 그대로면 머리 아래 빈 상자가
     // 그려지고, 그건 「나와야 할 것이 안 나왔다」로 읽힌다.
-    <fieldset className={showBody ? 'group' : 'group group--collapsed'}>
+    <fieldset className="group">
       {/* 카드가 있을 때만 설명을 붙인다 - 회차 데이터가 없으면 이 탭에 카드 자체가
           없어서, 카드를 고르면 어떻게 된다는 설명이 가리킬 대상이 없다. */}
       <legend className="group__legend">
@@ -257,7 +257,7 @@ export function BossProfileField({
       </legend>
 
       {showBody && (
-        <div id={bodyId}>
+        <div id={bodyId} className="boss-profile__body">
           {rotation && (
             <RaidRotationPicker
               rotation={rotation}
@@ -266,6 +266,14 @@ export function BossProfileField({
             />
           )}
 
+          {/* 회차 보스를 고르면 약점은 그 보스가 정한다 - pickRotationBoss가
+              element를 같이 넣는다. 고를 목록이 있는데 손으로 고르는 칸까지 두면
+              같은 값을 두 자리에서 정하게 되고, 둘이 어긋나면 어느 쪽이 진실인지
+              화면이 답하지 못한다(Fienn, 2026-08-22).
+
+              목록이 없을 때만 남긴다. 그때는 이 칸이 약점을 넣는 유일한 입구라,
+              같이 지우면 모든 보스가 「약점 없음」으로 계산된다. */}
+          {rotation === null && (
           <div className="field">
             <span className="field__label" id={`${elementId}-label`}>
               보스 약점 속성
@@ -305,6 +313,7 @@ export function BossProfileField({
               </label>
             </div>
           </div>
+          )}
 
           <div className="field">
             <span className="field__label-row">
@@ -395,7 +404,16 @@ export function BossProfileField({
             <ToggleChip
               type="checkbox"
               checked={value.spawns_adds}
-              onChange={(checked) => onChange({ ...value, spawns_adds: checked })}
+              onChange={(checked) =>
+                onChange({
+                  ...value,
+                  spawns_adds: checked,
+                  // 잡몹이 없으면 「그래도 홀드하겠다」는 선언도 의미가 없다. 값을
+                  // 남겨 두면 화면에서 사라진 칩이 계산에는 살아 있다 - 코어 타격
+                  // 가능 ↔ 관통과 같은 규칙이다.
+                  hold_fire_despite_adds: checked && value.hold_fire_despite_adds,
+                })
+              }
               help={
                 <HelpTip label="잡몹 생성">
                   <HelpText>{HELP.boss.spawnsAdds}</HelpText>
@@ -404,6 +422,25 @@ export function BossProfileField({
             >
               잡몹 생성
             </ToggleChip>
+
+            {/* 잡몹이 나오는 보스에서만 그린다 - 안 나오는 보스에 상시 떠 있으면
+                아무것도 안 하는 스위치가 된다. */}
+            {value.spawns_adds && (
+              <ToggleChip
+                type="checkbox"
+                checked={value.hold_fire_despite_adds}
+                onChange={(checked) =>
+                  onChange({ ...value, hold_fire_despite_adds: checked })
+                }
+                help={
+                  <HelpTip label="애미하라 택틱">
+                    <HelpText>{HELP.boss.holdFireDespiteAdds}</HelpText>
+                  </HelpTip>
+                }
+              >
+                애미하라 택틱
+              </ToggleChip>
+            )}
 
             {showElementalInterrupt && (
               <ToggleChip
