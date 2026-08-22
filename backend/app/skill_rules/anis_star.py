@@ -39,7 +39,13 @@ magazine really only manages ~11 around a reload. Two consequences of that
 choice are documented rather than hidden: charge speed is sampled once per
 MAGAZINE (see attack_rate), so a magazine already in flight when the burst
 lands keeps the slower cadence and one starting late keeps the faster one past
-the window's end; and modeling a "fixed at" as a buff means an ally's Charge
+the window's end - measured on the GAUGE axis for the first time on 2026-08-22
+(Fienn's deck-1 range reading): the engine fires her at 0.77-sec intervals in
+the gauge-charging window where her base charge is 1.00 sec, so it OVER-credits
+her there. That is the opposite sign from this approximation's damage cost, and
+it is why closing it makes the computed fill time worse before better - see
+`docs/measurements/burst-gauge-fill.md` (F2) and `docs/engine-gaps.md`; and
+modeling a "fixed at" as a buff means an ally's Charge
 Speed buff stacks on top and pushes below 0.7 sec, where in game the fixed
 value would not move - an over-estimate confined to decks that buff charge
 speed. The engine DOES have a per-unit buff-immunity primitive
