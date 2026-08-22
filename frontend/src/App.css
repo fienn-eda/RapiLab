@@ -1148,19 +1148,23 @@
   gap: var(--sp-2);
 }
 
-/* 상자를 걷는 이번 정리에서 유일하게 선을 남긴 자리다(Fienn, 2026-08-22).
-   켜짐은 이미 흰 채움이라 신호가 확실하지만, 꺼짐은 이 선이 「여기가 누르는
-   자리다」를 말하는 유일한 표시다. 채움만으로는 못 만든다 - --surface-2 위의
-   --raised는 1.18:1이라 3:1 바닥에 한참 못 미친다.
-   대신 --border-strong(5.04:1)에서 --border(3.03:1)로 낮춘다: 필요한 것보다
-   두 배 세게 말하고 있었다. */
+/* 꺼짐은 가이드 뱃지(.guide-badge)와 같은 모습이다 - 알약, --raised 채움, 선 없음.
+   켜짐은 채우지 않고 흰 테두리만 켠다(Fienn, 2026-08-22).
+
+   흰 채움을 쓰지 않는 이유: 이 칩들은 여럿이 동시에 켜져 있고(코어 타격 가능 +
+   부위파괴 기믹 + 잡몹 생성…) 상시 화면에 떠 있다. 켤 때마다 흰 덩어리가 하나씩
+   늘면 보스 설정이 화면에서 가장 밝은 구역이 된다 - 읽을 곳이 아니라 고르는
+   곳인데.
+
+   테두리는 꺼짐에서도 1px 투명으로 자리를 잡아 둔다. 0으로 두면 켤 때 칩이
+   2px씩 움직여 줄 전체가 흔들린다. */
 .chip-toggle {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--raised);
 }
 
 /* 설명 버튼이 있는 칩만 오른쪽에 자리를 낸다 - 없으면 라벨이 상자를 다 쓴다. */
@@ -1174,16 +1178,10 @@
   cursor: pointer;
 }
 
+/* 켜짐은 테두리만. 바닥과 글자는 꺼짐 그대로라, 줄을 훑을 때 달라 보이는 것이
+   윤곽 하나뿐이다. 흰색(--primary)인 것은 「누르는 것은 흰색」 규칙 그대로다. */
 .chip-toggle:has(input:checked) {
-  background: var(--primary);
   border-color: var(--primary);
-  color: var(--primary-contrast);
-}
-
-/* 흰 바닥 위에서는 설명 버튼의 회색 테두리와 글자가 사라진다. */
-.chip-toggle:has(input:checked) .help-tip__button {
-  color: var(--primary-contrast);
-  border-color: var(--primary-contrast);
 }
 
 .chip-toggle:has(input:focus-visible) {
@@ -1320,9 +1318,11 @@
   gap: var(--sp-3);
 }
 
+/* .group__legend와 같은 급이다 - 「40시즌 가이드」도 「모드」도 한 구획의 이름이라
+   같은 크기로 읽혀야 한다. */
 .guide-card__title {
   margin: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -1637,17 +1637,30 @@
   max-width: var(--measure);
 }
 
-/* 접힌 요약은 값이 아니라 값이 있는 곳을 가리키는 표지다. */
+/* 보스 설정 본문. 회차 보스 카드 · 적정거리 · 칩 줄 · 기타 설정이 세로로 쌓이는데
+   전에는 이 자리에 간격이 없어 항목끼리 붙어 있었다. 상자가 사라진 뒤로는
+   여백이 항목을 가르는 유일한 수단이라 더 티가 난다(Fienn, 2026-08-22). */
+.boss-profile__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* 접힌 요약은 값이 아니라 값이 있는 곳을 가리키는 표지다. 위쪽 여백은 이제
+   .boss-profile__body의 gap이 준다 - 여기 margin-top을 남기면 이중이 된다. */
 .boss-profile__folded > summary {
   cursor: pointer;
-  margin-top: var(--sp-2);
 }
 
 /* 상자가 없어졌으니 좌우 여백도 없다 - 그 여백은 legend가 테두리를 끊고 앉도록
    내주던 자리였다. 색은 --text 그대로 둔다: 구획을 알리는 것이 이제 이 한 줄
-   뿐이라, 니케 풀의 흐린 머리글까지 따라가면 너무 조용해진다. */
+   뿐이라, 니케 풀의 흐린 머리글까지 따라가면 너무 조용해진다.
+
+   15px인 이유도 같다(Fienn, 2026-08-22). 13px는 본문(14px)보다 작아서, 상자가
+   있을 때는 테두리가 「여기부터 새 구획」을 말해 줬지만 상자가 없으니 본문에
+   묻혔다. 카드 제목 18px과 본문 14px 사이에 앉는다. */
 .group__legend {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   padding: 0;
   color: var(--text);

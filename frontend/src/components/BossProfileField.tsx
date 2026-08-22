@@ -257,7 +257,7 @@ export function BossProfileField({
       </legend>
 
       {showBody && (
-        <div id={bodyId}>
+        <div id={bodyId} className="boss-profile__body">
           {rotation && (
             <RaidRotationPicker
               rotation={rotation}
@@ -266,6 +266,14 @@ export function BossProfileField({
             />
           )}
 
+          {/* 회차 보스를 고르면 약점은 그 보스가 정한다 - pickRotationBoss가
+              element를 같이 넣는다. 고를 목록이 있는데 손으로 고르는 칸까지 두면
+              같은 값을 두 자리에서 정하게 되고, 둘이 어긋나면 어느 쪽이 진실인지
+              화면이 답하지 못한다(Fienn, 2026-08-22).
+
+              목록이 없을 때만 남긴다. 그때는 이 칸이 약점을 넣는 유일한 입구라,
+              같이 지우면 모든 보스가 「약점 없음」으로 계산된다. */}
+          {rotation === null && (
           <div className="field">
             <span className="field__label" id={`${elementId}-label`}>
               보스 약점 속성
@@ -305,6 +313,7 @@ export function BossProfileField({
               </label>
             </div>
           </div>
+          )}
 
           <div className="field">
             <span className="field__label-row">

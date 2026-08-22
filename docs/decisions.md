@@ -5,6 +5,27 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 약점 속성은 회차 보스가 정한다 — 손으로 고르는 칸은 목록이 없을 때만 남는다
+
+- Date: 2026-08-22
+- Context: `pickRotationBoss`가 회차 보스 카드를 누를 때 `element`를 같이 넣는다.
+  그런데 그 아래에 「보스 약점 속성」 라디오가 따로 있어서, 같은 값을 정하는
+  자리가 화면에 둘이었다. 둘이 어긋나면 어느 쪽이 진실인지 화면이 답하지 못한다.
+- Decision: **회차 보스 목록이 있으면(`rotation !== null`) 약점 피커를 그리지
+  않는다.** 목록이 없을 때만 남긴다.
+- Alternatives considered: **(a) 완전 삭제** — 기각. `rotation`의 기본값이
+  `null`이고 호출부 둘 다 `latestRotationFor(...)`를 넘기므로, 회차 데이터가 아직
+  없거나 로딩 전이면 목록이 안 그려진다. 그 상태에서 피커까지 지우면 **약점을
+  넣을 입구가 아예 없어져** 모든 보스가 「약점 없음」으로 계산된다 — 조용히
+  틀리는 종류의 구멍이다.
+- Consequences: 테스트 세 건이 이 경로에 걸려 있었다. 둘(「속성을 직접 바꾸면
+  보스 이름을 버린다」·「약점 없음을 골라도…」)은 **규칙이 살아 있는 설정**인
+  `rotation` 없는 렌더로 옮겼다 — 커버리지는 그대로다. 세 번째(「약점을 손으로
+  바꾸면 카드 선택이 풀린다」)는 UI 경로가 사라져 성립하지 않으므로, 지키려던
+  것(카드 체크가 자기 상태를 따로 들지 않고 `value.boss_name`에서 파생된다)을
+  draft를 직접 바꿔 재는 형태로 다시 썼다. 목록이 있을 때 피커가 없다는 것을
+  검사하는 건을 새로 더했다.
+
 ## 구조는 선이 아니라 채움이 진다 — 상자는 「물건」에만 남긴다
 
 - Date: 2026-08-22
