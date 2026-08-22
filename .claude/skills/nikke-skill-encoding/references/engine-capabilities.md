@@ -1177,6 +1177,16 @@ spec dicts `{"schedule": fn(context, fight_duration) -> times, "percent",
 `simulate_raid`'s `scheduled_nukes` param. Times at or past `fight_duration` are
 dropped. Logged with `source="scheduled"`.
 
+**A scheduled hit is recorded at its LAUNCH time - flight is not modeled.**
+The tick enters `damage_log` when it is fired, so a projectile launched just
+inside a Full Burst window is counted inside it even when it lands after the
+window closes. Measured on deck 1 (2026-08-22): the burst gauge, which only
+accumulates OUTSIDE the window, takes a bolus of ~10% of the gauge at window
+close that the engine never sees, and its size matches ~3.5 of Anis: Star's
+0.25-sec Shooting Stars. Modeling flight would need a per-source constant that
+nothing has measured yet - see `docs/engine-gaps.md`, section
+「덱1 실측이 연 셋」.
+
 **`resource_gate` gates or scales each tick on a named resource, read at that
 tick's OWN time** - the same 3-tuple `(name, cap, scale_fn)` that
 `resource_scaled_nukes` uses (it names no lifetime: the count comes back on the
