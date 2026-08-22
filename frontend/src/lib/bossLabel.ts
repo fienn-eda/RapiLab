@@ -6,6 +6,7 @@ import { elementLabel } from './elementName'
 import { WEAKNESS_ICON } from './elementIcon'
 import type { BossElement } from '../types/recommend'
 import type { RaidRotation } from '../types/raidRotation'
+import type { NikkeElement } from '../types/supportedUnit'
 
 /** 이 보스의 약점 속성 이름. 속성을 안 고른 보스도 자리를 지켜야 하는 곳
  * (유니온 저장 이름의 덱 나열)이 있어서 빈 문자열이 아니라 낱말을 준다. */
@@ -16,6 +17,10 @@ export interface BossHeading {
   text: string
   /** 약점 속성 아이콘. 부를 이름이 폴백뿐이면 null. */
   iconSrc: string | null
+  /** 아이콘이 가리키는 바로 그 약점 속성. 화면이 이 이름을 속성 색으로 켤 때
+   * 쓴다(덱 라벨) - 아이콘 경로에서 속성을 되짚는 대신 같이 들고 다닌다.
+   * iconSrc가 null이면 이것도 null이다. */
+  weakness: NikkeElement | null
 }
 
 /** 보스를 부르는 이름 세 단계: 고른 보스 이름 → 약점 이름 → 부르는 쪽이 준
@@ -26,9 +31,13 @@ export const bossHeading = (args: {
   element: BossElement
   fallback: string
 }): BossHeading => {
-  if (args.element === null) return { text: args.fallback, iconSrc: null }
-  const iconSrc = WEAKNESS_ICON[weaknessFor(args.element)]
-  return { text: args.bossName ?? weaknessLabelOf(args.element), iconSrc }
+  if (args.element === null) return { text: args.fallback, iconSrc: null, weakness: null }
+  const weakness = weaknessFor(args.element)
+  return {
+    text: args.bossName ?? weaknessLabelOf(args.element),
+    iconSrc: WEAKNESS_ICON[weakness],
+    weakness,
+  }
 }
 
 /** 시즌 가이드 카드의 제목. 「솔로 레이드 40시즌」에서 회차만 뽑는 이유는 그
