@@ -19,6 +19,7 @@ describe('validateBossProfileDraft', () => {
       part_destructible: false,
       part_destruction_times: [],
       spawns_adds: false,
+      hold_fire_despite_adds: false,
       core_diameter_px: null,
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -36,6 +37,7 @@ describe('validateBossProfileDraft', () => {
       part_destructible: true,
       part_destruction_times: '',
       spawns_adds: false,
+      hold_fire_despite_adds: false,
       core_diameter_px: '',
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -49,6 +51,7 @@ describe('validateBossProfileDraft', () => {
       part_destructible: true,
       part_destruction_times: [],
       spawns_adds: false,
+      hold_fire_despite_adds: false,
       core_diameter_px: null,
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -96,6 +99,7 @@ describe('bossProfileToDraft', () => {
       part_destructible: true,
       part_destruction_times: '',
       spawns_adds: false,
+      hold_fire_despite_adds: false,
       core_diameter_px: '33.33',
       effective_range_band: null,
       elemental_interrupt_required: false,
@@ -275,3 +279,29 @@ describe('잡몹 생성', () => {
     expect(bossProfileToDraft(old).spawns_adds).toBe(false)
   })
 })
+
+describe('잡몹을 감당하겠다는 선언', () => {
+  // 인카운터의 사실(spawns_adds)과 별개 필드다. validateBossProfileDraft가 필드를
+  // 하나하나 나열하므로, 여기 안 적히면 폼에서는 켜지는데 wire에는 안 실린다 -
+  // effective_range_band가 정확히 그렇게 사라졌었다.
+  it('wire로 실려 간다', () => {
+    const draft = {
+      ...makeDefaultBossProfileDraft(),
+      spawns_adds: true,
+      hold_fire_despite_adds: true,
+    }
+    expect(validateBossProfileDraft(draft).value?.hold_fire_despite_adds).toBe(true)
+  })
+
+  it('기본값은 꺼짐이다', () => {
+    expect(makeDefaultBossProfileDraft().hold_fire_despite_adds).toBe(false)
+  })
+
+  it('그 필드가 없던 프로필을 복원하면 꺼진 채로 돌아온다', () => {
+    // 비제어 컴포넌트가 되는 것을 막는다 - 이 파일의 다른 불리언들과 같은 이유.
+    const stored = validateBossProfileDraft(makeDefaultBossProfileDraft()).value!
+    const { hold_fire_despite_adds: _dropped, ...older } = stored
+    expect(bossProfileToDraft(older as typeof stored).hold_fire_despite_adds).toBe(false)
+  })
+})
+

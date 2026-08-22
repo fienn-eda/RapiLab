@@ -2938,8 +2938,13 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
   `_helpers.hold_fire_segments` + `registry._HOLD_FIRE_TACTICS`(미하라 0발 방출,
   아인 1발 방출). **유닛 속성이 아니라 런의 선택**이라 켜는 것은
   `evaluate_deck(hold_fire=...)`이고, 고르는 곳은 **리포트 경로**
-  (`evaluate_deck_best_seating`)다. 게이트는 「덱에 라운드 버프를 남에게 주는
-  유닛이 있는가」이고 규칙 자체의 태그(`grants_round_buff_to_allies`)로 읽는다.
+  (`evaluate_deck_best_seating`)다. 게이트는 둘이다 — 덱 쪽은 「덱에 라운드 버프를
+  남에게 주는 유닛이 있는가」이고 규칙 자체의 태그(`grants_round_buff_to_allies`)로
+  읽는다. 인카운터 쪽은 `spawns_adds`인데 그것은 **판정이 아니라 기본값**이다
+  (2026-08-22): 잡몹을 감당하며 홀드하는 판이 있어서 `hold_fire_despite_adds`가
+  플레이어의 선언으로 그 게이트만 연다(덱 게이트는 그대로). 고른 홀드는
+  `_summarize`의 `hold_fire_slugs`로 화면까지 실려 간다 — 그 전에는 점수만
+  조용히 올랐다.
   **에이다도 대상**(2026-08-18 해소) — 특수개조를 1발짜리 세그먼트로 다시 인코딩해
   차지 4.0초·차지댐 1750%가 둘 다 착지했고, 그녀의 홀드는 그 세그먼트를 **대체**한다
   (`_HOLD_FIRE_RELEASE_PROFILE_BUILDERS`). 2026-08-18.

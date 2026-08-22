@@ -78,7 +78,7 @@ def test_feasible_roster_returns_ranked_decks_and_exclusions():
     assert set(first) == {
         "deck", "total_damage", "burst_damage", "normal_attack_damage", "skill_damage",
         "hold_burst_slugs", "tap_fire_slugs", "partial_charge_slugs",
-        "partial_charge_full_rounds", "seating",
+        "partial_charge_full_rounds", "seating", "hold_fire_slugs",
         "gauge_bound_cycles", "total_cycles", "gauge_delay_seconds",
     }
     assert len(first["deck"]) == 5
@@ -122,7 +122,7 @@ def test_recommend_raid_partitions_roster_and_reports_leftovers():
     assert set(deck) == {
         "deck", "total_damage", "burst_damage", "normal_attack_damage", "skill_damage",
         "hold_burst_slugs", "tap_fire_slugs", "partial_charge_slugs",
-        "partial_charge_full_rounds", "pinned_slugs", "seating",
+        "partial_charge_full_rounds", "pinned_slugs", "seating", "hold_fire_slugs",
         "gauge_bound_cycles", "total_cycles", "gauge_delay_seconds",
     }
     assert sorted(deck["deck"]) == sorted(FEASIBLE)

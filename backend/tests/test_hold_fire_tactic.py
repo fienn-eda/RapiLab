@@ -11,7 +11,7 @@ and why the deck gate exists.
 """
 import pytest
 
-from app.deck_search import (BossProfile, deck_is_valid, evaluate_deck,
+from app.deck_search import (BossProfile, _summarize, deck_is_valid, evaluate_deck,
                              evaluate_deck_best_seating,
                              evaluate_deck_hold_fire_options, feasible_orderings)
 from app.models import UserNikkeState
@@ -230,6 +230,67 @@ def test_holding_mihara_IS_A_WASH_at_this_decks_computed_gauge():
     plain = evaluate_deck(ordering, BOSS)
     held = evaluate_deck(ordering, BOSS, hold_fire={MIHARA})
     assert held["total_damage"] / plain["total_damage"] == pytest.approx(1.0, abs=0.01)
+
+
+def test_the_player_can_declare_the_adds_are_handled_and_get_the_hold_back():
+    # 잡몹이 나오는 보스라도 플레이어의 조작에 따라 평타를 멈출 수 있는 판이 있다
+    # (Fienn, 2026-08-22). `spawns_adds`는 인카운터의 사실로 남고, 그 사실을
+    # 감당하겠다는 선언은 플레이어의 것이다 - 그래서 필드가 둘이다.
+    ordering = _ordering(WITH_GRANTER, MIHARA)
+    boss = BossProfile(spawns_adds=True, hold_fire_despite_adds=True)
+    assert evaluate_deck_hold_fire_options(ordering, boss) == [
+        frozenset(), frozenset({MIHARA})]
+
+
+def test_the_override_does_not_bypass_the_deck_gate():
+    # 오버라이드는 인카운터 게이트만 연다. 살릴 라운드 버프가 없는 덱에서 홀드는
+    # 여전히 확정 손해이므로 시뮬을 돌릴 값이 없다 - 오버라이드를 게이트 전체의
+    # 우회로로 만들면 여기가 깨진다.
+    ordering = _ordering(WITHOUT_GRANTER, MIHARA)
+    boss = BossProfile(spawns_adds=True, hold_fire_despite_adds=True)
+    assert evaluate_deck_hold_fire_options(ordering, boss) == [frozenset()]
+
+
+def test_the_report_path_reports_the_hold_when_the_player_overrides_the_gate():
+    # 게이트를 여는 것과 리포트 경로가 그 값을 실어 보내는 것은 다른 일이다 -
+    # 인카운터 게이트가 들어올 때와 같은 이유로 짝을 지어 잰다.
+    #
+    # **채택되는지**를 보는 테스트는 에이다로 잰다. 미하라 덱은 전환점 바로 위라
+    # (`test_holding_mihara_IS_A_WASH_at_this_decks_computed_gauge`) 게이지를
+    # 건드리는 무관한 변경이 부호를 뒤집어 여기를 빨갛게 만든다. 에이다는 게이지
+    # 2.0~6.0초 전 구간에서 부호가 안 바뀐다.
+    ordering = _ordering(WITH_GRANTER_ADA, ADA)
+    handled = BossProfile(element="Iron", fight_duration=180.0,
+                          spawns_adds=True, hold_fire_despite_adds=True)
+    assert evaluate_deck_best_seating(ordering, handled)["hold_fire"] == [ADA]
+
+
+def test_the_override_is_inert_on_a_boss_without_adds():
+    # 잡몹이 없으면 이 선언은 아무것도 안 바꾼다 - 켜 둔 채로 회차를 옮겨도 조용해야
+    # 한다.
+    ordering = _ordering(WITH_GRANTER, MIHARA)
+    assert (evaluate_deck_hold_fire_options(
+                ordering, BossProfile(hold_fire_despite_adds=True))
+            == evaluate_deck_hold_fire_options(ordering, BossProfile()))
+
+
+def test_the_chosen_hold_is_carried_out_as_a_play_instruction():
+    # 좌석·톡톡이와 같은 계열이다 - 덱 목록만 봐서는 알 수 없고, 이 수를 두지 않으면
+    # 위 수치가 안 나온다. _summarize가 안 실으면 점수만 조용히 오르고 플레이어는
+    # 무엇을 해야 하는지 못 듣는다. 위 테스트와 같은 이유로 에이다로 잰다.
+    ordering = _ordering(WITH_GRANTER_ADA, ADA)
+    boss = BossProfile(element="Iron", fight_duration=180.0)
+    summary = _summarize(ordering, evaluate_deck_best_seating(ordering, boss))
+    assert summary["hold_fire_slugs"] == [ADA]
+
+
+def test_a_deck_that_holds_nobody_carries_an_empty_instruction():
+    # 홀드가 없으면 키가 아예 없는 것이 아니라 빈 목록이어야 한다 - 응답 모델이
+    # 매번 읽는 자리다.
+    ordering = _ordering(WITH_GRANTER_ADA, ADA)
+    noisy = BossProfile(element="Iron", fight_duration=180.0, spawns_adds=True)
+    summary = _summarize(ordering, evaluate_deck_best_seating(ordering, noisy))
+    assert summary["hold_fire_slugs"] == []
 
 
 def test_holding_a_transforming_unit_that_never_declared_its_release_is_refused():

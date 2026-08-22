@@ -25,14 +25,14 @@ const REQUEST: EvaluateDecksRequest = {
   roster: [nikke('liter')],
   decks: [{
     units: ['liter', 'blanc', 'crown', 'modernia', 'privaty'],
-    boss: { element: 'Iron', core_hittable: false, pierce_hits_body_behind_core: false, enemy_def: 0, fight_duration: 180, part_destructible: false, part_destruction_times: [], spawns_adds: false, core_diameter_px: null, effective_range_band: null, elemental_interrupt_required: false },
+    boss: { element: 'Iron', core_hittable: false, pierce_hits_body_behind_core: false, enemy_def: 0, fight_duration: 180, part_destructible: false, part_destruction_times: [], spawns_adds: false, hold_fire_despite_adds: false, core_diameter_px: null, effective_range_band: null, elemental_interrupt_required: false },
   }],
   stat_basis: 'raid400',
 }
 
 const RESPONSE: EvaluateDecksResponse = {
   decks: [{ deck: ['liter', 'blanc', 'crown', 'modernia', 'privaty'],
-            total_damage: 100, burst_damage: 60, normal_attack_damage: 30, skill_damage: 10, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {} }],
+            total_damage: 100, burst_damage: 60, normal_attack_damage: 30, skill_damage: 10, hold_burst_slugs: [], hold_fire_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {} }],
   combined_total_damage: 100,
   excluded_slugs: [],
   engine_version: 'abcdef012345',

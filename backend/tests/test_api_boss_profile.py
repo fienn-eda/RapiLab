@@ -75,6 +75,14 @@ def test_the_adds_flag_a_caller_sends_is_the_flag_the_engine_gets():
     assert boss_profile(BossProfileIn()).spawns_adds is False
 
 
+def test_the_adds_override_a_caller_sends_is_the_flag_the_engine_gets():
+    # 잡몹을 감당하고 홀드하겠다는 플레이어의 선언. 인카운터의 사실(spawns_adds)과
+    # 별개 필드라 둘 다 실려야 한다 - 한쪽만 닿으면 화면과 계산이 어긋난다.
+    assert boss_profile(BossProfileIn(
+        hold_fire_despite_adds=True)).hold_fire_despite_adds is True
+    assert boss_profile(BossProfileIn()).hold_fire_despite_adds is False
+
+
 def test_a_negative_destruction_time_is_rejected_at_the_api_surface():
     # 전투가 시작하기 전에 깨지는 파츠는 없다. 음수가 통과하면 -5초에 열린 창이
     # 전투 시작 시점에 이미 살아 있어, 회차 로더가 막으려던 것과 같은 상태가

@@ -967,3 +967,55 @@ describe('BossProfileField 코어 지름', () => {
     expect(input.checkValidity()).toBe(true)
   })
 })
+
+describe('BossProfileField 잡몹 홀드 오버라이드', () => {
+  // 잡몹이 나오는 보스에서도 플레이어의 조작에 따라 평타를 멈출 수 있는 판이 있다.
+  // 그 선언은 보스의 사실이 아니라 플레이어 것이므로, 사실 쪽을 꺼서 택틱을 여는
+  // 길밖에 없으면 화면에는 「잡몹 없는 보스」라고 적힌 채로 계산이 돈다.
+  it('잡몹이 안 나오는 보스에는 칩이 없다', () => {
+    render(
+      <BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />,
+    )
+
+    expect(screen.queryByRole('checkbox', { name: /홀드/ })).not.toBeInTheDocument()
+  })
+
+  it('잡몹 생성을 켜면 칩이 나오고 선언이 나간다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), spawns_adds: true }}
+        onChange={onChange}
+      />,
+    )
+
+    await user.click(screen.getByRole('checkbox', { name: /홀드/ }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ hold_fire_despite_adds: true }),
+    )
+  })
+
+  it('잡몹 생성을 끄면 선언도 같이 꺼진다', async () => {
+    // 코어 타격 가능 ↔ 관통과 같은 규칙: 폼에서 모순 상태를 아예 만들지 않는다.
+    // 값을 남겨 두면 화면에서 사라진 칩이 계산에는 살아 있다.
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{
+          ...makeDefaultBossProfileDraft(),
+          spawns_adds: true,
+          hold_fire_despite_adds: true,
+        }}
+        onChange={onChange}
+      />,
+    )
+
+    await user.click(screen.getByRole('checkbox', { name: '잡몹 생성' }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ spawns_adds: false, hold_fire_despite_adds: false }),
+    )
+  })
+})
+

@@ -395,7 +395,16 @@ export function BossProfileField({
             <ToggleChip
               type="checkbox"
               checked={value.spawns_adds}
-              onChange={(checked) => onChange({ ...value, spawns_adds: checked })}
+              onChange={(checked) =>
+                onChange({
+                  ...value,
+                  spawns_adds: checked,
+                  // 잡몹이 없으면 「그래도 홀드하겠다」는 선언도 의미가 없다. 값을
+                  // 남겨 두면 화면에서 사라진 칩이 계산에는 살아 있다 - 코어 타격
+                  // 가능 ↔ 관통과 같은 규칙이다.
+                  hold_fire_despite_adds: checked && value.hold_fire_despite_adds,
+                })
+              }
               help={
                 <HelpTip label="잡몹 생성">
                   <HelpText>{HELP.boss.spawnsAdds}</HelpText>
@@ -404,6 +413,25 @@ export function BossProfileField({
             >
               잡몹 생성
             </ToggleChip>
+
+            {/* 잡몹이 나오는 보스에서만 그린다 - 안 나오는 보스에 상시 떠 있으면
+                아무것도 안 하는 스위치가 된다. */}
+            {value.spawns_adds && (
+              <ToggleChip
+                type="checkbox"
+                checked={value.hold_fire_despite_adds}
+                onChange={(checked) =>
+                  onChange({ ...value, hold_fire_despite_adds: checked })
+                }
+                help={
+                  <HelpTip label="잡몹 무시하고 홀드">
+                    <HelpText>{HELP.boss.holdFireDespiteAdds}</HelpText>
+                  </HelpTip>
+                }
+              >
+                잡몹 무시하고 홀드
+              </ToggleChip>
+            )}
 
             {showElementalInterrupt && (
               <ToggleChip

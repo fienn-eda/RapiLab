@@ -213,6 +213,18 @@ class BossProfile:
     # 몇 발이 드는지는 모델하지 않는다. 이 플래그가 답하는 것은 「그 택틱을 둘 수
     # 있는가」 하나뿐이다.
     spawns_adds: bool = False
+    # 「잡몹이 나오지만 그래도 홀드 파이어를 두겠다」는 플레이어의 선언. 잡몹을
+    # 어떻게 처리하는지는 조작에 달렸고, 실제로 감당하며 홀드하는 판이 있다
+    # (Fienn, 2026-08-22). `spawns_adds`와 별개 필드인 것이 핵심이다 - 그쪽은
+    # 공지·관측에서 나온 인카운터의 사실이라 회차 데이터가 채우고, 이쪽은 플레이어
+    # 것이라 회차를 고를 때마다 기본값으로 돌아간다. 사실 쪽을 꺼서 택틱을 여는
+    # 길밖에 없으면 화면에는 「잡몹 없는 보스」라고 적힌 채로 계산이 돈다.
+    #
+    # 인카운터 게이트만 연다 - 살릴 라운드 버프가 없는 덱에서 홀드는 여전히 확정
+    # 손해라 덱 게이트는 그대로 걸린다. 그리고 이 선언 위의 점수는 플레이어가
+    # 실제로 잡몹을 감당한다는 전제 위의 **상한**이다: 잡몹이 가져가는 딜도, 치우는
+    # 발수도 엔진은 모델하지 않는다.
+    hold_fire_despite_adds: bool = False
     # How far away this boss is fought, which decides WHICH weapons are inside
     # their effective range and collect +0.30 in the major bucket on their
     # normal attacks (measured on Ade: Agent Bunny, engine-gaps item 16).
@@ -523,17 +535,19 @@ def evaluate_deck_hold_fire_options(ordered_deck, boss):
     and is not worth a simulation.
 
     The encounter gate is `BossProfile.spawns_adds`: against a boss that keeps
-    producing adds the player cannot stop firing, so the tactic is not on the
-    board however good the deck's buffs are. `boss` is required rather than
-    optional for the reason `effective_range_band` was silently dropped by
-    three endpoints - an input a caller can forget is an input that eventually
-    goes missing.
+    producing adds the player normally cannot stop firing, so the tactic is not
+    on the board however good the deck's buffs are. It is the DEFAULT rather
+    than the verdict - `hold_fire_despite_adds` is the player declaring the adds
+    are handled, which puts the tactic back on the board without pretending the
+    boss stopped spawning them. `boss` is required rather than optional for the
+    reason `effective_range_band` was silently dropped by three endpoints - an
+    input a caller can forget is an input that eventually goes missing.
 
     Subsets rather than one all-on set, because holding is not jointly good: in
     a deck with three Burst 3s, Ada holding while Ein also holds cost the deck
     3 percentage points against Ein holding alone, since she barely bursts and
     threw her normal attacks away for a window she rarely opened."""
-    if boss.spawns_adds:
+    if boss.spawns_adds and not boss.hold_fire_despite_adds:
         return [frozenset()]
     slugs = [unit.slug for unit in ordered_deck]
     holders = [slug for slug in slugs if get_hold_fire_release_shots(slug) is not None]
@@ -723,6 +737,11 @@ def _summarize(ordered_deck, result):
         "gauge_delay_seconds": result.get("gauge_delay_seconds", 0.0),
         "total_cycles": sum(1 for e in result.get("events", ())
                             if e["type"] == "full_burst_end"),
+        # 이 덱이 홀드 파이어를 두기로 한 좌석 - 자기 풀 버스트 동안 평타를 멈춰
+        # 「N발 유지」 버프를 살리는 수다. hold_burst_slugs·seating과 같은 계약으로,
+        # 이 수를 두지 않으면 위 수치가 안 나온다. 홀드가 값이 없는 덱에서는 빈
+        # 목록이다 - 엔진은 그럴 때 키 자체를 안 붙인다.
+        "hold_fire_slugs": result.get("hold_fire", []),
         "result": result,
     }
 

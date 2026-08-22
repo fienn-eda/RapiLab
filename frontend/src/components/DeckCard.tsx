@@ -158,6 +158,18 @@ export function DeckCard({
           </HelpText>
         </p>
       )}
+      {/* 자기 풀버스트 동안 평타를 멈춰야 하는 자리. 홀드·톡톡이·좌석과 같은 계약으로,
+          누가 여기 들어가는지는 엔진이 정해서 실어 보낸다. testid를 다는 이유는 이
+          안내의 문안이 따로 다듬어지기 때문이다 - 문구로 찾으면 다듬을 때마다
+          멀쩡한 테스트가 깨진다. */}
+      {deck.hold_fire_slugs.length > 0 && (
+        <p className="deck-results__hold" data-testid="hold-fire-note">
+          <span aria-hidden="true">🚫</span>{' '}
+          <HelpText>
+            {HELP.results.holdFire(deck.hold_fire_slugs.map(nameFor).join(', '))}
+          </HelpText>
+        </p>
+      )}
       {Object.entries(deck.seating).map(([caster, seat]) => (
         <p className="deck-results__seating" key={caster}>
           <HelpText>

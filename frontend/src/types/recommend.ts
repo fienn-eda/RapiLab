@@ -25,8 +25,13 @@ export interface BossProfile {
   // part destruction (e.g. Ark Ranger Black), false = floor (lower-bound) model.
   spawns_adds: boolean // default false — 잡몹이 주기적으로 생성되는 보스. 딜 계산에는
   // 안 들어가고, 홀드 파이어 택틱(자기 풀버스트 동안 평타를 멈춰 라운드 버프를
-  // 살리는 수)을 후보에서 지우는 데만 쓰인다 — 나오는 잡몹을 치워야 하므로 평타를
-  // 멈출 수 없다.
+  // 살리는 수)을 기본적으로 후보에서 지우는 데만 쓰인다 — 나오는 잡몹을 치워야
+  // 하므로 보통은 평타를 멈출 수 없다.
+  hold_fire_despite_adds: boolean // default false — 「잡몹이 나와도 홀드하겠다」는
+  // 플레이어의 선언. 잡몹을 어떻게 처리하는지는 조작에 달렸고 실제로 감당하며
+  // 홀드하는 판이 있어서, 위 사실이 판정이 아니라 기본값이 된다. spawns_adds가
+  // 거짓이면 아무것도 안 바꾼다. 이 선언 위의 수치는 플레이어가 정말로 잡몹을
+  // 공짜로 감당한다는 전제의 **상한**이다.
   part_destruction_times: number[] // default [] — 파츠가 실제로 깨지는 시각(초).
   // 그 보스를 관측해야 나오는 값이라 공지에서 오지 않는다. 비어 있으면 파괴에
   // 반응하는 스킬은 위 불리언만 보던 근사로 돌고, 시각이 있으면 그 시각마다
@@ -77,6 +82,10 @@ export interface DeckRecommendation {
   // 통째로 톡톡이, 1 이상이면 매거진 안에서 풀차지와 섞었다(밀크: 블루밍 바니).
   // 문안 자체는 helpText.ts의 tapFireBurstOnly/tapFireAlways/tapFireMixed 참고.
   partial_charge_full_rounds: Record<string, number>
+  // 자기 풀버스트 동안 **평타를 멈춰야** 하는 슬러그. 라운드 버프(「N발 유지」)는
+  // 탄으로 소모되므로, 안 쏘면 창 내내 살아 그 안의 스킬딜이 전부 그 버프를 받는다.
+  // 위 셋과 같은 계열의 플레이 지시다 — 이 수를 두지 않으면 위 수치가 안 나온다.
+  hold_fire_slugs: string[]
   // 「자신과 양 옆 아군 2명」을 대상으로 하는 버프를 가진 유닛(루주의 Sword Coin,
   // 플로라 애장품의 Peace of Mind)을 어떻게 앉혀야 위 수치가 나오는지. 그런 유닛이
   // 없는 덱은 빈 객체다. 이것도 덱 목록에 안 담기는 편성 지시인데, 이유가

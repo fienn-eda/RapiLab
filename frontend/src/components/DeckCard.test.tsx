@@ -11,7 +11,7 @@ const DECK = {
   burst_damage: 500,
   normal_attack_damage: 400,
   skill_damage: 100,
-  hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [],
+  hold_burst_slugs: [], hold_fire_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [],
   partial_charge_full_rounds: {}, seating: {},
 }
 
@@ -230,6 +230,7 @@ describe('DeckCard 보스 설정', () => {
           part_destructible: false,
           part_destruction_times: [],
           spawns_adds: false,
+          hold_fire_despite_adds: false,
           core_diameter_px: null,
           effective_range_band: null,
           elemental_interrupt_required: false,
@@ -316,3 +317,29 @@ describe('DeckCard 버충 밀림', () => {
     expect(screen.queryByText(/버충 밀림/)).not.toBeInTheDocument()
   })
 })
+describe('DeckCard 홀드 파이어 안내', () => {
+  // 홀드 파이어는 좌석·톡톡이와 같은 계열의 플레이 지시다: 자기 풀버스트 동안 평타를
+  // 멈춰야 위 수치가 나온다. 안 실어 주면 점수만 조용히 오르고 플레이어는 무엇을
+  // 해야 하는지 못 듣는다.
+  //
+  // 문구가 아니라 testid로 찾는 이유: 이 안내의 문안은 따로 쓰인다. 정규식으로
+  // 잡으면 문구를 다듬을 때마다 멀쩡한 테스트가 깨진다.
+  it('평타를 멈춰야 하는 자리를 이름으로 말한다', () => {
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{ ...DECK, hold_fire_slugs: ['d'] }}
+        nameFor={(slug) => (slug === 'd' ? '미하라: 본딩 체인' : slug)}
+      />,
+    )
+
+    expect(screen.getByTestId('hold-fire-note')).toHaveTextContent('미하라: 본딩 체인')
+  })
+
+  it('홀드가 없으면 아무것도 안 단다', () => {
+    render(<DeckCard label="덱 1" deck={DECK} />)
+
+    expect(screen.queryByTestId('hold-fire-note')).not.toBeInTheDocument()
+  })
+})
+
