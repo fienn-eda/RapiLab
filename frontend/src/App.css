@@ -126,12 +126,6 @@
   max-width: var(--measure);
 }
 
-.app__note {
-  color: var(--text-muted);
-  font-size: 13px;
-  max-width: var(--measure);
-}
-
 .app__main {
   display: flex;
   flex-direction: column;

@@ -63,13 +63,6 @@ describe('App', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'RapiLab' })).toBeInTheDocument()
   })
 
-  it('states the harmony cube assumption, and whose it is', async () => {
-    // The 계산기 tab asks which cube the unit wears, so an unqualified "every
-    // Nikke wears a reload cube" is a claim the app contradicts on that screen.
-    await renderSettled(<App />)
-    expect(screen.getByText(HELP.app.cubeAssumption)).toBeInTheDocument()
-  })
-
   it('prompts to sync and hides the roster/recommend panel when there is no active profile', async () => {
     await renderSettled(<App />)
     expect(screen.getByText(HELP.app.noProfiles)).toBeInTheDocument()

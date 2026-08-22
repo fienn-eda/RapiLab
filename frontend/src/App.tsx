@@ -174,9 +174,6 @@ function App() {
           <p className="app__subtitle">
             <HelpText>{HELP.app.subtitle}</HelpText>
           </p>
-          <p className="app__note">
-            <HelpText>{HELP.app.cubeAssumption}</HelpText>
-          </p>
         </div>
 
         {/* Top right of the page, opposite the title: which account is loaded
